@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OEDS Schemas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <style>
+        .content {
+            padding: 25px 100px 75px 100px;
+            background: #ffffff;
+            max-width: 900px;
+            margin: auto;
+            box-shadow: 1px 2px 4px rgba(0, 0, 0, .5);
+        }
+        .content-text {
+            width: 95%;
+            margin: auto;
+        }
+        h1 {
+            color: #00B5AD;
+            padding-top: 25px;
+        }
+        hr{
+            color: #c4c4c4;
+        }
+        body {
+            font-family: Verdana,Arial,Helvetica,sans-serif;
+            background-color: #f3f3f3;
+            font-size: 13px;
+            line-height: 1.42857143;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <div class="content-text">
+
+<h1>OEDS Schemas</h1><hr>
+
+{% for o in schemas %}
+    <p><a href="./{{ o }}">{{ o }}</a></p>
+{% endfor %}
+    </div>
+</div>
+</body>
+</html>
