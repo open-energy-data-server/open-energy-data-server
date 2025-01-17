@@ -53,12 +53,22 @@ def get_contract_data(address: dict):
 
 
 def get_grid_data(address: dict):
+    postcode = address.get("postcode", )
+    city = address.get("city", address.get("town"))
+    if not city:
+        city = requests.get(f'https://occ.eon.de/zipcodes/1.3/api?clientId=eonde&query={postcode}').json()
+        city = city["zipCodes"][0]["cities"][0]["city"]
+
+    street = requests.get(f'https://occ.eon.de/streets/1.3/api?clientId=eonde&zipCode={postcode}&streetName=a').json()[0]
+
+    if not street:
+        street = address.get("road")
     params = {
         "type": "Strom",
-        "city": address.get("city", address.get("town")),
+        "city": city,
         "consumption": 100000,
         "zipCode": address.get("postcode"),
-        "street": address.get("road"),
+        "street": street,
         # "houseNumber": address.get("house_number")
     }
 
@@ -80,6 +90,12 @@ geolocator = Nominatim(user_agent="Open-Energy-Data-Server")
 grid_fee_results = {}
 contracts_results = {}
 
+# code = 72516
+# row = plz_nuts.loc[code]
+# location is only based on nuts3, so it is hardly usefule to add so many
+plz_nuts = plz_nuts.drop_duplicates("nuts3")
+
+
 for code, row in plz_nuts.iterrows():
     latitude = row["latitude"]
     longitude = row["longitude"]
@@ -88,6 +104,9 @@ for code, row in plz_nuts.iterrows():
     # Perform reverse geocoding
     location = geolocator.reverse(f"{latitude}, {longitude}")
     address = location.raw["address"]
+    # some location middles do not have a postcode set like
+    # 57642
+    address["postcode"] = address.get("postcode", str(code))
     try:
         contracts_results[code] = get_contract_data(address)
     except Exception:
