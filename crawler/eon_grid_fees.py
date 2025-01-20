@@ -14,7 +14,7 @@ from common.base_crawler import create_schema_only, set_metadata_only
 from common.config import db_uri
 
 logging.basicConfig()
-log = logging.getLogger("MaStR")
+log = logging.getLogger("eonFees")
 log.setLevel(logging.INFO)
 
 metadata_info = {
@@ -129,8 +129,19 @@ def main(schema_name):
     try:
         pass
         # TODO crawl to database (connection=engine)
+        df = pd.DataFrame()
+        df["zip_code"] = pandas.Series(grid_fees.keys()).values
+        df["working_price_grid_ct_per_kwh"] = list(map(
+            lambda i: i.get('prices').get('working_price_grid').get('value_vat'),
+            map(grid_fees.get, grid_fees.keys())))
+        df["power_price_grid_eur_per_kw"] = list(map(
+            lambda i: i.get('prices').get('power_price_grid').get('value_vat'),
+            map(grid_fees.get, grid_fees.keys())))
+        df["fee_measurement_eur_per_year"] = list(map(
+            lambda i: i.get('prices').get('fee_measurement').get('value_vat'),
+            map(grid_fees.get, grid_fees.keys())))
     except Exception:
-        log.exception("error in mastr")
+        log.exception("error in eon_fees")
     set_metadata_only(engine, metadata_info)
 
 

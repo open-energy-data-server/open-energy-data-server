@@ -28,6 +28,7 @@ pyarrow
 typing
 yfinance
 cloudscraper
+geopy
 git+https://github.com/maurerle/roiti-gie@maurerle
 jao-py
 py7zr<1
