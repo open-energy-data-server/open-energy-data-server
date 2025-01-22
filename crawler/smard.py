@@ -147,11 +147,14 @@ class SmardCrawler(BaseCrawler):
                     f"the latest date in the database is not a sunday after 22:00, taking last week sunday 22:00 as start date to fill the missing data: {latest} -> {last_sunday_22}"
                 )
                 start_date = last_sunday_22
-            else:
+            elif latest.hour == 21 and latest.minute == 45:
                 log.info(
                     "the latest date in the database is a sunday 21:45, taking this sunday 22:00 as start date"
                 )
                 start_date = latest.replace(hour=22, minute=0, second=0, microsecond=0)
+            else:
+                log.info("the latest date in the database is a sunday 22:45, taking this sunday 23:00 as start date")
+                start_date = latest.replace(hour=23, minute=0, second=0, microsecond=0)
             return start_date, latest
         except Exception as e:
             log.info(f"Using the default start date {e}")
