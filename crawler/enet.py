@@ -19,7 +19,7 @@ import os.path as osp
 import pandas as pd
 from sqlalchemy import create_engine, text
 
-from config import db_uri
+from common.config import db_uri
 
 log = logging.getLogger("MaStR")
 log.setLevel(logging.INFO)
