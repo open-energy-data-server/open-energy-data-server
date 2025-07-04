@@ -57,7 +57,10 @@ def main(schema_name):
                         if sheet_name in ["index", "cover", "RES_hh_eff"]:
                             continue
                         index_col = [0]
-                        if "EmissionBalance" in thefile.name or "EnergyBalance" in thefile.name:
+                        if (
+                            "EmissionBalance" in thefile.name
+                            or "EnergyBalance" in thefile.name
+                        ):
                             index_col = [0, 1]
 
                         table_names.append(sheet_name)

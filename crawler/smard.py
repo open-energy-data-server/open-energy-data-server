@@ -153,7 +153,9 @@ class SmardCrawler(BaseCrawler):
                 )
                 start_date = latest.replace(hour=22, minute=0, second=0, microsecond=0)
             else:
-                log.info("the latest date in the database is a sunday 22:45, taking this sunday 23:00 as start date")
+                log.info(
+                    "the latest date in the database is a sunday 22:45, taking this sunday 23:00 as start date"
+                )
                 start_date = latest.replace(hour=23, minute=0, second=0, microsecond=0)
             return start_date, latest
         except Exception as e:
