@@ -17,7 +17,7 @@ import xarray as xr
 from shapely.geometry import Point
 from sqlalchemy import create_engine, text
 
-from config import db_uri
+from common.config import db_uri
 
 """
     Note that only requests with no more that 1000 items at a time are valid.
@@ -100,7 +100,7 @@ def save_data(request, ecmwf_client: cdsapi.Client):
     save_downloaded_files_path = os.path.realpath(
         os.path.join(
             os.path.dirname(__file__),
-            f'{request.get("year")}_{request.get("month")}_{request.get("day")[0]}-{request.get("month")}_{request.get("day")[len(request.get("day")) - 1]}_ecmwf.grb',
+            f"{request.get('year')}_{request.get('month')}_{request.get('day')[0]}-{request.get('month')}_{request.get('day')[len(request.get('day')) - 1]}_ecmwf.grb",
         )
     )
     ecmwf_client.retrieve("reanalysis-era5-land", request, save_downloaded_files_path)
@@ -128,7 +128,7 @@ def build_dataframe(engine, request: dict, write_lat_lon: bool = True):
     file_path = os.path.realpath(
         os.path.join(
             os.path.dirname(__file__),
-            f'{request.get("year")}_{request.get("month")}_{request.get("day")[0]}-{request.get("month")}_{request.get("day")[len(request.get("day")) - 1]}_ecmwf.grb',
+            f"{request.get('year')}_{request.get('month')}_{request.get('day')[0]}-{request.get('month')}_{request.get('day')[len(request.get('day')) - 1]}_ecmwf.grb",
         )
     )
     weather_data = xr.open_dataset(file_path, engine="cfgrib")
@@ -269,14 +269,14 @@ def request_builder(dates: list[datetime]):
     for month in dfs:
         days = []
         for i in range(month.index.start, month.index.stop):
-            days.append(f'{month["Date"].dt.day[i]:02d}')
+            days.append(f"{month['Date'].dt.day[i]:02d}")
         day_chunks = divide_month_in_chunks(days, 8)
         for chunk in day_chunks:
             request = dict(
                 format="grib",
                 variable=var_,
-                year=f'{month["Date"].dt.year[month.index.start]}',
-                month=f'{month["Date"].dt.month[month.index.start]:02d}',
+                year=f"{month['Date'].dt.year[month.index.start]}",
+                month=f"{month['Date'].dt.month[month.index.start]:02d}",
                 day=chunk,
                 time=[f"{i:02d}:00" for i in range(24)],
             )
