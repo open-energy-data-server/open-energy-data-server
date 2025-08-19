@@ -34,7 +34,7 @@ metadata_info = {
 class IndustrialLoadProfileCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
-            query = text("SELECT 1 from consumption limit 1")
+            query = text("SELECT 1 from high_load_times limit 1")
             with self.engine.connect() as conn:
                 return conn.execute(query).scalar() == 1
         except Exception:

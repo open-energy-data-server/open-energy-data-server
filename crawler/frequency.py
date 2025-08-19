@@ -110,7 +110,7 @@ if __name__ == "__main__":
     config = load_config(Path(__file__).parent.parent / "config.yml")
     craw = FrequencyCrawler("frequency", config)
     craw.crawl_structural(recreate=False)
-    #craw.crawl_frequency(2013, 2020)
+    # craw.crawl_frequency(2013, 2020)
 
     if False:
         year = 2010
