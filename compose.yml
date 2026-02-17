@@ -155,6 +155,8 @@ services:
         condition: service_healthy
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
+    volumes:
+       -/root/open-energy-data-server:/root/open-energy-data-server
     command: prefect worker start --pool local-pool
     restart: on-failure
 
