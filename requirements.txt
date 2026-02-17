@@ -20,6 +20,7 @@ numpy
 openpyxl
 open-mastr
 pandas
+prefect==3.6.17
 psycopg2-binary
 py7zr<1
 pyarrow
