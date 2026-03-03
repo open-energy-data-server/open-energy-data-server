@@ -203,7 +203,7 @@ class EntsoeCrawler(ContinuousCrawler):
             data["country"] = country
             try:
                 with self.engine.begin() as conn:
-                    data.to_sql(proc.__name__, conn, if_exists="append")
+                    data.to_sql(proc.__name__, conn, if_exists="fail")
             except Exception as e:
                 with self.engine.begin() as conn:
                     log.info(f"handling {repr(e)} by concat")
