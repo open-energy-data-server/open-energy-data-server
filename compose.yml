@@ -173,15 +173,21 @@ services:
       MB_DB_DBNAME: metabaseappdb
       MB_DB_PORT: 5432
       MB_DB_USER: metabase
-      MB_DB_PASS: mysecretpassword
-      MB_DB_HOST: postgres
-    networks:
-      - metanet1
+      MB_DB_PASS: ${METABASE_PW}
+      MB_DB_HOST: postgres-metabase
     healthcheck:
       test: curl --fail -I http://localhost:3000/api/health || exit 1
       interval: 15s
       timeout: 5s
       retries: 5
+  postgres-metabase:
+    image: postgres:16
+    container_name: postgres
+    hostname: postgres
+    environment:
+      POSTGRES_USER: metabase
+      POSTGRES_DB: metabaseappdb
+      POSTGRES_PASSWORD: ${POSTGRES_METABASE_PW}
 
 volumes:
   postgres_data:
