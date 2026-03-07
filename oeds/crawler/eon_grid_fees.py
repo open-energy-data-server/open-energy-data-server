@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+import time
 from datetime import datetime
 
 import pandas as pd
@@ -30,7 +31,7 @@ GRID_FEES_URI = "https://occ.eon.de/b2b-pricing/1.0/api/v2/thirdPartyCosts/rlm/p
 
 def get_contract_data(address: dict):
     # we need to create an offer starting for the next month
-    start = datetime.now() + relativedelta(day=1)
+    start = datetime.now() + relativedelta(months=1)
     start_str = start.strftime("%Y-%m-01")
     data = {
         "city": address.get("city"),
@@ -105,34 +106,45 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                 index_col="code",
             )
         # Initialize Nominatim API
-        geolocator = Nominatim(user_agent="Open-Energy-Data-Server")
+        geolocator = Nominatim(user_agent="OEDS FH-Aachen")
         grid_fee_results = {}
         contracts_results = {}
 
         # code = 72516
         # row = plz_nuts.loc[code]
-        # location is only based on nuts3, so it is hardly usefule to add so many
-        plz_nuts = plz_nuts.drop_duplicates("nuts3")
-
-        for code, row in plz_nuts.iterrows():
-            latitude = row["latitude"]
-            longitude = row["longitude"]
-            print(f"currently working at {code}")
-
-            # Perform reverse geocoding
-            location = geolocator.reverse(f"{latitude}, {longitude}")
-            address = location.raw["address"]
-            # some location middles do not have a postcode set like
-            # 57642
-            address["postcode"] = address.get("postcode", str(code))
-            try:
-                contracts_results[code] = get_contract_data(address)
-            except Exception:
-                log.exception(f"error in contract fees eon for {code}")
-            try:
-                grid_fee_results[code] = get_grid_data(address)
-            except Exception:
-                log.exception(f"error in grid fees eon for {code}")
+        # location is only based on nuts3, so we stop after the first one worked well
+        for nuts3, plzs in plz_nuts.groupby("nuts3"):
+            got_data = False
+            for code, row in plzs.iterrows():
+                # sleep to reduce load a nominatim API
+                # https://operations.osmfoundation.org/policies/nominatim/
+                time.sleep(2)
+                log.info(f"currently working at {code}")
+                # Perform reverse geocoding
+                loc = geolocator.geocode(f"{code}")
+                time.sleep(1)
+                
+                location = geolocator.reverse(f'{loc.raw["lat"]}, {loc.raw["lon"]}')
+                address = location.raw["address"]
+                # some location middles do not have a postcode set like
+                # 57642
+                address["postcode"] = address.get("postcode", str(code))
+                if not address.get("road"):
+                    log.warning("no road for postcode %s: %s", code, location)
+                    continue
+                try:
+                    contracts_results[code] = get_contract_data(address)
+                except Exception:
+                    log.exception(f"error in contract fees eon for {code}")
+                try:
+                    grid_fee_results[code] = get_grid_data(address)
+                    got_data = True
+                except Exception:
+                    log.exception(f"error in grid fees eon for {code}")
+                    
+                if got_data:
+                    # if we have valid data for this nuts3 we can skip to the next nuts3
+                    break
 
         df = pd.DataFrame()
         df["zip_code"] = pd.Series(grid_fee_results.keys()).values
@@ -154,9 +166,23 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                 map(grid_fee_results.get, grid_fee_results.keys()),
             )
         )
+        df["market_partner_name"] = list(
+            map(
+                lambda i: i.get("prices").get("working_price_grid").get("market_partner_name"),
+                map(grid_fee_results.get, grid_fee_results.keys()),
+            )
+        )
+        df["market_partner_code"] = list(
+            map(
+                lambda i: i.get("prices").get("working_price_grid").get("market_partner_code"),
+                map(grid_fee_results.get, grid_fee_results.keys()),
+            )
+        )
 
         with self.engine.begin() as conn:
-            df.to_sql("eon_grid_fees", conn)
+            df.to_sql("eon_grid_fees", conn, if_exists="replace")
+        
+        return df
 
 
 if __name__ == "__main__":
@@ -164,7 +190,8 @@ if __name__ == "__main__":
 
     config = load_config(DEFAULT_CONFIG_LOCATION)
     crawler = EonGridFeeCrawler("grid_fees", config)
-    crawler.crawl_structural()
+    #crawler.crawl_structural()
+    grid_fees = crawler.download_grid_fees()
     crawler.set_metadata(metadata_info)
 
     # with open("grid_fees.json", "w") as f:
