@@ -11,6 +11,7 @@ import requests
 from dateutil.relativedelta import relativedelta
 from geopy.geocoders import Nominatim
 from sqlalchemy import text
+from tqdm import tqdm
 
 from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load_config
 
@@ -112,9 +113,8 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
 
         # code = 72516
         # row = plz_nuts.loc[code]
-        # location is only based on nuts3, so we stop after the first one worked well
-        for nuts3, plzs in plz_nuts.groupby("nuts3"):
-            got_data = False
+        # location is only based on nuts3, but we crawl all to get all DSO data
+        for nuts3, plzs in tqdm(plz_nuts.groupby("nuts3")):
             for code, row in plzs.iterrows():
                 # sleep to reduce load a nominatim API
                 # https://operations.osmfoundation.org/policies/nominatim/
@@ -123,12 +123,14 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                 # Perform reverse geocoding
                 loc = geolocator.geocode(f"{code}")
                 time.sleep(1)
-                
-                location = geolocator.reverse(f'{loc.raw["lat"]}, {loc.raw["lon"]}')
+
+                location = geolocator.reverse(f"{loc.raw['lat']}, {loc.raw['lon']}")
                 address = location.raw["address"]
                 # some location middles do not have a postcode set like
                 # 57642
-                address["postcode"] = address.get("postcode", str(code))
+                # there is also an endpoint to get available steet names per zip code:
+                # https://occ.eon.de/streets/1.3/api?clientId=eonde&zipCode=06259&streetName=a
+                address["postcode"] = str(address.get("postcode", code)).zfill(5)
                 if not address.get("road"):
                     log.warning("no road for postcode %s: %s", code, location)
                     continue
@@ -136,15 +138,11 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                     contracts_results[code] = get_contract_data(address)
                 except Exception:
                     log.exception(f"error in contract fees eon for {code}")
+
                 try:
                     grid_fee_results[code] = get_grid_data(address)
-                    got_data = True
                 except Exception:
                     log.exception(f"error in grid fees eon for {code}")
-                    
-                if got_data:
-                    # if we have valid data for this nuts3 we can skip to the next nuts3
-                    break
 
         df = pd.DataFrame()
         df["zip_code"] = pd.Series(grid_fee_results.keys()).values
@@ -168,20 +166,24 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
         )
         df["market_partner_name"] = list(
             map(
-                lambda i: i.get("prices").get("working_price_grid").get("market_partner_name"),
+                lambda i: i.get("prices")
+                .get("working_price_grid")
+                .get("market_partner_name"),
                 map(grid_fee_results.get, grid_fee_results.keys()),
             )
         )
         df["market_partner_code"] = list(
             map(
-                lambda i: i.get("prices").get("working_price_grid").get("market_partner_code"),
+                lambda i: i.get("prices")
+                .get("working_price_grid")
+                .get("market_partner_code"),
                 map(grid_fee_results.get, grid_fee_results.keys()),
             )
         )
 
         with self.engine.begin() as conn:
             df.to_sql("eon_grid_fees", conn, if_exists="replace")
-        
+
         return df
 
 
@@ -190,7 +192,6 @@ if __name__ == "__main__":
 
     config = load_config(DEFAULT_CONFIG_LOCATION)
     crawler = EonGridFeeCrawler("grid_fees", config)
-    #crawler.crawl_structural()
     grid_fees = crawler.download_grid_fees()
     crawler.set_metadata(metadata_info)
 
