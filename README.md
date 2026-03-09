@@ -75,6 +75,24 @@ Prefect can automatically run python scripts e.g. for crawling, processing and a
 To add a script, you have to deploy it. See [here](https://docs.prefect.io/v3/how-to-guides/deployments/create-deployments) for more information about deploying. 
 An overview is shown [here](http://88.214.56.50:4200/runs).
 
+## Metabase
+
+To access, browse and download the data, we provide an metabase instance. Once the metabase container started,
+the admin should go to http://<ip>:3000 to claim the admin account. After this you can connect the database 
+with metabase using the connection string `postgresql://readonly:<READONLY_PW>@open-data-17:5432/opendata` .
+You can verify the connection by clicking on `Data` > `Databases` > `opendata` > `public` . Once you have uploaded data into the db, all tables
+should appear here. you can click on any table, browse and download the data (bottom right corner).
+
+### Users, Groups and Data Access
+
+As an admin click `⚙`️ > `Admin setting`. 
+Click on `People` to invite someone to metabase. At the bottom you can select the group for this user. 
+The group defines which data can be seen by an user. 
+
+To create a new group, click on `Groups` (left side of the `People` menu) and create a new group. Click on the new group to add users. 
+
+To manage permissions, click on `Permissions` , no select what the user may see (always choose granular to step down a level in granularity).
+
 ### What is a time-series database?
 Normal SQL tables can get quite slow if millions of entries are stored in them.
 
