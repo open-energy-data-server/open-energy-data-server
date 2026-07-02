@@ -33,6 +33,7 @@ dependencies = [
     "numpy >=1.26.4",
     "python-dateutil >=2.8.2",
     "pandas >=2.0.0",
+    "pdfplumber >=0.11",
     "pyyaml >=6.0.2",
     "open-mastr >=0.15.0",
     "beautifulsoup4 >= 4.15.0",

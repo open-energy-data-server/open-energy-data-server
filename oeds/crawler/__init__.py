@@ -19,6 +19,7 @@ from oeds.crawler.jrc_idees import JrcIdeesCrawler
 from oeds.crawler.ladesaeulenregister import LadesaeulenregisterCrawler
 from oeds.crawler.londondatastore import LondonLoadData
 from oeds.crawler.mastr import MastrDownloader
+from oeds.crawler.netzentgelte import NetzentgeltCrawler
 from oeds.crawler.netztransparenz import NetztransparenzCrawler
 from oeds.crawler.ninja import NinjaCrawler
 from oeds.crawler.nuts_mapper import NutsCrawler
@@ -47,6 +48,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "ladesaeulenregister": LadesaeulenregisterCrawler,
     "londondatastore": LondonLoadData,
     "mastr": MastrDownloader,
+    "netzentgelte": NetzentgeltCrawler,
     "netztransparenz": NetztransparenzCrawler,
     "ninja": NinjaCrawler,
     "oep": OepCrawler,

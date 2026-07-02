@@ -20,6 +20,7 @@ numpy
 openpyxl
 open-mastr
 pandas
+pdfplumber # for netzentgelte grid-fee price sheets (PDF)
 psycopg2-binary
 tzdata # for additional timezones like Europe/Kiev in entsoe
 py7zr<1

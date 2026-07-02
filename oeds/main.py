@@ -13,6 +13,7 @@ from oeds.base_crawler import (
     empty_config,
     load_config,
 )
+from oeds.crawler import crawlers
 
 log = logging.getLogger("OEDS")
 log.setLevel(logging.INFO)
@@ -48,8 +49,6 @@ def cli(args=None):
     parsed_args = parser.parse_args(args)
 
     logging.basicConfig(level=parsed_args.loglevel)
-    from oeds.crawler import crawlers
-
     selected_crawlers = (
         parsed_args.crawler_list if parsed_args.crawler_list else list(crawlers.keys())
     )
@@ -74,8 +73,6 @@ def cli(args=None):
 
 if __name__ == "__main__":
     logging.basicConfig()
-    from oeds.crawler import crawlers
-
     config = load_config(Path(__file__).parent.parent / "config.yml")
     for schema_name, crawler_class in crawlers.items():
         crawler = crawler_class(schema_name, config)
