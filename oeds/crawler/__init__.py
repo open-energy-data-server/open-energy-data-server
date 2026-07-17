@@ -11,6 +11,7 @@ from oeds.crawler.entsog import EntsogCrawler
 from oeds.crawler.eon_grid_fees import EonGridFeeCrawler
 from oeds.crawler.eview import EViewCrawler
 from oeds.crawler.fernwaerme_preisuebersicht import FWCrawler
+from oeds.crawler.kelmarsh import KelmarshCrawler
 from oeds.crawler.frequency import FrequencyCrawler
 from oeds.crawler.gie_crawler import GieCrawler
 from oeds.crawler.instrat_pl import InstratPlCrawler
@@ -43,6 +44,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "gie": GieCrawler,
     "instrat_pl": InstratPlCrawler,
     "jao": JaoCrawler,
+    "kelmarsh": KelmarshCrawler,
     "jrc_idees": JrcIdeesCrawler,
     "ladesaeulenregister": LadesaeulenregisterCrawler,
     "londondatastore": LondonLoadData,
