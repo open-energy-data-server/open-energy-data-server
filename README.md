@@ -55,6 +55,9 @@ For more information, check out `oeds -h`.
 If you want to use the ECMWF crawler you need to create an account at [copernicus](https://cds.climate.copernicus.eu) to get an API key which allows you to query the API of copernicus.
 Follow the [instructions](https://cds.climate.copernicus.eu/api-how-to) of copernicus for that.
 
+The crawler downloads **ERA5** (`reanalysis-era5-single-levels`): `ghi`, 100 m `wind_speed`,
+`temp_air`, `precipitation`. See [docs/ecmwf.md](docs/ecmwf.md).
+
 ## TimeScaleDB
 
 The used database technology for the database server is [TimescaleDB](https://timescale.com/) which is an extension for PostgreSQL (just like PostGIS but for timeseries databases).
