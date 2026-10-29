@@ -42,5 +42,8 @@ OEDS_VENV=/home/idt/workspace/open-energy-data-server/.venv
 # ENTSOG gas transmission data (every 4 hours)
 0 */4 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list entsog >> /tmp/oeds_entsog.log 2>&1
 
+# Kelmarsh wind farm SCADA data (monthly at 04:00 on the 1st)
+0 4 1 * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list kelmarsh >> /tmp/oeds_kelmarsh.log 2>&1
+
 # Run all crawlers together (optional alternative, daily at 02:00)
 # 0 2 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" >> /tmp/oeds_all.log 2>&1
