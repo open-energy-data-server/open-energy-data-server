@@ -14,6 +14,7 @@ from oeds.crawler.fernwaerme_preisuebersicht import FWCrawler
 from oeds.crawler.frequency import FrequencyCrawler
 from oeds.crawler.gie_crawler import GieCrawler
 from oeds.crawler.instrat_pl import InstratPlCrawler
+from oeds.crawler.iwugebaeudetypen import IwuCrawler
 from oeds.crawler.jao_crawler import JaoCrawler
 from oeds.crawler.jrc_idees import JrcIdeesCrawler
 from oeds.crawler.ladesaeulenregister import LadesaeulenregisterCrawler
@@ -21,13 +22,17 @@ from oeds.crawler.londondatastore import LondonLoadData
 from oeds.crawler.mastr import MastrDownloader
 from oeds.crawler.netztransparenz import NetztransparenzCrawler
 from oeds.crawler.ninja import NinjaCrawler
+from oeds.crawler.nrw_kwp_waermedichte import KwpCrawler
 from oeds.crawler.nuts_mapper import NutsCrawler
 from oeds.crawler.oep import OepCrawler
 from oeds.crawler.opec import OpecDownloader
 from oeds.crawler.opsd import OpsdCrawler
+from oeds.crawler.refit import RefitCrawler
+from oeds.crawler.regelleistung import RegelleistungCrawler
 from oeds.crawler.smard import SmardCrawler
 from oeds.crawler.synpro import SynproLoadProfileCrawler
 from oeds.crawler.vea_industrial_load_profiles import IndustrialLoadProfileCrawler
+from oeds.crawler.windmodel import WindTurbineCrawler
 
 crawlers: dict[str, type[BaseCrawler]] = {
     "public": NutsCrawler,
@@ -42,6 +47,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "frequency": FrequencyCrawler,
     "gie": GieCrawler,
     "instrat_pl": InstratPlCrawler,
+    "iwugebaeudetypen": IwuCrawler,
     "jao": JaoCrawler,
     "jrc_idees": JrcIdeesCrawler,
     "ladesaeulenregister": LadesaeulenregisterCrawler,
@@ -49,11 +55,15 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "mastr": MastrDownloader,
     "netztransparenz": NetztransparenzCrawler,
     "ninja": NinjaCrawler,
+    "nrw_kwp_waermedichte": KwpCrawler,
     "oep": OepCrawler,
     "opec": OpecDownloader,
     "opsd": OpsdCrawler,
+    "refit": RefitCrawler,
+    "regelleistung": RegelleistungCrawler,
     "smard": SmardCrawler,
     "synpro": SynproLoadProfileCrawler,
     "vea_industrial_load_profiles": IndustrialLoadProfileCrawler,
     "weather": EcmwfCrawler,
+    "windmodel": WindTurbineCrawler,
 }

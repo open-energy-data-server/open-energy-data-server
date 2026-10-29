@@ -88,8 +88,9 @@ class NutsCrawler(DownloadOnceCrawler):
         log.info("download EU DE zipcode list")
         r = requests.get(EU_DE_ZIP_URL)
         z = zipfile.ZipFile(io.BytesIO(r.content))
-        # open pc2025_DE_NUTS-2024_v1.0.csv with pandas
-        with z.open(EU_DE_ZIP_FILENAME) as f:
+        # open csv with pandas, handling possible directory prefix in archive
+        csv_filename = next((name for name in z.namelist() if name.endswith(".csv")), EU_DE_ZIP_FILENAME)
+        with z.open(csv_filename) as f:
             plz_list = pd.read_csv(f, sep=";", index_col="CODE", quotechar="'")
 
         # remove str literals from plzlist with read_csv

@@ -46,7 +46,10 @@ class BaseCrawler:
         if "db_uri" not in config.keys():
             raise ValueError("Please provide a 'db_uri' in the config")
         self.config = config.copy()
-        self.config["db_uri"] = config["db_uri"].format(DBNAME=schema_name)
+        db_uri = config["db_uri"].format(DBNAME=schema_name)
+        if db_uri.startswith("postgresql://"):
+            db_uri = "postgresql+psycopg2://" + db_uri[len("postgresql://") :]
+        self.config["db_uri"] = db_uri
         self.engine = create_engine(self.config["db_uri"], pool_pre_ping=True)
         if self.engine.url.drivername.startswith("postgresql"):
             self._register_search_path(schema_name)
@@ -80,6 +83,16 @@ class BaseCrawler:
             return
 
         try:
+            with self.engine.connect() as conn:
+                tbl_exists = conn.execute(
+                    text(
+                        "SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = :t"
+                    ),
+                    {"t": table_name},
+                ).scalar()
+            if not tbl_exists:
+                return
+
             query_create_hypertable = text(
                 f"SELECT public.create_hypertable('{table_name}', '{time_column}', if_not_exists => TRUE, migrate_data => TRUE);"
             )

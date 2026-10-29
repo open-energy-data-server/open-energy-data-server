@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import argparse
 import logging
+import os
 from pathlib import Path
 
 from oeds.base_crawler import (
@@ -50,16 +51,28 @@ def cli(args=None):
     logging.basicConfig(level=parsed_args.loglevel)
     from oeds.crawler import crawlers
 
-    selected_crawlers = (
-        parsed_args.crawler_list if parsed_args.crawler_list else list(crawlers.keys())
-    )
+    if parsed_args.crawler_list:
+        selected_crawlers = []
+        for item in parsed_args.crawler_list:
+            selected_crawlers.extend([c.strip() for c in item.split(",") if c.strip()])
+    else:
+        selected_crawlers = list(crawlers.keys())
+
     if parsed_args.config:
         config = load_config(parsed_args.config)
+    elif os.getenv("OEDS_CONFIG") and Path(os.getenv("OEDS_CONFIG")).exists():
+        config = load_config(os.getenv("OEDS_CONFIG"))
+    elif Path("config.yml").exists():
+        config = load_config("config.yml")
+    elif (Path(__file__).parent.parent / "config.yml").exists():
+        config = load_config(Path(__file__).parent.parent / "config.yml")
     else:
         config = empty_config()
 
     if parsed_args.db:
         config["db_uri"] = parsed_args.db
+    elif ("db_uri" not in config or not config["db_uri"]) and os.getenv("OEDS_DB_URI"):
+        config["db_uri"] = os.getenv("OEDS_DB_URI")
 
     for crawler_name in selected_crawlers:
         log.info("Starting crawler: %s", crawler_name)

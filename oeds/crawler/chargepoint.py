@@ -17,7 +17,7 @@ CHARGEPOINT_MAP_URL = "https://mc-eu.chargepoint.com/map-prod/get"
 PRICE_URL = "https://de.chargepoint.com/dashboard/getStationPricingDetails"
 
 
-def read_stations():
+def read_stations(max_locations: int | None = None):
     stations = {}
     # for key in stations.keys():
     #    stations[key]['price'] = stations[key]['price'].strip()
@@ -31,6 +31,9 @@ def read_stations():
         for lon in range(3, 22):
             loc = f'"ne_lat":{lat + 1},"ne_lon":{lon + 1},"sw_lat":{lat},"sw_lon":{lon}'
             locations.append(loc)
+
+    if max_locations is not None:
+        locations = locations[:max_locations]
 
     for location in locations:
         for sort in ["installation_date", "distance"]:
@@ -58,7 +61,7 @@ def read_stations():
                 response = requests.post(
                     PRICE_URL, data={"deviceId": station["device_id"]}
                 )
-                soup = BeautifulSoup(response.text)
+                soup = BeautifulSoup(response.text, "html.parser")
                 price_text = (
                     soup.get_text()
                     .strip()
@@ -111,14 +114,20 @@ class ChargepointDownloader(DownloadOnceCrawler):
         except Exception:
             return False
 
-    def crawl_structural(self, recreate: bool = False):
+    def crawl_structural(self, recreate: bool = False, max_locations: int | None = None):
         if not self.structure_exists() or recreate:
-            stations = read_stations()
+            stations = read_stations(max_locations=max_locations)
             df = pd.DataFrame(stations).T
             df.index.name = "cs_id"
-            df["price_e_kwh"] = df["price_e_kwh"].fillna(0.0)
-            df["parking"] = df["parking"].fillna(0.0)
-            df["kunde"] = df["kunde"].fillna("unknown customer")
+            for col, default_val in [
+                ("price_e_kwh", 0.0),
+                ("parking", 0.0),
+                ("kunde", "unknown customer"),
+            ]:
+                if col not in df.columns:
+                    df[col] = default_val
+                else:
+                    df[col] = df[col].fillna(default_val)
             df["price_strings"] = df.price.apply("</br> ".join)
             with self.engine.begin() as conn:
                 df.to_sql("chargingstations", conn, if_exists="replace")

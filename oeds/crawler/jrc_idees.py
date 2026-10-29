@@ -41,7 +41,10 @@ JRC_IDEES_URL = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/JRC-IDEES/JRC-
 class JrcIdeesCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
-            query = text("SELECT 1 from turbine_data limit 1")
+            query = text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'jrc_idees' LIMIT 1"
+            )
             with self.engine.connect() as conn:
                 return conn.execute(query).scalar() == 1
         except Exception:

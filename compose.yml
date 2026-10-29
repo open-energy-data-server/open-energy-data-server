@@ -4,7 +4,10 @@
 
 services:
   open-data-18:
-    image: timescale/timescaledb-ha:pg18-oss
+    # Note: upstream `pg18-oss` HA image built with TimescaleDB 2.31.0 fails on init
+    # (`could not access file "$libdir/timescaledb-tsl-2.31.0"`).
+    # Standard `timescale/timescaledb-ha:pg18` includes TSL and works properly.
+    image: timescale/timescaledb-ha:pg18
     container_name: open-data-18
     restart: always
     shm_size: 32g

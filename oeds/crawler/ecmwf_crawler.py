@@ -25,7 +25,6 @@ from io import StringIO
 from pathlib import Path
 
 import cdsapi
-import cfgrib
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
@@ -217,6 +216,8 @@ def _resolve_grib_path(file_path: Path) -> tuple[Path, Path | None]:
 
 def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
     """Load ERA5 GRIB; merge cfgrib hypercubes (instant vs accumulated)."""
+    import cfgrib
+
     grib_path, extract_dir = _resolve_grib_path(file_path)
     log.info("successfully read file %s", file_path)
 

@@ -38,11 +38,19 @@ to_download = dict(
 
 geo_path = Path(__file__).parent.parent / "shapes" / "NUTS_RG_01M_2021_4326.shp"
 DOWNLOAD_DIR = Path(__file__).parent.parent / "grb_files"
-
-geo_information = gpd.read_file(geo_path)
 DATA_PATH = Path(__file__).parent.parent / "data"
-dwd_latitude = np.load(DATA_PATH / "lat_coordinates.npy")
-dwd_longitude = np.load(DATA_PATH / "lon_coordinates.npy")
+
+geo_information = None
+if geo_path.exists():
+    geo_information = gpd.read_file(geo_path)
+
+dwd_latitude = None
+if (DATA_PATH / "lat_coordinates.npy").exists():
+    dwd_latitude = np.load(DATA_PATH / "lat_coordinates.npy")
+
+dwd_longitude = None
+if (DATA_PATH / "lon_coordinates.npy").exists():
+    dwd_longitude = np.load(DATA_PATH / "lon_coordinates.npy")
 
 
 def create_nuts_map(coords):

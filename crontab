@@ -1,11 +1,46 @@
-# SPDX-FileCopyrightText: Florian Maurer
+# SPDX-FileCopyrightText: Florian Maurer, OEDS Contributors
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Crontab configuration for running individual or grouped OEDS crawlers with dedicated intervals.
+# (Addresses https://github.com/open-energy-data-server/open-energy-data-server/issues/18)
+#
+# Setup instructions:
+#   1. Adjust OEDS_DIR and OEDS_VENV paths below.
+#   2. Ensure config.yml or environment variables (e.g. OEDS_DB_URI) are in place.
+#   3. Install via: crontab crontab (or copy entries to `crontab -e`)
 
-0 0 * * 1,3,5 cd open-energy-data-server && source .venv/bin/activate && python3 crawler/ecmwf.py
-5 6 * * * cd open-energy-data-server && source .venv/bin/activate && python3 crawler/eview.py
-0 7 * * * cd open-energy-data-server && source .venv/bin/activate && python3 crawler/e2watch.py
-0 7 * * * cd open-energy-data-server && source .venv/bin/activate && python3 crawler/regelleistung.py
-0 7 * * * cd open-energy-data-server && source .venv/bin/activate && python3 -m crawler.jao_crawler
-0 6,12 * * * cd open-energy-data-server && source .venv/bin/activate && python3 crawler/smard.py
-13 5 * * 2 cd open-energy-data-server && source .venv/bin/activate && python3 crawler/gie_crawler.py
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+OEDS_DIR=/home/idt/workspace/open-energy-data-server
+OEDS_VENV=/home/idt/workspace/open-energy-data-server/.venv
+
+# ECMWF / Copernicus weather data (Monday, Wednesday, Friday at midnight)
+0 0 * * 1,3,5 cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list ecmwf >> /tmp/oeds_ecmwf.log 2>&1
+
+# EView solar generation (daily at 06:05)
+5 6 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list eview >> /tmp/oeds_eview.log 2>&1
+
+# e2watch municipal building energy data (daily at 07:00)
+0 7 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list e2watch >> /tmp/oeds_e2watch.log 2>&1
+
+# Regelleistung balancing market (daily at 07:00)
+0 7 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list regelleistung >> /tmp/oeds_regelleistung.log 2>&1
+
+# JAO cross-border transmission capacity (daily at 07:00)
+0 7 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list jao >> /tmp/oeds_jao.log 2>&1
+
+# SMARD market & generation data (twice daily at 06:00 and 12:00)
+0 6,12 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list smard >> /tmp/oeds_smard.log 2>&1
+
+# GIE AGSI/ALSI gas and storage transparency (every Tuesday at 05:13)
+13 5 * * 2 cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list gie >> /tmp/oeds_gie.log 2>&1
+
+# ENTSO-E electricity data (hourly at minute 15)
+15 * * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list entsoe >> /tmp/oeds_entsoe.log 2>&1
+
+# ENTSOG gas transmission data (every 4 hours)
+0 */4 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" --crawler-list entsog >> /tmp/oeds_entsog.log 2>&1
+
+# Run all crawlers together (optional alternative, daily at 02:00)
+# 0 2 * * * cd "$OEDS_DIR" && "$OEDS_VENV/bin/oeds" >> /tmp/oeds_all.log 2>&1
