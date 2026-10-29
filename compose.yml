@@ -57,7 +57,7 @@ services:
       - open-data-18
 
   grafana:
-    image: grafana/grafana-oss:latest
+    image: grafana/grafana:latest
     container_name: oeds-grafana
     user: "104"
     depends_on:
