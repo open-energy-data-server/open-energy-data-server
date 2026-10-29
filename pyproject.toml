@@ -68,5 +68,9 @@ test = [
 [project.scripts]
 oeds = "oeds.main:cli"
 
-[tool.setuptools]
-packages = ["oeds"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["oeds*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.npy", "*.csv", "*.license"]
