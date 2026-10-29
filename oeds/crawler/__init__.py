@@ -17,6 +17,7 @@ from oeds.crawler.instrat_pl import InstratPlCrawler
 from oeds.crawler.iwugebaeudetypen import IwuCrawler
 from oeds.crawler.jao_crawler import JaoCrawler
 from oeds.crawler.jrc_idees import JrcIdeesCrawler
+from oeds.crawler.kelmarsh import KelmarshCrawler
 from oeds.crawler.ladesaeulenregister import LadesaeulenregisterCrawler
 from oeds.crawler.londondatastore import LondonLoadData
 from oeds.crawler.mastr import MastrDownloader
@@ -49,6 +50,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "instrat_pl": InstratPlCrawler,
     "iwugebaeudetypen": IwuCrawler,
     "jao": JaoCrawler,
+    "kelmarsh": KelmarshCrawler,
     "jrc_idees": JrcIdeesCrawler,
     "ladesaeulenregister": LadesaeulenregisterCrawler,
     "londondatastore": LondonLoadData,

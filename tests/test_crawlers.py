@@ -29,6 +29,7 @@ def test_crawler_registry():
         "nrw_kwp_waermedichte",
         "refit",
         "windmodel",
+        "kelmarsh",
     ]
     for name in expected:
         assert name in crawlers, f"Missing crawler in registry: {name}"
