@@ -249,7 +249,9 @@ def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
         shutil.rmtree(extract_dir, ignore_errors=True)
 
     assert merged is not None
-    return merged.dropna(subset=["latitude", "longitude", "time"]).reset_index(drop=True)
+    return merged.dropna(subset=["latitude", "longitude", "time"]).reset_index(
+        drop=True
+    )
 
 
 def deaccumulate_radiation(series: pd.Series, times: pd.Series) -> pd.Series:

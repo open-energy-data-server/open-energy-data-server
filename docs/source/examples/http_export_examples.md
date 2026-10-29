@@ -10,10 +10,7 @@ import requests
 import pandas as pd
 
 url = "https://localhost:6432/consumption"
-headers = {
-    "Accept": "application/json",
-    "Accept-Profile": "londondatastore"
-}
+headers = {"Accept": "application/json", "Accept-Profile": "londondatastore"}
 params = {
     "limit": 10,
     "DateTime": "gte.'2012-01-01'",

@@ -114,7 +114,9 @@ class ChargepointDownloader(DownloadOnceCrawler):
         except Exception:
             return False
 
-    def crawl_structural(self, recreate: bool = False, max_locations: int | None = None):
+    def crawl_structural(
+        self, recreate: bool = False, max_locations: int | None = None
+    ):
         if not self.structure_exists() or recreate:
             stations = read_stations(max_locations=max_locations)
             df = pd.DataFrame(stations).T

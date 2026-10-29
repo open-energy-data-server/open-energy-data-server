@@ -89,7 +89,9 @@ class NutsCrawler(DownloadOnceCrawler):
         r = requests.get(EU_DE_ZIP_URL)
         z = zipfile.ZipFile(io.BytesIO(r.content))
         # open csv with pandas, handling possible directory prefix in archive
-        csv_filename = next((name for name in z.namelist() if name.endswith(".csv")), EU_DE_ZIP_FILENAME)
+        csv_filename = next(
+            (name for name in z.namelist() if name.endswith(".csv")), EU_DE_ZIP_FILENAME
+        )
         with z.open(csv_filename) as f:
             plz_list = pd.read_csv(f, sep=";", index_col="CODE", quotechar="'")
 
