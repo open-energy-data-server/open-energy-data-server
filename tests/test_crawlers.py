@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import pytest
-import psycopg2
+import psycopg
 from oeds.base_crawler import empty_config
 from oeds.crawler import crawlers
 
@@ -68,7 +68,7 @@ def test_cli_comma_separated_parsing():
 def test_postgres_container_connectivity():
     """Verify connectivity and schema handling against the local PostgreSQL test container if running."""
     try:
-        conn = psycopg2.connect("postgresql://opendata:opendata@127.0.0.1:6432/opendata", connect_timeout=2)
+        conn = psycopg.connect("postgresql://opendata:opendata@127.0.0.1:6432/opendata", connect_timeout=2)
     except Exception:
         pytest.skip("Local postgres container not reachable on port 6432")
 

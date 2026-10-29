@@ -22,7 +22,11 @@ import pandas as pd
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import InvalidBusinessParameterError, NoMatchingDataError
 from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS, Area
-from psycopg2.errors import UndefinedTable
+try:
+    from psycopg.errors import UndefinedTable
+except ImportError:
+    class UndefinedTable(Exception):
+        pass
 from requests.exceptions import HTTPError
 from sqlalchemy import text
 from tqdm import tqdm

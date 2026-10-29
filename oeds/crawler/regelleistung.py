@@ -575,7 +575,7 @@ class RegelleistungCrawler(ContinuousCrawler):
                 wrote_data = True
             except sqlalchemy.exc.ProgrammingError as e:
                 _, err_obj, _ = sys.exc_info()
-                if "psycopg2.errors.UndefinedColumn" in str(err_obj):
+                if "UndefinedColumn" in str(err_obj):
                     log.info(f"handling {repr(e)} by concat")
                     self.write_concat_table(table_name, df)
                     log.info(f"replaced table {table_name}")
@@ -633,7 +633,7 @@ class RegelleistungCrawler(ContinuousCrawler):
                     latest_data_date += timedelta(days=1)
                 except sqlalchemy.exc.ProgrammingError as e:
                     _, err_obj, _ = sys.exc_info()
-                    if "psycopg2.errors.UndefinedColumn" in str(err_obj):
+                    if "UndefinedColumn" in str(err_obj):
                         log.info(f"handling {repr(e)} by concat")
                         self.write_concat_table(table_name, df)
                         log.info(f"replaced table {table_name}")

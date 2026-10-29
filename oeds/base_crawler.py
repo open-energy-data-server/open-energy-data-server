@@ -47,8 +47,10 @@ class BaseCrawler:
             raise ValueError("Please provide a 'db_uri' in the config")
         self.config = config.copy()
         db_uri = config["db_uri"].format(DBNAME=schema_name)
-        if db_uri.startswith("postgresql://"):
-            db_uri = "postgresql+psycopg2://" + db_uri[len("postgresql://") :]
+        if db_uri.startswith("postgresql+psycopg2://"):
+            db_uri = "postgresql+psycopg://" + db_uri[len("postgresql+psycopg2://") :]
+        elif db_uri.startswith("postgresql://"):
+            db_uri = "postgresql+psycopg://" + db_uri[len("postgresql://") :]
         self.config["db_uri"] = db_uri
         self.engine = create_engine(self.config["db_uri"], pool_pre_ping=True)
         if self.engine.url.drivername.startswith("postgresql"):

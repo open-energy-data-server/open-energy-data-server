@@ -20,7 +20,7 @@ numpy
 openpyxl
 open-mastr
 pandas
-psycopg2-binary
+psycopg[binary]
 tzdata # for additional timezones like Europe/Kiev in entsoe
 py7zr<1
 pyarrow
