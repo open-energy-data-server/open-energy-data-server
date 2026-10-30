@@ -261,3 +261,61 @@ def test_ensure_utc_checks_python_datetimes_in_object_columns():
     # calendar days stay dates
     days = pd.DataFrame({"d": [date(2024, 7, 1)]})
     assert ensure_utc(days)["d"].iloc[0] == date(2024, 7, 1)
+
+
+def test_replace_overlap_keeps_rows_outside_the_range_of_each_entity():
+    crawler = make_crawler()
+
+    def frame(days, plant, value):
+        return pd.DataFrame(
+            {"time": pd.to_datetime(days, utc=True), "plant": plant, "value": value}
+        )
+
+    week = [f"2024-01-0{d}" for d in range(1, 7)]
+    with crawler.engine.begin() as conn:
+        crawler.replace_overlap(
+            conn,
+            "t",
+            pd.concat([frame(week, "a", 1.0), frame(week, "b", 1.0)]),
+            "time",
+            ["plant"],
+        )
+        # b only returns the last two days of the re-fetched week
+        refetch = pd.concat([frame(week, "a", 2.0), frame(week[-2:], "b", 2.0)])
+        crawler.replace_overlap(conn, "t", refetch, "time", ["plant"])
+        counts = dict(
+            conn.execute(text("select plant, count(*) from t group by plant")).all()
+        )
+    assert counts == {"a": 6, "b": 6}
+
+
+def test_replace_overlap_with_missing_entity_values():
+    crawler = make_crawler()
+    df = pd.DataFrame(
+        {
+            "time": pd.to_datetime(["2024-01-01", "2024-01-02"], utc=True),
+            "plant": [None, None],
+            "value": [1.0, 2.0],
+        }
+    )
+    with crawler.engine.begin() as conn:
+        crawler.replace_overlap(conn, "t", df, "time", ["plant"])
+        crawler.replace_overlap(conn, "t", df, "time", ["plant"])
+        assert conn.execute(text("select count(*) from t")).scalar() == 2
+
+
+def test_replace_overlap_ignores_an_index_which_is_not_written():
+    crawler = make_crawler()
+    df = pd.DataFrame(
+        {"time": pd.to_datetime(["2024-01-01"], utc=True), "value": [1.0]},
+        index=pd.to_datetime(["2024-01-01"]),
+    )
+    with crawler.engine.begin() as conn:
+        crawler.replace_overlap(conn, "t", df, "time")
+        assert conn.execute(text("select count(*) from t")).scalar() == 1
+
+
+def test_as_utc_rejects_missing_values():
+    for missing in (None, pd.NaT):
+        with pytest.raises(ValueError):
+            as_utc(missing)
