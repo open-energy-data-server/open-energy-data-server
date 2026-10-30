@@ -46,7 +46,7 @@ class NinjaCrawler(DownloadOnceCrawler):
                 "ninja_wind_europe_v1.1_current_on-offshore.csv"
             ) as ninja_wind_file:
                 data = pd.read_csv(ninja_wind_file, index_col=0)
-                data.index = pd.to_datetime(data.index)
+                data.index = pd.to_datetime(data.index, utc=True)
                 onshore = {
                     col.split("_")[0].lower(): data[col].values
                     for col in data.columns
@@ -70,7 +70,7 @@ class NinjaCrawler(DownloadOnceCrawler):
         with zipfile.ZipFile(BytesIO(response.content)) as z_file:
             with z_file.open("ninja_pv_europe_v1.1_merra2.csv") as ninja_solar_file:
                 data = pd.read_csv(ninja_solar_file, index_col=0)
-                data.index = pd.to_datetime(data.index)
+                data.index = pd.to_datetime(data.index, utc=True)
                 data.columns = [col.lower() for col in data.columns]
                 with self.engine.begin() as conn:
                     data.to_sql("capacity_solar_merra2", conn, if_exists="replace")
