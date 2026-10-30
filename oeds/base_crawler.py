@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import io
 import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
@@ -103,6 +104,42 @@ def ensure_utc(df: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"index {df.index.name} holds naive datetimes")
         df.index = df.index.tz_convert("UTC")
     return df
+
+
+def _copy_text(value) -> str:
+    """Formats a value for COPY in text format, where only None becomes NULL."""
+    if value is None:
+        return r"\N"
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace("\t", r"\t")
+        .replace("\n", r"\n")
+        .replace("\r", r"\r")
+    )
+
+
+def copy_insert(table, conn, keys, data_iter):
+    """pandas to_sql insertion method using COPY, which is much faster for postgres.
+
+    The text format keeps empty strings apart from NULL, unlike CSV.
+    """
+    dbapi_conn = conn.connection
+    with dbapi_conn.cursor() as cur:
+        buf = io.StringIO()
+        for row in data_iter:
+            buf.write("\t".join(_copy_text(value) for value in row))
+            buf.write("\n")
+        buf.seek(0)
+        quote = conn.dialect.identifier_preparer.quote_identifier
+        columns = ", ".join(quote(k) for k in keys)
+        name = ".".join(quote(part) for part in (table.schema, table.name) if part)
+        sql = f"COPY {name} ({columns}) FROM STDIN WITH (FORMAT text)"
+        if hasattr(cur, "copy_expert"):  # psycopg2
+            cur.copy_expert(sql, buf)
+        else:  # psycopg 3
+            with cur.copy(sql) as copy:
+                copy.write(buf.read())
 
 
 class BaseCrawler:

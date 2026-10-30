@@ -10,6 +10,7 @@ from oeds.base_crawler import (
     BaseCrawler,
     ContinuousCrawler,
     as_utc,
+    copy_insert,
     empty_config,
     ensure_utc,
     utcnow,
@@ -199,6 +200,44 @@ def test_ensure_utc_converts_and_rejects_multiindex_levels():
     )
     with pytest.raises(ValueError, match="naive"):
         ensure_utc(pd.DataFrame({"value": [1.0]}, index=naive))
+
+
+def test_copy_insert_quotes_identifiers():
+    from types import SimpleNamespace
+
+    from sqlalchemy.dialects import postgresql
+
+    statements = []
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def copy_expert(self, sql, buf):
+            statements.append(sql)
+
+    conn = SimpleNamespace(
+        connection=SimpleNamespace(cursor=Cursor),
+        dialect=postgresql.dialect(),
+    )
+    table = SimpleNamespace(schema='my"schema', name='t"; DROP TABLE x; --')
+    copy_insert(table, conn, ['col"1', "value"], [(1, 2.0)])
+    assert statements == [
+        'COPY "my""schema"."t""; DROP TABLE x; --" ("col""1", "value") '
+        "FROM STDIN WITH (FORMAT text)"
+    ]
+
+
+def test_copy_text_keeps_empty_strings_apart_from_null():
+    from oeds.base_crawler import _copy_text
+
+    assert _copy_text(None) == r"\N"
+    assert _copy_text("") == ""
+    assert _copy_text("a\tb\nc\\d") == r"a\tb\nc\\d"
+    assert _copy_text(1.5) == "1.5"
 
 
 def test_ensure_utc_checks_python_datetimes_in_object_columns():
