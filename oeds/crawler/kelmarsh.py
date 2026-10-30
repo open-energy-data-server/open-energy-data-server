@@ -5,7 +5,7 @@
 import csv
 import logging
 import zipfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -140,7 +140,10 @@ class KelmarshCrawler(DownloadOnceCrawler):
                             if not power_kw_str or power_kw_str == "NaN":
                                 continue
 
-                            dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+                            # the export states "Time zone: UTC"
+                            dt = datetime.strptime(
+                                timestamp_str, "%Y-%m-%d %H:%M:%S"
+                            ).replace(tzinfo=UTC)
                             wind_speed = (
                                 float(wind_speed_str)
                                 if wind_speed_str and wind_speed_str != "NaN"
