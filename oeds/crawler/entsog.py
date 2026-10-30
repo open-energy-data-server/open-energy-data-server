@@ -9,6 +9,8 @@ The resulting data is not available under an open-source license and should not 
 """
 
 import logging
+import re
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -16,13 +18,14 @@ from datetime import date, datetime, timedelta
 
 import pandas as pd
 import requests
-from sqlalchemy import Boolean, DateTime, Float, bindparam, inspect, text
+from sqlalchemy import Boolean, Date, DateTime, Float, bindparam, inspect, text
 from tqdm import tqdm
 
 from oeds.base_crawler import (
     DEFAULT_CONFIG_LOCATION,
     ContinuousCrawler,
     as_utc,
+    copy_insert,
     ensure_utc,
     load_config,
 )
@@ -154,6 +157,150 @@ def prepare_operational_data(df: pd.DataFrame) -> pd.DataFrame:
     # the id is not unique for rows without data (isna), so use the natural key
     key = [c for c in NATURAL_KEY if c in df.columns]
     return df.drop_duplicates(subset=key, keep="last")
+
+
+ARCHIVE_TABLE = "physical_flow_archive_daily"
+ARCHIVE_TYPE = 16  # daily physical flow of all TSOs per calendar year
+ARCHIVE_LIST_URL = f"{api_endpoint}archives?archive_type={ARCHIVE_TYPE}"
+ARCHIVE_DOWNLOAD_URL = "https://transparency.entsog.eu/api/archiveDirectories"
+ARCHIVE_CHUNKSIZE = 200_000
+# The layout differs between the years: 2016-2019 have 15/16 columns and no
+# offsets, 2020 has 13 columns with offsets and a stray ",," at the end of the
+# header and of every line. Columns are therefore read by (normalised) name.
+ARCHIVE_HEADER_ALIASES = {
+    "operatorname": "operatorlabel",
+    "operatoreic": "operatorkey",
+    "pointname": "pointlabel",
+    "pointeic": "pointkey",
+    "direction": "directionkey",
+}
+ARCHIVE_SOURCE_COLUMNS = [
+    "operatorlabel",
+    "operatorkey",
+    "pointlabel",
+    "pointkey",
+    "directionkey",
+    "indicator",
+    "periodfrom",
+    "value",
+    "unit",
+    "rmkmessage",
+    "rmkgeneral",
+    "rmkspecific",
+]
+ARCHIVE_COLUMNS = [
+    "operatorlabel",
+    "operatorkey",
+    "pointlabel",
+    "pointkey",
+    "directionkey",
+    "indicator",
+    "gasday",
+    "value",
+    "unit",
+    "rmkmessage",
+    "rmkgeneral",
+    "rmkspecific",
+]
+
+ARCHIVE_KEY = ["gasday", "operatorkey", "pointkey", "pointlabel", "directionkey"]
+
+
+def extract_gasday(starts: pd.Series) -> pd.Series:
+    """The gas day is the date of "Period From" as written in the file. The
+    local time and offset behind the date are ignored on purpose."""
+    return pd.to_datetime(starts.str[:10], format="%Y-%m-%d", errors="coerce").dt.date
+
+
+def deduplicate_archive(df: pd.DataFrame) -> pd.DataFrame:
+    """One row per gas day, operator, point and direction. Identical rows are
+    merged, for differing values the last one in file order wins."""
+    df = df.drop_duplicates(keep="last")
+    dup = df.duplicated(subset=ARCHIVE_KEY, keep=False)
+    if dup.any():
+        groups = df[dup].groupby(ARCHIVE_KEY, dropna=False).ngroups
+        log.warning(
+            f"{groups} archive gas days with conflicting rows, keeping the last"
+        )
+    return df.drop_duplicates(subset=ARCHIVE_KEY, keep="last")
+
+
+def parse_archive_values(values: pd.Series) -> pd.Series:
+    """Values up to 2019 are grouped by dots including six decimal places
+    (93.698.000.000.000 is 93698000.0), later ones are plain (88063395.00)."""
+    grouped = values.str.count(r"\.") > 1
+    result = pd.to_numeric(values.where(~grouped), errors="coerce")
+    result[grouped] = (
+        pd.to_numeric(values[grouped].str.replace(".", "", regex=False)) / 1e6
+    )
+    return result
+
+
+def prepare_archive(df: pd.DataFrame) -> pd.DataFrame:
+    """Brings an archive CSV (read with normalised column names) into the
+    layout of the API tables. The daily data is stored per gas day (date)."""
+    df = df.copy()
+    df["gasday"] = extract_gasday(df["periodfrom"])
+    bad = df["gasday"].isna()
+    if bad.any():
+        log.warning(f"dropping {bad.sum()} archive rows with invalid gas day")
+        df = df[~bad]
+    df["value"] = parse_archive_values(df["value"])
+    df["indicator"] = "Physical Flow"
+    # the trailing ",," ends up in the last column
+    df["rmkspecific"] = df["rmkspecific"].str.removesuffix(",,")
+    for col in ("rmkgeneral", "rmkspecific"):
+        df[col] = df[col].replace({"": None})
+    df["rmkmessage"] = df["rmkmessage"].replace({"NULL": None, "": None})
+    df["periodtype"] = "day"
+    return deduplicate_archive(df[ARCHIVE_COLUMNS + ["periodtype"]]).reset_index(
+        drop=True
+    )
+
+
+def _normalise_archive_header(name: str) -> str:
+    key = re.sub(r"[\s,]", "", name.lstrip("﻿")).lower()
+    return ARCHIVE_HEADER_ALIASES.get(key, key)
+
+
+def read_archive(source, **kwargs) -> pd.DataFrame:
+    """Reads a whole archive CSV (path, URL or file object) by column names."""
+
+    def read(encoding):
+        return pd.read_csv(
+            source,
+            sep=";",
+            encoding=encoding,
+            header=0,
+            index_col=False,
+            usecols=lambda c: _normalise_archive_header(c) in ARCHIVE_SOURCE_COLUMNS,
+            dtype=str,
+            keep_default_na=False,
+            **kwargs,
+        )
+
+    try:
+        df = read("utf-8-sig")
+    except UnicodeDecodeError:
+        # the 2019 archive is not UTF-8
+        if hasattr(source, "seek"):
+            source.seek(0)
+        df = read("cp1252")
+    df.columns = [_normalise_archive_header(c) for c in df.columns]
+    return prepare_archive(df)
+
+
+def read_archive_chunks(source, chunksize: int = ARCHIVE_CHUNKSIZE, **kwargs):
+    """Yields prepared chunks of an archive CSV. The file is read as a whole as
+    duplicates are removed across the file."""
+    df = read_archive(source, **kwargs)
+    for start in range(0, len(df), chunksize):
+        yield df.iloc[start : start + chunksize]
+
+
+def archive_year(filename: str) -> int | None:
+    match = re.search(r"CalendarYear(\d{4})", filename)
+    return int(match.group(1)) if match else None
 
 
 class EntsogCrawler(ContinuousCrawler):
@@ -368,6 +515,81 @@ class EntsogCrawler(ContinuousCrawler):
                 )
                 conn.execute(query)
 
+    def _archive_year_present(self, year: int) -> bool:
+        # the import of a year is atomic, so a row inside the year is enough. Each
+        # file also holds the last gas day of the previous year, so check mid-year.
+        try:
+            with self.engine.begin() as conn:
+                if not inspect(conn).has_table(ARCHIVE_TABLE):
+                    return False
+                row = conn.execute(
+                    text(
+                        f"SELECT 1 FROM {ARCHIVE_TABLE} "
+                        "WHERE gasday >= :lo AND gasday <= :hi LIMIT 1"
+                    ),
+                    {"lo": date(year, 6, 1), "hi": date(year, 6, 30)},
+                ).fetchone()
+            return row is not None
+        except Exception:
+            log.exception("could not check the archive table")
+            return False
+
+    def import_archive_file(self, path: str) -> int:
+        """Replaces the rows covered by one archive file, in a single transaction."""
+        df = read_archive(path)
+        lo, hi = df["gasday"].min(), df["gasday"].max()
+        rows = 0
+        dtype = {
+            "gasday": Date(),
+            "value": Float(53),
+        }
+        with self.engine.begin() as conn:
+            if inspect(conn).has_table(ARCHIVE_TABLE):
+                conn.execute(
+                    text(
+                        f"DELETE FROM {ARCHIVE_TABLE} WHERE gasday BETWEEN :lo AND :hi"
+                    ),
+                    {"lo": lo, "hi": hi},
+                )
+            for start in range(0, len(df), ARCHIVE_CHUNKSIZE):
+                chunk = df.iloc[start : start + ARCHIVE_CHUNKSIZE]
+                chunk.to_sql(
+                    ARCHIVE_TABLE,
+                    conn,
+                    if_exists="append",
+                    index=False,
+                    dtype=dtype,
+                    method=copy_insert,
+                )
+                rows += len(chunk)
+        return rows
+
+    def import_archive(self, force: bool = False) -> None:
+        """Imports the yearly daily physical flow archives which are not stored yet.
+        The API only serves the last five years, the archive reaches back further."""
+        response = requests.get(ARCHIVE_LIST_URL, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        files = [f for a in response.json()["archives"] for f in a["links"]]
+        for filename in sorted(files):
+            year = archive_year(filename)
+            if year is None:
+                continue
+            if not force and self._archive_year_present(year):
+                continue
+            url = (
+                f"{ARCHIVE_DOWNLOAD_URL}/{ARCHIVE_TYPE}/{urllib.parse.quote(filename)}"
+            )
+            log.info(f"importing archive {filename}")
+            with tempfile.NamedTemporaryFile(suffix=".csv") as tmp:
+                with requests.get(url, stream=True, timeout=REQUEST_TIMEOUT) as r:
+                    r.raise_for_status()
+                    for block in r.iter_content(1024 * 1024):
+                        tmp.write(block)
+                    tmp.flush()
+                rows = self.import_archive_file(tmp.name)
+            log.info(f"imported {rows} rows of {year}")
+        self.create_single_hypertable_if_not_exists(ARCHIVE_TABLE, "gasday")
+
     def crawl_temporal(
         self, begin: datetime | None = None, end: datetime | None = None
     ):
@@ -395,6 +617,11 @@ class EntsogCrawler(ContinuousCrawler):
             initial_begin=begin.date() if begin else None,
             end=end.date() if end else None,
         )
+
+        try:
+            self.import_archive()
+        except Exception:
+            log.exception("could not import the ENTSOG archive")
 
         self.create_hypertable_if_not_exists()
 
