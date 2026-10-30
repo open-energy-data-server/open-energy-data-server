@@ -14,14 +14,18 @@ Primary Limit: 400 requests per minute per user account (API token).
 
 Optional config keys (or environment variables):
 - entsoe_countries (ENTSOE_COUNTRIES): list or comma-separated string of area names to crawl, e.g. "DE_LU,DE_AT_LU,DE" (default: all areas)
+- entsoe_workers (ENTSOE_WORKERS): number of parallel requests (default: 8)
 """
 
 import logging
 import os
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 
 import pandas as pd
+import requests
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import InvalidBusinessParameterError, NoMatchingDataError
 from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS, Area
@@ -34,6 +38,7 @@ except ImportError:
         pass
 
 
+from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from sqlalchemy import inspect, text
 from tqdm import tqdm
@@ -64,9 +69,22 @@ neighbours = pd.DataFrame({"from": from_n, "to": to_n})
 
 all_countries = [e.name for e in Area]
 
+DEFAULT_WORKERS = 8
 # seconds to wait for the server, entsoe-py waits forever by default
 REQUEST_TIMEOUT = 300
 MAX_ATTEMPTS = 5
+
+
+def time_chunks(start, end, freq):
+    """
+    splits [start, end) into consecutive intervals at the boundaries of freq (e.g. "YS", "MS").
+    Returns a single interval if freq is None.
+    """
+    if freq is None:
+        return [(start, end)]
+    bounds = pd.date_range(start, end, freq=freq, inclusive="neither")
+    edges = [start, *bounds, end]
+    return list(zip(edges[:-1], edges[1:]))
 
 
 def sanitize_series(seriesname):
@@ -147,9 +165,6 @@ class EntsoeCrawler(ContinuousCrawler):
 
     def __init__(self, schema_name, config):
         super().__init__(schema_name, config)
-        self.client = EntsoePandasClient(
-            api_key=self.config["entsoe_api_key"], timeout=REQUEST_TIMEOUT
-        )
 
         countries = self.config.get("entsoe_countries") or os.getenv("ENTSOE_COUNTRIES")
         if isinstance(countries, str):
@@ -158,7 +173,21 @@ class EntsoeCrawler(ContinuousCrawler):
         unknown = set(self.countries) - set(all_countries)
         if unknown:
             raise ValueError(f"unknown ENTSO-E areas: {sorted(unknown)}")
-        log.info(f"crawling {len(self.countries)} areas")
+        self.workers = int(
+            self.config.get("entsoe_workers")
+            or os.getenv("ENTSOE_WORKERS")
+            or DEFAULT_WORKERS
+        )
+        # serializes DB writes, as parallel ALTER TABLE/CREATE TABLE would conflict
+        self._db_lock = threading.Lock()
+        session = requests.Session()
+        session.mount("https://", HTTPAdapter(pool_maxsize=self.workers))
+        self.client = EntsoePandasClient(
+            api_key=self.config["entsoe_api_key"],
+            session=session,
+            timeout=REQUEST_TIMEOUT,
+        )
+        log.info(f"crawling {len(self.countries)} areas with {self.workers} workers")
 
         self.init_base_sql()
         self.save_power_system_data()
@@ -199,7 +228,7 @@ class EntsoeCrawler(ContinuousCrawler):
         Appends data to tablename, adding columns which do not exist in the table yet.
         This avoids re-reading and replacing the whole table when new series appear.
         """
-        with self.engine.begin() as conn:
+        with self._db_lock, self.engine.begin() as conn:
             if inspect(conn).has_table(tablename):
                 self._add_missing_columns(conn, data, tablename)
             data.to_sql(tablename, conn, if_exists="append")
@@ -250,6 +279,9 @@ class EntsoeCrawler(ContinuousCrawler):
             data = pd.DataFrame(
                 self.query_with_retries(proc, country, start=start, end=end)
             )
+
+            # entsoe-py includes the end timestamp, which is the start of the next chunk
+            data = data[data.index < end]
 
             # replace spaces and invalid chars in column names
             data.columns = [sanitize_series(x).lower() for x in data.columns]
@@ -321,10 +353,13 @@ class EntsoeCrawler(ContinuousCrawler):
             end = pd.Timestamp.now(tz=tz) - self.get_minimum_offset()
             return start, end
 
-    def download_entsoe(self, countries, proc, start, end, create_hypertable=True):
+    def download_entsoe(
+        self, countries, proc, start, end, create_hypertable=True, chunk_freq="YS"
+    ):
         """
         Downloads data with a procedure from a EntsoePandasClient
-        and stores it in the configured database
+        and stores it in the configured database.
+        Countries and time chunks are downloaded in parallel.
 
         Parameters
         ----------
@@ -336,6 +371,9 @@ class EntsoeCrawler(ContinuousCrawler):
 
         end : pd.Timestamp
 
+        chunk_freq : str | None
+            frequency at which the time range is split into parallel tasks,
+            None downloads the whole range at once
 
         Returns
         -------
@@ -347,12 +385,22 @@ class EntsoeCrawler(ContinuousCrawler):
         if delta.days < 2:
             log.info("less than 2 days - nothing to do")
             return
-        # daten für jedes Land runterladen
-        pbar = tqdm(countries)
-        for country in pbar:
-            pbar.set_description(f"{country} {start:%Y-%m-%d} to {end:%Y-%m-%d}")
-
-            self.fetch_and_write_entsoe_df_to_db(country, proc, start, end)
+        tasks = [
+            (country, s, e)
+            for country in countries
+            for s, e in time_chunks(start, end, chunk_freq)
+        ]
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = [
+                executor.submit(self.fetch_and_write_entsoe_df_to_db, c, proc, s, e)
+                for c, s, e in tasks
+            ]
+            for _ in tqdm(
+                as_completed(futures),
+                total=len(futures),
+                desc=f"{proc.__name__} {start:%Y-%m-%d} to {end:%Y-%m-%d}",
+            ):
+                pass
 
         # indexe anlegen für schnelles suchen
         try:
@@ -399,28 +447,39 @@ class EntsoeCrawler(ContinuousCrawler):
             log.info("less than 2 days - nothing to do")
             return
 
-        data = pd.DataFrame()
-        start_ = start
-        end_ = end
-        log.info(start_)
+        log.info(start)
+        pairs = [
+            (n1, n2)
+            for n1 in NEIGHBOURS
+            for n2 in NEIGHBOURS[n1]
+            if (n1 in countries or n2 in countries)
+            and ((len(n1) == 2 and len(n2) == 2) or allZones)
+        ]
 
-        for n1 in tqdm(NEIGHBOURS):
-            for n2 in NEIGHBOURS[n1]:
-                if n1 not in countries and n2 not in countries:
-                    continue
-                try:
-                    if (len(n1) == 2 and len(n2) == 2) or allZones:
-                        dataN = self.query_with_retries(
-                            proc, n1, n2, start=start_, end=end_
-                        )
-                        data[n1 + "-" + n2] = dataN
-                except (NoMatchingDataError, InvalidBusinessParameterError):
-                    # log.info('no data found for ',n1,n2)
-                    pass
-                except Exception as e:
-                    log.error(f"Error crawling Crossboarders {e}")
-            data = data.copy()
+        def fetch_pair(n1, n2):
+            try:
+                return f"{n1}-{n2}", self.query_with_retries(
+                    proc, n1, n2, start=start, end=end
+                )
+            except (NoMatchingDataError, InvalidBusinessParameterError):
+                pass
+            except Exception as e:
+                log.error(f"Error crawling Crossboarders {n1}-{n2}: {e}")
+            return f"{n1}-{n2}", None
 
+        series = {}
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = [executor.submit(fetch_pair, n1, n2) for n1, n2 in pairs]
+            for future in tqdm(as_completed(futures), total=len(futures)):
+                name, s = future.result()
+                if s is not None:
+                    series[name] = s
+        if not series:
+            log.info("no crossborder data found")
+            return
+
+        data = pd.concat(series, axis=1)
+        data = data[data.index < end]
         data.columns = [x.lower() for x in data.columns]
         try:
             self.append_to_table(data, proc.__name__)
@@ -513,7 +572,10 @@ class EntsoeCrawler(ContinuousCrawler):
         start_, end_ = self.get_latest_crawled_timestamp(
             query_per_plant.__name__, begin, end
         )
-        self.download_entsoe(countries, query_per_plant, start_, end=end_)
+        # entsoe-py requests per plant data day by day, so use small chunks for parallelism
+        self.download_entsoe(
+            countries, query_per_plant, start_, end=end_, chunk_freq="MS"
+        )
 
         try:
             with self.engine.begin() as conn:
@@ -589,8 +651,14 @@ class EntsoeCrawler(ContinuousCrawler):
         delta = end_ - start_
 
         if delta.days > 365:
+            # yearly values, so download the whole range at once
             self.download_entsoe(
-                countries, proc_cap, start_, end_, create_hypertable=False
+                countries,
+                proc_cap,
+                start_,
+                end_,
+                create_hypertable=False,
+                chunk_freq=None,
             )
 
         # timeseries
@@ -605,7 +673,6 @@ class EntsoeCrawler(ContinuousCrawler):
         ]
 
         # Download load and generation
-        # hier könnte man parallelisieren
         for proc in ts_procs:
             start_, end_ = self.get_latest_crawled_timestamp(proc.__name__, begin, end)
             self.download_entsoe(countries, proc, start_, end_)
