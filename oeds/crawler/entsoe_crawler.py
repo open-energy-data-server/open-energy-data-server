@@ -22,6 +22,7 @@ which is stored in the crawl_state table. So areas which are added later are cra
 
 import logging
 import os
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -30,7 +31,7 @@ from inspect import signature
 
 import pandas as pd
 import requests
-from entsoe import EntsoePandasClient
+from entsoe import EntsoePandasClient, EntsoeRawClient
 from entsoe.exceptions import InvalidBusinessParameterError, NoMatchingDataError
 from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS, Area
 from requests.adapters import HTTPAdapter
@@ -78,6 +79,37 @@ def to_utc(ts):
     if ts.tzinfo is None:
         return ts.tz_localize("UTC")
     return ts.tz_convert("UTC")
+
+
+TIMESERIES = re.compile(r"<TimeSeries>.*?</TimeSeries>", re.S)
+PLANT_EIC = re.compile(r"(<PowerSystemResources>\s*<mRID[^>]*>([^<]*)</mRID>)")
+
+
+def name_unnamed_plants(xml: str) -> str:
+    """
+    Adds the EIC code as name to the per plant time series without a name.
+    Some documents (e.g. DE_AMPRION 2015) contain such series, entsoe-py fails on them.
+    """
+
+    def add_name(match):
+        series = match.group(0)
+        if "<name>" in series:
+            return series
+        return PLANT_EIC.sub(r"\1<name>\2</name>", series, count=1)
+
+    return TIMESERIES.sub(add_name, xml)
+
+
+class PlantNameRawClient(EntsoeRawClient):
+    def query_generation_per_plant(self, *args, **kwargs) -> str:
+        return name_unnamed_plants(super().query_generation_per_plant(*args, **kwargs))
+
+
+class EntsoeClient(EntsoePandasClient, PlantNameRawClient):
+    """
+    EntsoePandasClient, which parses the raw response of PlantNameRawClient
+    (EntsoePandasClient calls the raw query of the next class in the MRO)
+    """
 
 
 def time_chunks(start, end, freq):
@@ -155,7 +187,7 @@ class EntsoeCrawler(ContinuousCrawler):
         self._db_lock = threading.Lock()
         session = requests.Session()
         session.mount("https://", HTTPAdapter(pool_maxsize=self.workers))
-        self.client = EntsoePandasClient(
+        self.client = EntsoeClient(
             api_key=self.config["entsoe_api_key"],
             session=session,
             timeout=REQUEST_TIMEOUT,
