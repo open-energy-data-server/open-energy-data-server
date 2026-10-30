@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from datetime import date
 
 import pandas as pd
 import pytest
@@ -28,3 +29,13 @@ def test_ecmwf_process_makes_times_aware_utc():
     result = process_era5_dataframe(df)
     assert str(result["time"].dt.tz) == "UTC"
     assert result["time"].iloc[0] == pd.Timestamp("2024-01-01 01:00", tz="UTC")
+
+
+def test_gie_gas_days_are_dates_and_updates_aware_utc():
+    from oeds.crawler.gie_crawler import to_dataframe
+
+    df = to_dataframe(
+        [{"gasDayStart": "2024-01-01", "updatedAt": "2024-01-02 17:00:00"}], "EU"
+    )
+    assert df["gasdaystart"].iloc[0] == date(2024, 1, 1)
+    assert str(df["updatedat"].dt.tz) == "UTC"
