@@ -3,20 +3,26 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-from datetime import datetime
+import time
 
 import pandas as pd
 import requests
 from dateutil.relativedelta import relativedelta
 from geopy.geocoders import Nominatim
 from sqlalchemy import text
+from tqdm import tqdm
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    DownloadOnceCrawler,
+    load_config,
+    utcnow,
+)
 
 log = logging.getLogger(__name__)
 
 metadata_info = {
-    "schema_name": "eon_fees",
+    "schema_name": "eon_grid_fees",
     "data_source": "https://www.eon.de/de/gk/strom/tarifrechner.html",
     "license": "EON restricted",
     "description": "Contract data of EON",
@@ -30,7 +36,7 @@ GRID_FEES_URI = "https://occ.eon.de/b2b-pricing/1.0/api/v2/thirdPartyCosts/rlm/p
 
 def get_contract_data(address: dict):
     # we need to create an offer starting for the next month
-    start = datetime.now() + relativedelta(day=1)
+    start = utcnow() + relativedelta(months=1)
     start_str = start.strftime("%Y-%m-01")
     data = {
         "city": address.get("city"),
@@ -62,7 +68,11 @@ def get_grid_data(address: dict):
 
     street = requests.get(
         f"https://occ.eon.de/streets/1.3/api?clientId=eonde&zipCode={postcode}&streetName=a"
-    ).json()[0]
+    ).json()
+
+    # extract first element if available
+    if street:
+        street = street[0]
 
     if not street:
         street = address.get("road")
@@ -72,7 +82,7 @@ def get_grid_data(address: dict):
         "consumption": 100000,
         "zipCode": address.get("postcode"),
         "street": street,
-        # "houseNumber": address.get("house_number")
+        # "houseNumber" is not used anyway and can be left out
     }
 
     grid_response = requests.get(GRID_FEES_URI, params=params)
@@ -105,34 +115,41 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                 index_col="code",
             )
         # Initialize Nominatim API
-        geolocator = Nominatim(user_agent="Open-Energy-Data-Server")
+        geolocator = Nominatim(user_agent="OEDS FH-Aachen")
         grid_fee_results = {}
         contracts_results = {}
 
         # code = 72516
         # row = plz_nuts.loc[code]
-        # location is only based on nuts3, so it is hardly usefule to add so many
-        plz_nuts = plz_nuts.drop_duplicates("nuts3")
+        # location is only based on nuts3, but we crawl all to get all DSO data
+        for nuts3, plzs in tqdm(plz_nuts.groupby("nuts3")):
+            for code, row in plzs.iterrows():
+                # sleep to reduce load a nominatim API
+                # https://operations.osmfoundation.org/policies/nominatim/
+                time.sleep(2)
+                log.info(f"currently working at {code}")
+                # Perform reverse geocoding
+                loc = geolocator.geocode(f"{code}")
+                if loc is None:
+                    log.warning(f"no location found for {code}, skipping")
+                    continue
+                time.sleep(1)
 
-        for code, row in plz_nuts.iterrows():
-            latitude = row["latitude"]
-            longitude = row["longitude"]
-            print(f"currently working at {code}")
+                location = geolocator.reverse(f"{loc.raw['lat']}, {loc.raw['lon']}")
+                address = location.raw["address"]
+                # some location middles do not have a postcode set like
+                # 57642
+                # fill with leading zeros
+                address["postcode"] = str(address.get("postcode", code)).zfill(5)
+                try:
+                    contracts_results[code] = get_contract_data(address)
+                except Exception:
+                    log.exception(f"error in contract fees eon for {code}")
 
-            # Perform reverse geocoding
-            location = geolocator.reverse(f"{latitude}, {longitude}")
-            address = location.raw["address"]
-            # some location middles do not have a postcode set like
-            # 57642
-            address["postcode"] = address.get("postcode", str(code))
-            try:
-                contracts_results[code] = get_contract_data(address)
-            except Exception:
-                log.exception(f"error in contract fees eon for {code}")
-            try:
-                grid_fee_results[code] = get_grid_data(address)
-            except Exception:
-                log.exception(f"error in grid fees eon for {code}")
+                try:
+                    grid_fee_results[code] = get_grid_data(address)
+                except Exception:
+                    log.exception(f"error in grid fees eon for {code}")
 
         df = pd.DataFrame()
         df["zip_code"] = pd.Series(grid_fee_results.keys()).values
@@ -154,21 +171,33 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                 map(grid_fee_results.get, grid_fee_results.keys()),
             )
         )
+        df["market_partner_name"] = list(
+            map(
+                lambda i: (
+                    i.get("prices").get("working_price_grid").get("market_partner_name")
+                ),
+                map(grid_fee_results.get, grid_fee_results.keys()),
+            )
+        )
+        df["market_partner_code"] = list(
+            map(
+                lambda i: (
+                    i.get("prices").get("working_price_grid").get("market_partner_code")
+                ),
+                map(grid_fee_results.get, grid_fee_results.keys()),
+            )
+        )
 
         with self.engine.begin() as conn:
-            df.to_sql("eon_grid_fees", conn)
+            df.to_sql("eon_grid_fees", conn, if_exists="replace")
+
+        return df
 
 
 if __name__ == "__main__":
     logging.basicConfig()
 
     config = load_config(DEFAULT_CONFIG_LOCATION)
-    crawler = EonGridFeeCrawler("grid_fees", config)
-    crawler.crawl_structural()
+    crawler = EonGridFeeCrawler("eon_grid_fees", config)
+    grid_fees = crawler.download_grid_fees()
     crawler.set_metadata(metadata_info)
-
-    # with open("grid_fees.json", "w") as f:
-    #     json.dump(grid_fee_results, f, indent=2)
-
-    # with open("contracts_results.json", "w") as f:
-    #     json.dump(contracts_results, f, indent=2)
