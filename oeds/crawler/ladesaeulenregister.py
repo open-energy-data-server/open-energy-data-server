@@ -6,12 +6,15 @@
 The Charging station map is available at:
 https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/Karte/Ladesaeulenkarte.html
 One can download the raw file as CSV from this link:
-https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/E_Mobilitaet/Ladesaeulenregister_CSV.csv?__blob=publicationFile&v=42
+The current CSV link is read from the page above, as its file name contains the date.
 """
 
+import io
 import logging
+import re
 
 import pandas as pd
+import requests
 from sqlalchemy import text
 
 from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load_config
@@ -31,6 +34,24 @@ metadata_info = {
 }
 
 
+LADESAEULEN_PAGE = "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenkarte/start.html"
+CSV_URL_PATTERN = re.compile(
+    r"https://data\.bundesnetzagentur\.de/[^\"'\s<>]*Ladesaeulenregister_BNetzA_[\d-]+\.csv"
+)
+
+
+def find_csv_url() -> str:
+    """The file name of the CSV contains the date, so read the current link from the BNetzA page."""
+    response = requests.get(LADESAEULEN_PAGE, timeout=60)
+    response.raise_for_status()
+    urls = CSV_URL_PATTERN.findall(response.text)
+    if not urls:
+        raise RuntimeError(
+            f"no Ladesaeulenregister CSV link found on {LADESAEULEN_PAGE}"
+        )
+    return sorted(set(urls))[-1]
+
+
 class LadesaeulenregisterCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
@@ -43,9 +64,12 @@ class LadesaeulenregisterCrawler(DownloadOnceCrawler):
     def crawl_structural(self, recreate: bool = False):
         if not self.structure_exists() or recreate:
             log.info("Crawling Ladesäulenregister")
-            url = "https://data.bundesnetzagentur.de/Bundesnetzagentur/DE/Fachthemen/ElektrizitaetundGas/E-Mobilitaet/Ladesaeulenregister_BNetzA_2026-01-28.csv"
+            url = find_csv_url()
+            log.info("Reading %s", url)
+            response = requests.get(url, timeout=300)
+            response.raise_for_status()
             df = pd.read_csv(
-                url,
+                io.BytesIO(response.content),
                 skiprows=10,
                 delimiter=";",
                 encoding="iso-8859-1",
