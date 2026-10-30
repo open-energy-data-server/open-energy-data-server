@@ -600,7 +600,8 @@ class EntsoeCrawler(ContinuousCrawler):
         st=pd.Timestamp("20180101", tz="Europe/Berlin"),
     ):
         """
-        checks for all countries if the have available data at date.
+        checks for all countries if the have available data at st or in the last week.
+        Checking a recent date as well finds areas which did not exist at st (e.g. DE_LU since 2018-10).
         Returns list of countries with existing generation data per plant at given timestamp
 
         Parameters
@@ -616,15 +617,18 @@ class EntsoeCrawler(ContinuousCrawler):
         """
         plant_countries = []
         log.info("****** find countries with plant_data *******")
+        recent = pd.Timestamp.now(tz="Europe/Berlin").normalize() - timedelta(days=7)
         for country in countries:
-            try:
-                _ = self.client.query_generation_per_plant(
-                    country, start=st, end=st + timedelta(days=1)
-                )
-                plant_countries.append(country)
-                log.info(f"found data for {country}")
-            except Exception:
-                continue
+            for date in (st, recent):
+                try:
+                    _ = self.client.query_generation_per_plant(
+                        country, start=date, end=date + timedelta(days=1)
+                    )
+                    plant_countries.append(country)
+                    log.info(f"found data for {country}")
+                    break
+                except Exception:
+                    continue
         return plant_countries
 
     def crawl_temporal(
