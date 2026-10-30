@@ -29,6 +29,7 @@ from oeds.crawler.nuts_mapper import NutsCrawler
 from oeds.crawler.oep import OepCrawler
 from oeds.crawler.opec import OpecDownloader
 from oeds.crawler.opsd import OpsdCrawler
+from oeds.crawler.powerplantmatching import PowerplantmatchingCrawler
 from oeds.crawler.refit import RefitCrawler
 from oeds.crawler.regelleistung import RegelleistungCrawler
 from oeds.crawler.smard import SmardCrawler
@@ -64,6 +65,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "oep": OepCrawler,
     "opec": OpecDownloader,
     "opsd": OpsdCrawler,
+    "powerplantmatching": PowerplantmatchingCrawler,
     "refit": RefitCrawler,
     "regelleistung": RegelleistungCrawler,
     "smard": SmardCrawler,
