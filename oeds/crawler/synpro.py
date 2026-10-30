@@ -8,7 +8,12 @@ import pandas as pd
 import requests
 from sqlalchemy import text
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    DownloadOnceCrawler,
+    ensure_utc,
+    load_config,
+)
 
 metadata_info = {
     "schema_name": "synpro_free_load_profiles",
@@ -151,7 +156,7 @@ class SynproLoadProfileCrawler(DownloadOnceCrawler):
     def write_to_database(self, dfs: dict[str : pd.DataFrame], name: str) -> None:
         logging.info(f"Writing {name} data to database")
         for key, df in dfs.items():
-            df.to_sql(
+            ensure_utc(df).to_sql(
                 name=f"{name}_{key}",
                 con=self.engine,
                 if_exists="replace",
