@@ -10,10 +10,17 @@ import pandas as pd
 import requests
 from sqlalchemy import text
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    DownloadOnceCrawler,
+    copy_insert,
+    load_config,
+)
 
 log = logging.getLogger("frequency")
 log.setLevel(logging.INFO)
+
+LOCAL_TIMEZONE = "Europe/Berlin"
 
 metadata_info = {
     "schema_name": "frequency",
@@ -29,17 +36,46 @@ No license given, usage is desirable but without any liability: https://www.50he
     "concave_hull_geometry": None,
 }
 
+DOWNLOAD_TIMEOUT = 300
+
 
 def download_extract_zip(url):
     """
     Download a ZIP file and extract its contents in memory
     yields (filename, file-like object) pairs
     """
-    response = requests.get(url)
+    response = requests.get(url, timeout=DOWNLOAD_TIMEOUT)
+    response.raise_for_status()
     with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
         for zipinfo in thezip.infolist():
             with thezip.open(zipinfo) as thefile:
                 yield zipinfo.filename, thefile, len(thezip.infolist())
+
+
+def local_to_utc(local_times: pd.Series) -> pd.DatetimeIndex:
+    """Converts Europe/Berlin timestamp strings to aware UTC.
+
+    The source labels the repeated hour at the end of summer time as "2A:mm:ss"
+    (summer time) and "2B:mm:ss" (standard time). Local times in the skipped hour
+    of the spring DST change become NaT, as do unparsable values.
+    """
+    text_values = local_times.astype(str).str.strip()
+    summer_time = text_values.str.contains("2A", regex=False).to_numpy()
+    cleaned = text_values.str.replace("2A", "02", regex=False).str.replace(
+        "2B", "02", regex=False
+    )
+    index = pd.DatetimeIndex(pd.to_datetime(cleaned, errors="coerce"))
+    valid = ~index.isna()
+    result = pd.Series(pd.NaT, index=range(len(index)), dtype="datetime64[ns, UTC]")
+    if valid.any():
+        result[valid] = (
+            index[valid]
+            .tz_localize(
+                LOCAL_TIMEZONE, ambiguous=summer_time[valid], nonexistent="NaT"
+            )
+            .tz_convert("UTC")
+        )
+    return pd.DatetimeIndex(result)
 
 
 class FrequencyCrawler(DownloadOnceCrawler):
@@ -69,27 +105,30 @@ class FrequencyCrawler(DownloadOnceCrawler):
                     # index_col='date',
                     # parse_dates=['date_time']
                 )
-                df.index = pd.to_datetime(
-                    df.pop("date_time"), format="%d.%m.%Y %H:%M:%S"
+                df.index = local_to_utc(
+                    pd.to_datetime(df.pop("date_time"), format="%d.%m.%Y %H:%M:%S")
                 )
-
-                del df["date_time"]
             else:
                 df = pd.read_csv(
                     thefile,
                     sep=",",
                     header=None,
                 )
-                # timestamps like 2013/10/27 2A:00:00 can't be read
-                df.index = pd.to_datetime(df.pop(0) + " " + df.pop(1), errors="coerce")
+                # timestamps like 2013/10/27 2A:00:00 are resolved by the A/B label
+                df.index = local_to_utc(df.pop(0) + " " + df.pop(1))
 
                 if len(df.columns) == 2:
                     # delete the all "Frequ" column
                     del df[2]
                 df.columns = ["frequency"]
+            df = df[df.index.notna()]
+            df.index.name = "index"
             try:
                 with self.engine.begin() as conn:
-                    df.to_sql("frequency", conn, if_exists="append", chunksize=10000)
+                    # crawling a file again must not duplicate it
+                    self.replace_overlap(
+                        conn, "frequency", df, "index", method=copy_insert
+                    )
             except Exception as e:
                 log.error(f"Error: {e}")
 
