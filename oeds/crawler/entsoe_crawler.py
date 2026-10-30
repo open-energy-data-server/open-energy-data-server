@@ -15,6 +15,9 @@ Primary Limit: 400 requests per minute per user account (API token).
 Optional config keys (or environment variables):
 - entsoe_countries (ENTSOE_COUNTRIES): list or comma-separated string of area names to crawl, e.g. "DE_LU,DE_AT_LU,DE" (default: all areas)
 - entsoe_workers (ENTSOE_WORKERS): number of parallel requests (default: 8)
+
+Each area (and each crossborder pair) is resumed from where its last successful crawl ended,
+which is stored in the crawl_state table. So areas which are added later are crawled from the beginning.
 """
 
 import logging
@@ -29,15 +32,6 @@ import requests
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import InvalidBusinessParameterError, NoMatchingDataError
 from entsoe.mappings import NEIGHBOURS, PSRTYPE_MAPPINGS, Area
-
-try:
-    from psycopg.errors import UndefinedTable
-except ImportError:
-
-    class UndefinedTable(Exception):
-        pass
-
-
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from sqlalchemy import inspect, text
@@ -73,6 +67,16 @@ DEFAULT_WORKERS = 8
 # seconds to wait for the server, entsoe-py waits forever by default
 REQUEST_TIMEOUT = 300
 MAX_ATTEMPTS = 5
+DEFAULT_START = pd.Timestamp("20150101", tz="UTC")
+STATE_TABLE = "crawl_state"
+
+
+def to_utc(ts):
+    """converts a timestamp from the database or the user to a tz-aware UTC pd.Timestamp"""
+    ts = pd.Timestamp(ts)
+    if ts.tzinfo is None:
+        return ts.tz_localize("UTC")
+    return ts.tz_convert("UTC")
 
 
 def time_chunks(start, end, freq):
@@ -190,6 +194,7 @@ class EntsoeCrawler(ContinuousCrawler):
         log.info(f"crawling {len(self.countries)} areas with {self.workers} workers")
 
         self.init_base_sql()
+        self.create_state_table()
         self.save_power_system_data()
 
     def init_base_sql(self):
@@ -209,6 +214,108 @@ class EntsoeCrawler(ContinuousCrawler):
             areas.to_sql("areas", conn, if_exists="replace")
             psrtype.to_sql("psrtype", conn, if_exists="replace")
 
+    def create_state_table(self):
+        """
+        creates the table which stores until when each area of each table was crawled successfully
+        """
+        with self.engine.begin() as conn:
+            conn.execute(
+                text(
+                    f"CREATE TABLE IF NOT EXISTS {STATE_TABLE} "
+                    "(table_name TEXT, item TEXT, crawled_until TIMESTAMPTZ, "
+                    "PRIMARY KEY (table_name, item))"
+                )
+            )
+
+    def get_crawled_until(self, tablename):
+        """
+        returns {item: crawled_until} of the given table from the crawl state
+        """
+        with self.engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    f"SELECT item, crawled_until FROM {STATE_TABLE} WHERE table_name = :t"
+                ),
+                {"t": tablename},
+            ).fetchall()
+        return {item: to_utc(until) for item, until in rows}
+
+    def set_crawled_until(self, tablename, item, until):
+        with self._db_lock, self.engine.begin() as conn:
+            params = {"t": tablename, "i": item}
+            conn.execute(
+                text(f"DELETE FROM {STATE_TABLE} WHERE table_name = :t AND item = :i"),
+                params,
+            )
+            conn.execute(
+                text(
+                    f"INSERT INTO {STATE_TABLE} (table_name, item, crawled_until) VALUES (:t, :i, :u)"
+                ),
+                {**params, "u": self._db_ts(until)},
+            )
+
+    def _db_ts(self, ts):
+        """
+        converts a timestamp into a query parameter comparable to the index written by pandas
+        """
+        ts = to_utc(ts)
+        if self.engine.dialect.name == "sqlite":
+            # pandas stores timestamps as naive UTC strings in sqlite
+            return ts.strftime("%Y-%m-%d %H:%M:%S.%f")
+        return ts.to_pydatetime()
+
+    def _latest_index(self, tablename, where, params):
+        with self.engine.connect() as conn:
+            d = conn.execute(
+                text(f'SELECT max("index") FROM "{tablename}" WHERE {where}'), params
+            ).scalar()
+        return None if d is None else to_utc(d)
+
+    def crawl_ranges(
+        self, tablename, items, begin=None, end=None, column_per_item=False
+    ):
+        """
+        Find the range to crawl for each item (area or column) of a table.
+        Starts where the last successful crawl of the item ended.
+        Items without crawl state (crawled before it existed) start at their latest data,
+        items without data at DEFAULT_START.
+
+        Parameters
+        ----------
+        tablename : str
+        items : list[str]
+            areas, or column names if column_per_item
+        begin, end :
+            if both are given, they are used for all items and the crawl state is not updated
+        column_per_item : bool
+            whether each item is stored in its own column instead of a country column
+
+        Returns
+        -------
+        ranges : dict[str, tuple[pd.Timestamp, pd.Timestamp]]
+        update_state : bool
+            whether the crawl state should be updated after crawling the ranges
+        """
+        if begin is not None and end is not None:
+            return {item: (to_utc(begin), to_utc(end)) for item in items}, False
+
+        end = pd.Timestamp.now(tz="UTC") - self.get_minimum_offset()
+        state = self.get_crawled_until(tablename)
+        insp = inspect(self.engine)
+        columns = set()
+        if insp.has_table(tablename):
+            columns = {c["name"] for c in insp.get_columns(tablename)}
+
+        ranges = {}
+        for item in items:
+            start = state.get(item)
+            if start is None and column_per_item and item in columns:
+                start = self._latest_index(tablename, f'"{item}" IS NOT NULL', {})
+            elif start is None and not column_per_item and "country" in columns:
+                start = self._latest_index(tablename, "country = :c", {"c": item})
+            ranges[item] = (start or DEFAULT_START, end)
+        return ranges, True
+
     def _add_missing_columns(self, conn, data, tablename):
         existing = {c["name"] for c in inspect(conn).get_columns(tablename)}
         for col in data.columns:
@@ -223,15 +330,65 @@ class EntsoeCrawler(ContinuousCrawler):
                 text(f'ALTER TABLE "{tablename}" ADD COLUMN "{col}" {sqltype}')
             )
 
-    def append_to_table(self, data, tablename):
+    def _create_country_index(self, conn, tablename):
+        conn.execute(
+            text(
+                f'CREATE INDEX IF NOT EXISTS "country_idx_{tablename}" ON "{tablename}" ("country", "index")'
+            )
+        )
+
+    def write_chunk(self, data, tablename, country, start, end):
         """
-        Appends data to tablename, adding columns which do not exist in the table yet.
-        This avoids re-reading and replacing the whole table when new series appear.
+        Replaces the data of country in [start, end) with data,
+        so that crawling a range again does not create duplicates.
+        Adds columns which do not exist in the table yet.
         """
         with self._db_lock, self.engine.begin() as conn:
             if inspect(conn).has_table(tablename):
                 self._add_missing_columns(conn, data, tablename)
-            data.to_sql(tablename, conn, if_exists="append")
+                conn.execute(
+                    text(
+                        f'DELETE FROM "{tablename}" WHERE country = :c AND "index" >= :s AND "index" < :e'
+                    ),
+                    {"c": country, "s": self._db_ts(start), "e": self._db_ts(end)},
+                )
+                data.to_sql(tablename, conn, if_exists="append")
+            else:
+                data.to_sql(tablename, conn, if_exists="append")
+                # needed for fast deletes in the next chunks
+                self._create_country_index(conn, tablename)
+
+    def merge_into_wide_table(self, data, tablename):
+        """
+        Writes data into a table with one column per series.
+        Rows with an existing index are updated, so that series can be added
+        for time ranges which already exist without creating duplicate rows.
+        """
+        with self._db_lock, self.engine.begin() as conn:
+            if not inspect(conn).has_table(tablename):
+                data.to_sql(tablename, conn, if_exists="append")
+                return
+            self._add_missing_columns(conn, data, tablename)
+            tmp = f"{tablename}_tmp"
+            data.to_sql(tmp, conn, if_exists="replace")
+            cols = [f'"{c}"' for c in data.columns]
+            updates = ", ".join(
+                f'{c} = COALESCE(tmp.{c}, "{tablename}".{c})' for c in cols
+            )
+            conn.execute(
+                text(
+                    f'UPDATE "{tablename}" SET {updates} FROM "{tmp}" AS tmp '
+                    f'WHERE "{tablename}"."index" = tmp."index"'
+                )
+            )
+            collist = ", ".join(['"index"', *cols])
+            conn.execute(
+                text(
+                    f'INSERT INTO "{tablename}" ({collist}) SELECT {collist} FROM "{tmp}" AS tmp '
+                    f'WHERE NOT EXISTS (SELECT 1 FROM "{tablename}" WHERE "{tablename}"."index" = tmp."index")'
+                )
+            )
+            conn.execute(text(f'DROP TABLE "{tmp}"'))
 
     def query_with_retries(self, proc, *args, start, end):
         """
@@ -273,7 +430,8 @@ class EntsoeCrawler(ContinuousCrawler):
 
         Returns
         -------
-
+        success : bool
+            False if the download or the write failed, True otherwise (also if there is no data)
         """
         try:
             data = pd.DataFrame(
@@ -281,7 +439,7 @@ class EntsoeCrawler(ContinuousCrawler):
             )
 
             # entsoe-py includes the end timestamp, which is the start of the next chunk
-            data = data[data.index < end]
+            data = data[(data.index >= start) & (data.index < end)]
 
             # replace spaces and invalid chars in column names
             data.columns = [sanitize_series(x).lower() for x in data.columns]
@@ -293,72 +451,30 @@ class EntsoeCrawler(ContinuousCrawler):
 
             # add country column
             data["country"] = country
-            self.append_to_table(data, proc.__name__)
-        except NoMatchingDataError:
+            self.write_chunk(data, proc.__name__, country, start, end)
+        except (NoMatchingDataError, InvalidBusinessParameterError):
             log.error(f"no data found for {proc.__name__}, {country}, {start}, {end}")
         except Exception as e:
             log.error(
                 f"error downloading {proc.__name__}, {country}, {start}, {end}: {e}"
             )
-
-    def get_latest_crawled_timestamp(
-        self,
-        tablename,
-        start: datetime | None = None,
-        end: datetime | None = None,
-        tz="UTC",
-    ):
-        """
-        Find the best Start and end for the given procedurename by finding the last timestemp where data was collected for.
-
-        Parameters
-        ----------
-        start : pd.Timestamp
-        tablename : str
-            name of the table
-        tz :  str
-            (Default value = 'UTC')
-
-        Returns
-        -------
-        type
-        start : pd.Timestamp
-            best start
-        end : pd.Timestamp
-            best end
-        """
-
-        if start and end:
-            return start, end
-        else:
-            try:
-                with self.engine.begin() as conn:
-                    query = text(f'select max("index") from {tablename}')
-                    d = conn.execute(query).fetchone()[0]
-                start = pd.to_datetime(d)
-                try:
-                    start = start.tz_localize("Europe/Berlin")
-                except TypeError:
-                    # if already localized
-                    pass
-            except UndefinedTable:
-                start = pd.Timestamp("20150101", tz=tz)
-                log.info(
-                    "no data in %s yet - using default timestamp (%s)", tablename, start
-                )
-            except Exception as e:
-                start = pd.Timestamp("20150101", tz=tz)
-                log.info("using default %s timestamp for %s (%s)", start, tablename, e)
-
-            end = pd.Timestamp.now(tz=tz) - self.get_minimum_offset()
-            return start, end
+            return False
+        return True
 
     def download_entsoe(
-        self, countries, proc, start, end, create_hypertable=True, chunk_freq="YS"
+        self,
+        countries,
+        proc,
+        begin=None,
+        end=None,
+        create_hypertable=True,
+        chunk_freq="YS",
+        min_days=2,
     ):
         """
         Downloads data with a procedure from a EntsoePandasClient
         and stores it in the configured database.
+        Each country is resumed from where its last crawl ended (see crawl_ranges).
         Countries and time chunks are downloaded in parallel.
 
         Parameters
@@ -367,68 +483,78 @@ class EntsoeCrawler(ContinuousCrawler):
             list of country codes
         proc :
             procedure of entsoe-py
-        start : pd.Timestamp
-
+        begin : pd.Timestamp
+            if begin and end are given, this range is crawled for all countries
         end : pd.Timestamp
 
         chunk_freq : str | None
             frequency at which the time range is split into parallel tasks,
             None downloads the whole range at once
+        min_days : int
+            minimum length of the range to crawl for a country
 
         Returns
         -------
 
         """
-        log.info(f"****** {proc.__name__} *******")
-        delta = end - start
-
-        if delta.days < 2:
-            log.info("less than 2 days - nothing to do")
+        tablename = proc.__name__
+        log.info(f"****** {tablename} *******")
+        ranges, update_state = self.crawl_ranges(tablename, countries, begin, end)
+        chunks = {
+            country: time_chunks(start, end_, chunk_freq)
+            for country, (start, end_) in ranges.items()
+            if (end_ - start).days >= min_days
+        }
+        if not chunks:
+            log.info(f"less than {min_days} days - nothing to do")
             return
-        tasks = [
-            (country, s, e)
-            for country in countries
-            for s, e in time_chunks(start, end, chunk_freq)
-        ]
-        with ThreadPoolExecutor(max_workers=self.workers) as executor:
-            futures = [
-                executor.submit(self.fetch_and_write_entsoe_df_to_db, c, proc, s, e)
-                for c, s, e in tasks
-            ]
-            for _ in tqdm(
-                as_completed(futures),
-                total=len(futures),
-                desc=f"{proc.__name__} {start:%Y-%m-%d} to {end:%Y-%m-%d}",
-            ):
-                pass
-
-        # indexe anlegen für schnelles suchen
-        try:
+        if inspect(self.engine).has_table(tablename):
+            # needed for fast deletes of already crawled ranges
             with self.engine.begin() as conn:
-                log.info(f"creating index country_idx_{proc.__name__}")
-                query = text(
-                    f'CREATE INDEX IF NOT EXISTS "country_idx_{proc.__name__}" ON "{proc.__name__}" ("country", "index");'
+                self._create_country_index(conn, tablename)
+
+        success = {}
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = {
+                executor.submit(self.fetch_and_write_entsoe_df_to_db, c, proc, s, e): (
+                    c,
+                    i,
                 )
-                conn.execute(query)
-                # query = text(f'CREATE INDEX IF NOT EXISTS "country_{proc.__name__}" ON "{proc.__name__}" ("country");')
-                # conn.execute(query)
-                log.info(f"created indexes country_idx_{proc.__name__}")
-        except Exception as e:
-            log.error(f"could not create index if needed: {e}")
+                for c, country_chunks in chunks.items()
+                for i, (s, e) in enumerate(country_chunks)
+            }
+            for future in tqdm(
+                as_completed(futures), total=len(futures), desc=tablename
+            ):
+                success[futures[future]] = future.result()
+
+        if update_state:
+            for country, country_chunks in chunks.items():
+                # only the chunks before the first failed one count as crawled,
+                # so the next run retries from the failed chunk on
+                until = None
+                for i, (s, e) in enumerate(country_chunks):
+                    if not success[(country, i)]:
+                        log.error(f"{tablename} {country} will be retried from {s}")
+                        break
+                    until = e
+                if until is not None:
+                    self.set_crawled_until(tablename, country, until)
 
         if create_hypertable:
-            self.create_single_hypertable_if_not_exists(proc.__name__, "index")
+            self.create_single_hypertable_if_not_exists(tablename, "index")
 
-    def pull_crossborders(self, start, end, allZones=True, countries=None):
+    def pull_crossborders(self, begin=None, end=None, allZones=True, countries=None):
         """
-        Pulls transmissions across borders from entsoe
+        Pulls transmissions across borders from entsoe.
+        Each border is stored in its own column and resumed from where its last crawl ended.
 
         Parameters
         ----------
-        start :
-            param start:
+        begin :
+            if begin and end are given, this range is crawled for all borders
         end :
-            param end:
+
         allZones :
             Default value = True)
         countries : list[str]
@@ -440,53 +566,65 @@ class EntsoeCrawler(ContinuousCrawler):
         """
         countries = countries or self.countries
         proc = self.client.query_crossborder_flows
-        start, end = self.get_latest_crawled_timestamp(proc.__name__, start, end)
-        log.info(f"****** {proc.__name__} *******")
+        tablename = proc.__name__
+        log.info(f"****** {tablename} *******")
 
-        if (end - start).days < 2:
-            log.info("less than 2 days - nothing to do")
-            return
-
-        log.info(start)
-        pairs = [
-            (n1, n2)
+        pairs = {
+            f"{n1}-{n2}".lower(): (n1, n2)
             for n1 in NEIGHBOURS
             for n2 in NEIGHBOURS[n1]
             if (n1 in countries or n2 in countries)
             and ((len(n1) == 2 and len(n2) == 2) or allZones)
-        ]
-
-        def fetch_pair(n1, n2):
-            try:
-                return f"{n1}-{n2}", self.query_with_retries(
-                    proc, n1, n2, start=start, end=end
-                )
-            except (NoMatchingDataError, InvalidBusinessParameterError):
-                pass
-            except Exception as e:
-                log.error(f"Error crawling Crossboarders {n1}-{n2}: {e}")
-            return f"{n1}-{n2}", None
-
-        series = {}
-        with ThreadPoolExecutor(max_workers=self.workers) as executor:
-            futures = [executor.submit(fetch_pair, n1, n2) for n1, n2 in pairs]
-            for future in tqdm(as_completed(futures), total=len(futures)):
-                name, s = future.result()
-                if s is not None:
-                    series[name] = s
-        if not series:
-            log.info("no crossborder data found")
+        }
+        ranges, update_state = self.crawl_ranges(
+            tablename, list(pairs), begin, end, column_per_item=True
+        )
+        ranges = {col: r for col, r in ranges.items() if (r[1] - r[0]).days >= 2}
+        if not ranges:
+            log.info("less than 2 days - nothing to do")
             return
 
-        data = pd.concat(series, axis=1)
-        data = data[data.index < end]
-        data.columns = [x.lower() for x in data.columns]
-        try:
-            self.append_to_table(data, proc.__name__)
-        except Exception as e:
-            log.error(f"error saving crossboarders {e}")
+        def fetch_pair(col):
+            n1, n2 = pairs[col]
+            start, end_ = ranges[col]
+            try:
+                s = self.query_with_retries(proc, n1, n2, start=start, end=end_)
+                return col, s[(s.index >= start) & (s.index < end_)], True
+            except (NoMatchingDataError, InvalidBusinessParameterError):
+                return col, None, True
+            except Exception as e:
+                log.error(f"Error crawling Crossboarders {n1}-{n2}: {e}")
+                return col, None, False
 
-        self.create_single_hypertable_if_not_exists(proc.__name__, "index")
+        batch = {}
+        done = []
+
+        def flush():
+            # write in batches to limit memory usage
+            try:
+                if batch:
+                    self.merge_into_wide_table(pd.concat(batch, axis=1), tablename)
+                if update_state:
+                    for col in done:
+                        self.set_crawled_until(tablename, col, ranges[col][1])
+            except Exception as e:
+                log.error(f"error saving crossboarders {e}")
+            batch.clear()
+            done.clear()
+
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = [executor.submit(fetch_pair, col) for col in ranges]
+            for future in tqdm(as_completed(futures), total=len(futures)):
+                col, s, ok = future.result()
+                if s is not None and not s.empty:
+                    batch[col] = s
+                if ok:
+                    done.append(col)
+                if len(batch) >= self.workers:
+                    flush()
+        flush()
+
+        self.create_single_hypertable_if_not_exists(tablename, "index")
 
     def save_power_system_data(self):
         """
@@ -568,14 +706,8 @@ class EntsoeCrawler(ContinuousCrawler):
             )
             return pp
 
-        log.info(f"****** {query_per_plant.__name__} *******")
-        start_, end_ = self.get_latest_crawled_timestamp(
-            query_per_plant.__name__, begin, end
-        )
         # entsoe-py requests per plant data day by day, so use small chunks for parallelism
-        self.download_entsoe(
-            countries, query_per_plant, start_, end=end_, chunk_freq="MS"
-        )
+        self.download_entsoe(countries, query_per_plant, begin, end, chunk_freq="MS")
 
         try:
             with self.engine.begin() as conn:
@@ -650,20 +782,16 @@ class EntsoeCrawler(ContinuousCrawler):
 
         """
         countries = countries or self.countries
-        proc_cap = self.client.query_installed_generation_capacity
-        start_, end_ = self.get_latest_crawled_timestamp(proc_cap.__name__, begin, end)
-        delta = end_ - start_
-
-        if delta.days > 365:
-            # yearly values, so download the whole range at once
-            self.download_entsoe(
-                countries,
-                proc_cap,
-                start_,
-                end_,
-                create_hypertable=False,
-                chunk_freq=None,
-            )
+        # yearly values, so download the whole range at once and only once a year
+        self.download_entsoe(
+            countries,
+            self.client.query_installed_generation_capacity,
+            begin,
+            end,
+            create_hypertable=False,
+            chunk_freq=None,
+            min_days=366,
+        )
 
         # timeseries
         ts_procs = [
@@ -678,8 +806,7 @@ class EntsoeCrawler(ContinuousCrawler):
 
         # Download load and generation
         for proc in ts_procs:
-            start_, end_ = self.get_latest_crawled_timestamp(proc.__name__, begin, end)
-            self.download_entsoe(countries, proc, start_, end_)
+            self.download_entsoe(countries, proc, begin, end)
 
         self.pull_crossborders(begin, end, countries=countries)
 
