@@ -10,6 +10,9 @@ entsoe_api_key: "YOUR_ENTSOE_API_KEY"
 # entsoe_countries: "DE,DE_LU,DE_AT_LU,DE_50HZ,DE_AMPRION,DE_TENNET,DE_TRANSNET,DE_AMP_LU"
 # optional: number of parallel requests to the ENTSO-E API (default: 8)
 # entsoe_workers: 8
+# optional: Eurostat dataset codes (default: energy balances, capacities, prices, electricity supply) and geo filter (default: all)
+# eurostat_datasets: "nrg_bal_c,nrg_pc_204"
+# eurostat_geo: "DE,EU27_2020"
 gie_api_key: "YOUR_GIE_API_KEY"
 ipnt_client_id: "YOUR_IPNT_CLIENT_ID"
 ipnt_client_secret: "YOUR_IPNT_CLIENT_SECRET"

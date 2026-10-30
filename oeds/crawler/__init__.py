@@ -10,6 +10,7 @@ from oeds.crawler.ecmwf_crawler import EcmwfCrawler, EcmwfLandCrawler
 from oeds.crawler.entsoe_crawler import EntsoeCrawler
 from oeds.crawler.entsog import EntsogCrawler
 from oeds.crawler.eon_grid_fees import EonGridFeeCrawler
+from oeds.crawler.eurostat_crawler import EurostatCrawler
 from oeds.crawler.eview import EViewCrawler
 from oeds.crawler.fernwaerme_preisuebersicht import FWCrawler
 from oeds.crawler.frequency import FrequencyCrawler
@@ -46,6 +47,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "eon_grid_fees": EonGridFeeCrawler,
     "entsoe": EntsoeCrawler,
     "entsog": EntsogCrawler,
+    "eurostat": EurostatCrawler,
     "eview": EViewCrawler,
     "fernwaerme_preisuebersicht": FWCrawler,
     "frequency": FrequencyCrawler,
