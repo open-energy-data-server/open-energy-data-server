@@ -26,6 +26,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
+from inspect import signature
 
 import pandas as pd
 import requests
@@ -119,44 +120,12 @@ def sanitize_series(seriesname):
     return st
 
 
-def calculate_nett_generation(df):
-    """
-    Calculates the difference between columns ending with _actual_aggregated and _actual_consumption.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with columns ending with _actual_aggregated or _actual_consumption
-
-    Returns
-    -------
-    dat: pd.DataFrame
-    """
-
-    dat = df.copy()
-    for c in filter(lambda x: x.endswith("_actual_aggregated"), dat.columns):
-        new = str.replace(c, "_actual_aggregated", "")
-        dif = list(
-            filter(
-                lambda x: x.endswith("_actual_consumption") and x.startswith(new),
-                dat.columns,
-            )
-        )
-        if len(dif) > 0:
-            # calc difference if both exists
-            dat[new] = dat[c] - dat[dif[0]]
-            del dat[c]  # delete handled series of our copy here
-            del dat[dif[0]]
-        else:
-            # if no consumption exists, directly return aggregated
-            dat[new] = dat[c]
-            del dat[c]
-    for c in filter(lambda x: x.endswith("_actual_consumption"), dat.columns):
-        # if only consumption exists use the negative value
-        new = str.replace(c, "_actual_consumption", "")
-        dat[new] = -dat[c]
-        del dat[c]
-    return dat
+def query_kwargs(proc) -> dict:
+    """Generation is condensed into one nett value per production type
+    (aggregated minus consumption, e.g. for pumped storage) by entsoe-py."""
+    if "nett" in signature(proc).parameters:
+        return {"nett": True}
+    return {}
 
 
 class EntsoeCrawler(ContinuousCrawler):
@@ -390,14 +359,14 @@ class EntsoeCrawler(ContinuousCrawler):
             )
             conn.execute(text(f'DROP TABLE "{tmp}"'))
 
-    def query_with_retries(self, proc, *args, start, end):
+    def query_with_retries(self, proc, *args, start, end, **kwargs):
         """
         Calls proc and retries on server and connection errors with increasing delay.
         Raises NoMatchingDataError, InvalidBusinessParameterError and HTTP 400 directly.
         """
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                return proc(*args, start=start, end=end)
+                return proc(*args, start=start, end=end, **kwargs)
             except (NoMatchingDataError, InvalidBusinessParameterError):
                 raise
             except HTTPError as e:
@@ -435,7 +404,9 @@ class EntsoeCrawler(ContinuousCrawler):
         """
         try:
             data = pd.DataFrame(
-                self.query_with_retries(proc, country, start=start, end=end)
+                self.query_with_retries(
+                    proc, country, start=start, end=end, **query_kwargs(proc)
+                )
             )
 
             # entsoe-py includes the end timestamp, which is the start of the next chunk
@@ -444,10 +415,6 @@ class EntsoeCrawler(ContinuousCrawler):
             # replace spaces and invalid chars in column names
             data.columns = [sanitize_series(x).lower() for x in data.columns]
             data = data.fillna(0)
-
-            # XXX could have used nett=True in entsoe-py client
-            # calculate difference betweeen agg and consumption
-            data = calculate_nett_generation(data)
 
             # add country column
             data["country"] = country

@@ -8,16 +8,20 @@ https://regelleistung.net/
 
 import functools as ft
 import logging
-import sys
 import warnings
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import numpy as np
 import pandas as pd
-import sqlalchemy
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, ContinuousCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    ContinuousCrawler,
+    as_utc,
+    ensure_utc,
+    load_config,
+)
 
 log = logging.getLogger("regelleistung")
 log.setLevel(logging.INFO)
@@ -266,148 +270,73 @@ def prepare_fcr_results_df(df):
 
 
 def prepare_afrr_mfrr_results_df(df):
+    # suffix of the wide column -> (long column name, number of suffix parts)
+    suffixes = {
+        "_min_capacity_price_eur_mwh": ("min_capacity_price_eur_mwh", 5),
+        "_average_capacity_price_eur_mwh": ("average_capacity_price_eur_mwh", 5),
+        "_marginal_capacity_price_eur_mwh": ("marginal_capacity_price_eur_mwh", 5),
+        "_import_export_mw": ("import_export_mw", 3),
+        "_sum_of_offered_capacity_mw": ("sum_of_offered_capacity_mw", 5),
+        "_min_energy_price_eur_mwh": ("min_energy_price_eur_mwh", 5),
+        "_average_energy_price_eur_mwh": ("average_energy_price_eur_mwh", 5),
+        "_marginal_energy_price_eur_mwh": ("marginal_energy_price_eur_mwh", 5),
+    }
     col_mapping = {}
     id_vars = []
-    min_cap_price_cols = []
-    avg_cap_price_cols = []
-    max_cap_price_cols = []
-    import_export_cols = []
-    sum_off_cap_cols = []
-    min_energy_price_cols = []
-    avg_energy_price_cols = []
-    max_energy_price_cols = []
+    value_cols = {value_name: [] for value_name, _ in suffixes.values()}
     for col_name in df.columns:
-        if col_name.endswith("_min_capacity_price_eur_mwh"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            min_cap_price_cols.append(col_name)
-        elif col_name.endswith("_average_capacity_price_eur_mwh"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            avg_cap_price_cols.append(col_name)
-        elif col_name.endswith("_marginal_capacity_price_eur_mwh"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            max_cap_price_cols.append(col_name)
-        elif col_name.endswith("_import_export_mw"):
-            area_name = col_name.rsplit("_", 3)[0]
-            col_mapping.update({col_name: area_name})
-            import_export_cols.append(col_name)
-        elif col_name.endswith("_sum_of_offered_capacity_mw"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            sum_off_cap_cols.append(col_name)
-        elif col_name.endswith("_min_energy_price_eur_mwh"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            min_energy_price_cols.append(col_name)
-        elif col_name.endswith("_average_energy_price_eur_mwh"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            avg_energy_price_cols.append(col_name)
-        elif col_name.endswith("_marginal_energy_price_eur_mwh"):
-            area_name = col_name.rsplit("_", 5)[0]
-            col_mapping.update({col_name: area_name})
-            max_energy_price_cols.append(col_name)
+        for suffix, (value_name, n_parts) in suffixes.items():
+            if col_name.endswith(suffix):
+                col_mapping[col_name] = col_name.rsplit("_", n_parts)[0]
+                value_cols[value_name].append(col_name)
+                break
         else:
             id_vars.append(col_name)
-    df_melted_min_cap_price = df.melt(
-        id_vars=id_vars,
-        value_vars=min_cap_price_cols,
-        var_name="area",
-        value_name="min_capacity_price_eur_mwh",
-    )
-    df_melted_min_cap_price["area"] = df_melted_min_cap_price["area"].replace(
-        col_mapping
-    )
-    df_melted_avg_cap_price = df.melt(
-        id_vars=id_vars,
-        value_vars=avg_cap_price_cols,
-        var_name="area",
-        value_name="average_capacity_price_eur_mwh",
-    )
-    df_melted_avg_cap_price["area"] = df_melted_avg_cap_price["area"].replace(
-        col_mapping
-    )
-    df_melted_max_cap_price = df.melt(
-        id_vars=id_vars,
-        value_vars=max_cap_price_cols,
-        var_name="area",
-        value_name="marginal_capacity_price_eur_mwh",
-    )
-    df_melted_max_cap_price["area"] = df_melted_max_cap_price["area"].replace(
-        col_mapping
-    )
-    df_melted_import_export = df.melt(
-        id_vars=id_vars,
-        value_vars=import_export_cols,
-        var_name="area",
-        value_name="import_export_mw",
-    )
-    df_melted_import_export["area"] = df_melted_import_export["area"].replace(
-        col_mapping
-    )
-    df_melted_sum_off_cap = df.melt(
-        id_vars=id_vars,
-        value_vars=sum_off_cap_cols,
-        var_name="area",
-        value_name="sum_of_offered_capacity_mw",
-    )
-    df_melted_sum_off_cap["area"] = df_melted_sum_off_cap["area"].replace(col_mapping)
-    df_melted_min_energy_price = df.melt(
-        id_vars=id_vars,
-        value_vars=min_energy_price_cols,
-        var_name="area",
-        value_name="min_energy_price_eur_mwh",
-    )
-    df_melted_min_energy_price["area"] = df_melted_min_energy_price["area"].replace(
-        col_mapping
-    )
-    df_melted_avg_energy_price = df.melt(
-        id_vars=id_vars,
-        value_vars=avg_energy_price_cols,
-        var_name="area",
-        value_name="average_energy_price_eur_mwh",
-    )
-    df_melted_avg_energy_price["area"] = df_melted_avg_energy_price["area"].replace(
-        col_mapping
-    )
-    df_melted_max_energy_price = df.melt(
-        id_vars=id_vars,
-        value_vars=max_energy_price_cols,
-        var_name="area",
-        value_name="marginal_energy_price_eur_mwh",
-    )
-    df_melted_max_energy_price["area"] = df_melted_max_energy_price["area"].replace(
-        col_mapping
-    )
 
-    dfs = [
-        df_melted_min_cap_price,
-        df_melted_avg_cap_price,
-        df_melted_max_cap_price,
-        df_melted_import_export,
-        df_melted_sum_off_cap,
-        df_melted_min_energy_price,
-        df_melted_avg_energy_price,
-        df_melted_max_energy_price,
-    ]
-    dfs = [df.set_index([*id_vars, "area"]) for df in dfs]
+    dfs = []
+    for value_name, cols in value_cols.items():
+        # products differ in the published columns (e.g. ABLA has no energy prices)
+        if not cols:
+            continue
+        melted = df.melt(
+            id_vars=id_vars, value_vars=cols, var_name="area", value_name=value_name
+        )
+        melted["area"] = melted["area"].replace(col_mapping)
+        dfs.append(melted.set_index([*id_vars, "area"]))
+    if not dfs:
+        return df
     df_final = ft.reduce(lambda left, right: left.join(right, how="outer"), dfs)
 
-    pivot_cols = [
-        "min_capacity_price_eur_mwh",
-        "average_capacity_price_eur_mwh",
-        "marginal_capacity_price_eur_mwh",
-        "import_export_mw",
-        "sum_of_offered_capacity_mw",
-        "min_energy_price_eur_mwh",
-        "average_energy_price_eur_mwh",
-        "marginal_energy_price_eur_mwh",
-    ]
-
-    df_final = df_final.dropna(subset=pivot_cols, how="all")
+    df_final = df_final.dropna(subset=list(df_final.columns), how="all")
     return df_final.reset_index()
+
+
+BERLIN = "Europe/Berlin"
+# columns published as Europe/Berlin local time, stored as aware UTC
+LOCAL_TIME_COLUMNS = [
+    "date_from",
+    "date_to",
+    "gate_open_time",
+    "gate_closure_time",
+    "allocation_deadline",
+]
+
+
+def berlin_to_utc(series: pd.Series) -> pd.Series:
+    """Convert naive Europe/Berlin wall-clock times to aware UTC."""
+    local = series.dt.tz_localize(
+        BERLIN,
+        # ambiguous (DST end) -> first occurrence, nonexistent (DST start) -> shift
+        ambiguous=np.ones(len(series), dtype=bool),
+        nonexistent="shift_forward",
+    )
+    return local.dt.tz_convert("UTC")
+
+
+def utc_to_berlin_date(value: datetime) -> date:
+    """Delivery day (Europe/Berlin) of a stored UTC timestamp (aware or naive UTC)."""
+    local = as_utc(value).tz_convert(BERLIN)
+    return date(local.year, local.month, local.day)
 
 
 def get_date_column_from_table_name(table_name):
@@ -429,6 +358,11 @@ def get_df_for_date(url, date_to_get: date, table_name: str):
         df = pd.read_excel(
             url_with_date, sheet_name="001", na_values=["-", "n.a.", "n.e."]
         )
+    except ValueError as e:
+        if "Worksheet named" in str(e):
+            # no tender data published for this day
+            return pd.DataFrame()
+        raise Exception(f"Could not read Datasheet from URL: {url_with_date}") from e
     except Exception as e:
         raise Exception(f"Could not read Datasheet from URL: {url_with_date}") from e
     df.rename(mapper=lambda x: database_friendly(x), axis="columns", inplace=True)
@@ -476,7 +410,7 @@ def get_df_for_date(url, date_to_get: date, table_name: str):
         df = prepare_demands_df(df)
     elif table_name == "fcr_ergebnisse" and df.shape[0] > 0:
         df = prepare_fcr_results_df(df)
-    elif "ergebnis" in table_name and df.shape[0] > 0:
+    elif "ergebnis" in table_name and "anonyme" not in table_name and df.shape[0] > 0:
         df = prepare_afrr_mfrr_results_df(df)
 
     df = df.dropna(axis="columns", how="all")
@@ -502,10 +436,36 @@ def get_df_for_date(url, date_to_get: date, table_name: str):
             .str.upper()
         )
 
+    # the source publishes Europe/Berlin local times, store aware UTC
+    for col in LOCAL_TIME_COLUMNS:
+        if col in df.columns and pd.api.types.is_datetime64_any_dtype(df[col]):
+            df[col] = berlin_to_utc(df[col])
+    # the delivery day is a calendar date
+    if "delivery_date" in df.columns and pd.api.types.is_datetime64_any_dtype(
+        df["delivery_date"]
+    ):
+        df["delivery_date"] = df["delivery_date"].dt.date
+
     return df
 
 
 TEMPORAL_START = date(2020, 2, 1)
+
+
+def sql_type(series: pd.Series) -> str:
+    if pd.api.types.is_datetime64_any_dtype(series):
+        return "TIMESTAMPTZ"
+    if pd.api.types.is_bool_dtype(series):
+        return "BOOLEAN"
+    if pd.api.types.is_numeric_dtype(series):
+        return "DOUBLE PRECISION"
+    return "TEXT"
+
+
+def to_delivery_date(date_col: str, value: datetime) -> date:
+    if date_col == "delivery_date":
+        return date(value.year, value.month, value.day)
+    return utc_to_berlin_date(value)
 
 
 class RegelleistungCrawler(ContinuousCrawler):
@@ -518,13 +478,12 @@ class RegelleistungCrawler(ContinuousCrawler):
             with self.engine.connect() as conn:
                 latest_datetime = conn.execute(query).scalar()
                 if not latest_datetime:
-                    return TEMPORAL_START
-                return date(
-                    latest_datetime.year, latest_datetime.month, latest_datetime.day
-                )
+                    # empty table: the day before the start, as callers add one day
+                    return TEMPORAL_START - timedelta(days=1)
+                return to_delivery_date(date_col, latest_datetime)
         except Exception:
             log.error("No data found for %s", table_name)
-            return TEMPORAL_START
+            return TEMPORAL_START - timedelta(days=1)
 
     def get_first_data(self, table_name: str) -> date:
         date_col = get_date_column_from_table_name(table_name)
@@ -534,27 +493,34 @@ class RegelleistungCrawler(ContinuousCrawler):
                 earliest_datetime = conn.execute(query).scalar()
                 if not earliest_datetime:
                     return TEMPORAL_START
-                return date(
-                    earliest_datetime.year,
-                    earliest_datetime.month,
-                    earliest_datetime.day,
-                )
+                return to_delivery_date(date_col, earliest_datetime)
         except Exception:
             log.error("No data found for %s", table_name)
             return TEMPORAL_START
 
-    def write_concat_table(self, table_name, new_data):
+    def append_df(self, table_name: str, df: pd.DataFrame) -> None:
+        """Append df, adding columns the source introduced since the table was created."""
+        if df.empty or len(df.columns) == 0:
+            return
+        # integers would fix the column type to bigint, later values may be fractional
+        for col in df.columns:
+            if pd.api.types.is_integer_dtype(df[col]) and col != "area":
+                df[col] = df[col].astype("float64")
         with self.engine.begin() as conn:
-            # merge old data with new data
-            prev = pd.read_sql_query(f"select * from {table_name}", conn)
-            new_cols = set(new_data.columns).difference(set(prev.columns))
-            removed_cols = set(prev.columns).difference(set(new_data.columns))
-            log.info(f"New columns: {new_cols}")
-            log.info(f"Removed columns: {removed_cols}")
-            date_col = get_date_column_from_table_name(table_name)
-            log.info(new_data[date_col])
-            complete_data = pd.concat([prev, new_data])
-            complete_data.to_sql(table_name, conn, if_exists="replace", index=False)
+            inspector = inspect(conn)
+            if inspector.has_table(table_name):
+                existing = {c["name"] for c in inspector.get_columns(table_name)}
+                for col in df.columns:
+                    if col in existing:
+                        continue
+                    log.info("Adding new column %s to %s", col, table_name)
+                    conn.execute(
+                        text(
+                            f'ALTER TABLE "{table_name}" ADD COLUMN "{col}" {sql_type(df[col])}'
+                        )
+                    )
+            df = ensure_utc(df)
+            df.to_sql(table_name, conn, if_exists="append", index=False)
 
     def write_past_entries(
         self,
@@ -570,19 +536,8 @@ class RegelleistungCrawler(ContinuousCrawler):
             try:
                 earliest_date -= timedelta(days=1)
                 df = get_df_for_date(url, earliest_date, table_name)
-                with self.engine.begin() as conn:
-                    df.to_sql(table_name, conn, if_exists="append", index=False)
+                self.append_df(table_name, df)
                 wrote_data = True
-            except sqlalchemy.exc.ProgrammingError as e:
-                _, err_obj, _ = sys.exc_info()
-                if "UndefinedColumn" in str(err_obj):
-                    log.info(f"handling {repr(e)} by concat")
-                    self.write_concat_table(table_name, df)
-                    log.info(f"replaced table {table_name}")
-                    wrote_data = True
-                else:
-                    log.error(f"Encountered error {e}")
-                    data_for_date_exists = False
             except Exception as e:
                 log.info(
                     f"The earliest date for {table_name} is the date {earliest_date}. {e}"
@@ -626,19 +581,9 @@ class RegelleistungCrawler(ContinuousCrawler):
         else:
             latest_data_date = latest_data_date + timedelta(days=1)
             while latest_data_date < today_date:
-                try:
-                    df = get_df_for_date(url, latest_data_date, table_name)
-                    with self.engine.begin() as conn:
-                        df.to_sql(table_name, conn, if_exists="append", index=False)
-                    latest_data_date += timedelta(days=1)
-                except sqlalchemy.exc.ProgrammingError as e:
-                    _, err_obj, _ = sys.exc_info()
-                    if "UndefinedColumn" in str(err_obj):
-                        log.info(f"handling {repr(e)} by concat")
-                        self.write_concat_table(table_name, df)
-                        log.info(f"replaced table {table_name}")
-                    else:
-                        log.error(f"Encountered error {e}")
+                df = get_df_for_date(url, latest_data_date, table_name)
+                self.append_df(table_name, df)
+                latest_data_date += timedelta(days=1)
 
             log.info(
                 f"Finished writing new data to {table_name} with newest date being yesterday {(latest_data_date - timedelta(days=1))}"
@@ -654,7 +599,10 @@ class RegelleistungCrawler(ContinuousCrawler):
         latest_date = self.get_latest_data(table_name)
         if latest_date is not None:
             self.write_new_data_from_latest_date_to_today(url, table_name, latest_date)
-            if write_additional_past_entries_if_any:
+            if (
+                write_additional_past_entries_if_any
+                and earliest_date_to_write < TEMPORAL_START
+            ):
                 self.add_additional_past_entries(
                     table_name, url, earliest_date_to_write
                 )

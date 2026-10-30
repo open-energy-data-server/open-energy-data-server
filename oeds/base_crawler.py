@@ -64,14 +64,17 @@ def as_utc(timestamp) -> pd.Timestamp:
     All instants are stored as timestamptz in UTC. Naive values only come from
     databases without timezone support (sqlite) and are read as UTC.
     """
+    if timestamp is None or pd.isna(timestamp):
+        # e.g. MAX() of an empty table: the crawler has to choose a start itself
+        raise ValueError("no timestamp to convert")
     timestamp = pd.Timestamp(timestamp)
     if timestamp.tzinfo is None:
         return timestamp.tz_localize("UTC")
     return timestamp.tz_convert("UTC")
 
 
-def ensure_utc(df: pd.DataFrame) -> pd.DataFrame:
-    """Converts all datetime columns and a datetime index of df to UTC.
+def ensure_utc(df: pd.DataFrame, check_index: bool = True) -> pd.DataFrame:
+    """Converts all datetime columns and (if check_index) a datetime index of df to UTC.
 
     Naive datetimes are rejected: their meaning (UTC or local time) is unknown,
     so the crawler has to localize them explicitly before writing.
@@ -93,6 +96,8 @@ def ensure_utc(df: pd.DataFrame) -> pd.DataFrame:
                 raise ValueError(f"column {name} holds naive datetimes")
             if len(instants) == len(values):
                 df[name] = pd.to_datetime(series, utc=True)
+    if not check_index:
+        return df
     if isinstance(df.index, pd.MultiIndex):
         for i, level in enumerate(df.index.levels):
             if isinstance(level, pd.DatetimeIndex):
@@ -181,6 +186,43 @@ class BaseCrawler:
     def create_hypertable_if_not_exists(self) -> None:
         pass
 
+    @staticmethod
+    def _delete_ranges(conn, table, df, times, time_col, entity_cols) -> None:
+        """Deletes the time range of each entity combination of df from table."""
+        quote = conn.dialect.identifier_preparer.quote
+        keys = pd.DataFrame({c: df[c].to_numpy() for c in entity_cols})
+        keys["__time"] = list(times)
+        if entity_cols:
+            ranges = keys.groupby(entity_cols, dropna=False)["__time"].agg(
+                ["min", "max"]
+            )
+        else:
+            ranges = pd.DataFrame(
+                {"min": [keys["__time"].min()], "max": [keys["__time"].max()]}
+            )
+        for entity, (first, last) in zip(ranges.index, ranges.to_numpy()):
+            # calendar days (e.g. gas days) are stored as date, instants as timestamptz
+            if isinstance(first, date) and not isinstance(first, datetime):
+                time_type = Date
+                lo, hi = first, last
+            else:
+                time_type = DateTime(timezone=True)
+                lo = pd.Timestamp(first).to_pydatetime()
+                hi = pd.Timestamp(last).to_pydatetime()
+            sql = f"DELETE FROM {quote(table)} WHERE {quote(time_col)} BETWEEN :lo AND :hi"
+            params = {"lo": lo, "hi": hi}
+            values = entity if isinstance(entity, tuple) else (entity,)
+            for i, (col, value) in enumerate(zip(entity_cols, values)):
+                if pd.isna(value):
+                    sql += f" AND {quote(col)} IS NULL"
+                else:
+                    sql += f" AND {quote(col)} = :e{i}"
+                    params[f"e{i}"] = value.item() if hasattr(value, "item") else value
+            stmt = text(sql).bindparams(
+                bindparam("lo", type_=time_type), bindparam("hi", type_=time_type)
+            )
+            conn.execute(stmt, params)
+
     def replace_overlap(
         self,
         conn,
@@ -194,37 +236,18 @@ class BaseCrawler:
         """Deletes the rows of table which overlap df and appends df, so that
         data can be fetched again (e.g. because of revisions) without duplicates.
 
-        Rows are deleted if time_col lies between the min and max of df
-        and, for every entity column, the value occurs in df.
+        Rows are deleted if time_col lies between the min and max of df, for each
+        combination of entity_cols separately (with its own min and max).
         Call this inside the transaction of conn, to keep delete and append atomic.
         time_col may be a column or the (named) index of df.
         """
         if df.empty:
             return
-        df = ensure_utc(df)
         in_columns = time_col in df.columns
+        df = ensure_utc(df, check_index=not in_columns)
         times = df[time_col] if in_columns else df.index.get_level_values(time_col)
         if inspect(conn).has_table(table):
-            quote = conn.dialect.identifier_preparer.quote
-            sql = f"DELETE FROM {quote(table)} WHERE {quote(time_col)} BETWEEN :lo AND :hi"
-            lo, hi = times.min(), times.max()
-            # calendar days (e.g. gas days) are stored as date, instants as timestamptz
-            if isinstance(lo, date) and not isinstance(lo, datetime):
-                time_type = Date
-            else:
-                time_type = DateTime(timezone=True)
-                lo = pd.Timestamp(lo).to_pydatetime()
-                hi = pd.Timestamp(hi).to_pydatetime()
-            params = {"lo": lo, "hi": hi}
-            for i, col in enumerate(entity_cols):
-                sql += f" AND {quote(col)} IN :e{i}"
-                params[f"e{i}"] = df[col].unique().tolist()
-            stmt = text(sql).bindparams(
-                bindparam("lo", type_=time_type),
-                bindparam("hi", type_=time_type),
-                *[bindparam(f"e{i}", expanding=True) for i in range(len(entity_cols))],
-            )
-            conn.execute(stmt, params)
+            self._delete_ranges(conn, table, df, times, time_col, list(entity_cols))
         df.to_sql(
             table,
             conn,

@@ -9,13 +9,19 @@ It contains mostly data for Germany which is also availble in the ENTSO-E transp
 
 import io
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 import requests
 from sqlalchemy import text
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, ContinuousCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    ContinuousCrawler,
+    as_utc,
+    load_config,
+    utcnow,
+)
 
 log = logging.getLogger("smard")
 
@@ -127,12 +133,40 @@ MODULE_IDS["consumption"] = [5000410, 5004387, 5005140, 5004359]
 MODULE_IDS["frequency_reserve"] = [15004383, 15004384, 15004382, 15004390]
 
 # Data is available from 2015-01-01 until now
-TEMPORAL_START = datetime(2015, 1, 1)
+TEMPORAL_START = datetime(2015, 1, 1, tzinfo=UTC)
 
 # We can query up to 5 years at once - keep this small for now
 MAX_DELTA = timedelta(weeks=52)
 
 SMARD_URL = "https://www.smard.de/nip-download-manager/nip/download/market-data"
+
+# The CSV downloads contain local (Europe/Berlin) timestamps without offset
+SMARD_TZ = "Europe/Berlin"
+
+
+def _epoch_ms(dt: datetime) -> int:
+    """Naive datetimes are interpreted as UTC."""
+    return int(as_utc(dt).timestamp() * 1000)
+
+
+def local_to_utc(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """Converts the naive Europe/Berlin timestamps of a smard download to aware UTC.
+
+    The index must be in the original (chronological) order of the download.
+    In the autumn the repeated hour occurs twice: the first occurrence is
+    summer time, the second one winter time.
+    """
+    index = pd.DatetimeIndex(index)
+    # first occurrence of a repeated local time is DST, the second one is not
+    is_dst = ~index.duplicated(keep="first")
+    # a download may start on the second repeated hour (first row is a lone,
+    # already winter time row, followed by the next hour)
+    if len(index) > 1 and index[1] - index[0] == timedelta(hours=1):
+        first = index[0]
+        if first.month == 10 and first.hour == 2 and first.day > 24:
+            is_dst[0] = False
+    local = index.tz_localize(SMARD_TZ, ambiguous=is_dst, nonexistent="shift_forward")
+    return local.tz_convert("UTC")
 
 
 class SmardCrawler(ContinuousCrawler):
@@ -169,10 +203,11 @@ class SmardCrawler(ContinuousCrawler):
             begin (datetime): included begin datetime from which to crawl
             end (datetime): exclusive end datetime until which to crawl
         """
+        begin, end = as_utc(begin), as_utc(end)
         if begin < TEMPORAL_START:
             begin = TEMPORAL_START
 
-        data_available_until = datetime.now() - self.get_minimum_offset()
+        data_available_until = utcnow() - self.get_minimum_offset()
 
         if end > data_available_until:
             end = data_available_until
@@ -194,8 +229,8 @@ class SmardCrawler(ContinuousCrawler):
         """
         log.info("Crawling smard data from %s to %s", begin, end)
 
-        timestamp_from = int(begin.timestamp() * 1000)
-        timestamp_to = int(end.timestamp() * 1000)
+        timestamp_from = _epoch_ms(begin)
+        timestamp_to = _epoch_ms(end)
 
         with self.engine.begin() as conn:
             for table_name, modul_ids in MODULE_IDS.items():
@@ -243,8 +278,18 @@ class SmardCrawler(ContinuousCrawler):
                         log.error("Following Data was found %s", df.head())
                     df.index.name = "datum_von"
                     df.columns = [col.lower().replace(" ", "_") for col in df.columns]
+                    if df.empty:
+                        continue
 
-                    df.to_sql(table_name, conn, if_exists="append")
+                    # timestamps are stored as timestamptz in UTC
+                    utc_index = local_to_utc(df.index)
+                    df.index = utc_index
+                    df.index.name = "datum_von"
+                    df["datum_bis"] = utc_index + timedelta(hours=1)
+                    df = df[~df.index.duplicated(keep="last")]
+
+                    # make re-crawling the same period idempotent
+                    self.replace_overlap(conn, table_name, df, "datum_von")
                 except Exception as e:
                     log.error(
                         "Error while downloading %s data with %s from smard: %s",

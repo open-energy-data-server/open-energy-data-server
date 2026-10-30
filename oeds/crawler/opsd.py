@@ -35,6 +35,20 @@ when2heat_url = (
 national_generation_capacity_url = "https://data.open-power-system-data.org/national_generation_capacity/2020-10-01/national_generation_capacity_stacked.csv"
 
 
+def prepare_when2heat(data: pd.DataFrame) -> pd.DataFrame:
+    """Indexes when2heat by utc_timestamp as aware UTC.
+
+    cet_cest_timestamp is kept as a column, converted to aware UTC as well.
+    """
+    data = data.copy()
+    utc = pd.to_datetime(data["utc_timestamp"], utc=True)
+    data["cet_cest_timestamp"] = pd.to_datetime(data["cet_cest_timestamp"], utc=True)
+    data.index = pd.DatetimeIndex(utc)
+    data.index.name = "utc_timestamp"
+    del data["utc_timestamp"]
+    return data
+
+
 class OpsdCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
@@ -72,13 +86,14 @@ class OpsdCrawler(DownloadOnceCrawler):
 
         with sqlite3.connect(db_path) as conn:
             data = pd.read_sql("select * from when2heat", conn)
-        data.index = pd.to_datetime(data["utc_timestamp"])
-        del data["cet_cest_timestamp"]
-        del data["utc_timestamp"]
+        data = prepare_when2heat(data)
         log.info("data read successfully")
 
         with self.engine.begin() as conn:
-            data.to_sql("when2heat", conn, if_exists="replace", chunksize=20000)
+            # when2heat is a hypertable, so it must not be dropped and recreated
+            self.replace_overlap(
+                conn, "when2heat", data, "utc_timestamp", chunksize=20000
+            )
         log.info("when2heat data written successfully")
 
     def crawl_capacities(self):

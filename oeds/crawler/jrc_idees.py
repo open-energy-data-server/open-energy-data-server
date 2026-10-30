@@ -41,10 +41,8 @@ JRC_IDEES_URL = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/JRC-IDEES/JRC-
 class JrcIdeesCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
-            query = text(
-                "SELECT 1 FROM information_schema.tables "
-                "WHERE table_schema = 'jrc_idees' LIMIT 1"
-            )
+            # the marker table is written last, so partial runs are repeated
+            query = text("SELECT 1 FROM crawl_complete LIMIT 1")
             with self.engine.connect() as conn:
                 return conn.execute(query).scalar() == 1
         except Exception:
@@ -54,12 +52,19 @@ class JrcIdeesCrawler(DownloadOnceCrawler):
         if not self.structure_exists() or recreate:
             log.info("Download JRC-IDEES dataset")
             self.download_jrc_dataset()
+            self.create_hypertable_if_not_exists()
+            pd.DataFrame({"complete": [True]}).to_sql(
+                "crawl_complete", self.engine, if_exists="replace", index=False
+            )
             log.info("Finished writing JRC-IDEES dataset to Database")
 
     def download_jrc_dataset(self):
-        response = requests.get(JRC_IDEES_URL)
+        response = requests.get(JRC_IDEES_URL, timeout=300)
+        response.raise_for_status()
         log.info("Write JRC-IDEES dataset to database")
         self.table_names = []
+        # tables which were already (re)created in this run, the others are replaced
+        written = set()
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
             for zipinfo in thezip.infolist():
                 try:
@@ -80,7 +85,6 @@ class JrcIdeesCrawler(DownloadOnceCrawler):
                             ):
                                 index_col = [0, 1]
 
-                            self.table_names.append(sheet_name)
                             df = xl.parse(sheet_name, index_col=index_col)
                             df.dropna(how="all", axis=1, inplace=True)
                             df.columns = [
@@ -104,11 +108,22 @@ class JrcIdeesCrawler(DownloadOnceCrawler):
                             # insert as to leftmost columns
                             df.insert(0, "zone", zone)
 
+                            # skip rows whose label is no year
+                            df = df[df.index.notna()]
                             if df.empty:
                                 continue
                             table_name = f"{section}_{sheet_name}".lower()
                             with self.engine.begin() as conn:
-                                df.to_sql(table_name, conn, if_exists="append")
+                                df.to_sql(
+                                    table_name,
+                                    conn,
+                                    if_exists="append"
+                                    if table_name in written
+                                    else "replace",
+                                )
+                            written.add(table_name)
+                            if table_name not in self.table_names:
+                                self.table_names.append(table_name)
                 except Exception as e:
                     log.error(f"Error: {e} - {zipinfo}")
 

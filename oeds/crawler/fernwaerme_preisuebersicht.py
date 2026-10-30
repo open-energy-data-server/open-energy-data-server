@@ -28,6 +28,25 @@ metadata_info = {
 }
 
 
+def parse_network_size(value) -> tuple[str | None, str | None]:
+    """Splits the network size in MW into (min, max) as strings.
+
+    Handles "bis 5", "5 - 10" and "größer als 50"; max is None for the last one.
+    """
+    if not isinstance(value, str):
+        return None, None
+    text = value.replace("MW", "").replace(",", ".").replace("\xad", "").strip()
+    lowered = text.lower()
+    if lowered.startswith("bis"):
+        return "0", text[3:].strip()
+    if "größer" in lowered:
+        return lowered.replace("größer", "").replace("als", "").strip(), None
+    if "-" in text:
+        low, high = text.split("-", 1)
+        return low.strip(), high.strip()
+    return text, text
+
+
 class FWCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
@@ -98,68 +117,10 @@ class FWCrawler(DownloadOnceCrawler):
         df[column_name9] = pd.to_numeric(df[column_name9], errors="coerce")
 
         column_name4 = "Netzgröße in MW Netzgröße nach Höhe der angeschlossenen Wärme­erzeugungs­leistung"
-        df[["Min Netzgröße", "Max Netzgröße"]] = df[column_name4].str.split(
-            "-", expand=True
-        )
-
-        df["Min Netzgröße"] = df.apply(
-            lambda row: (
-                0 if str(row["Min Netzgröße"]).startswith("b") else row["Min Netzgröße"]
-            ),
-            axis=1,
-        )
-        df["Max Netzgröße"] = df.apply(
-            lambda row: (
-                row["Max Netzgröße"]
-                if str(row["Max Netzgröße"]).startswith("b")
-                else row["Max Netzgröße"]
-            ),
-            axis=1,
-        )
-
-        df["Min Netzgröße"] = df[column_name4].apply(
-            lambda x: None if "größer" in x else x.split("-")[0].strip()
-        )
-        df["Max Netzgröße"] = df[column_name4].apply(
-            lambda x: (
-                x.replace("bis", "").strip() if "bis" in x else x.split("-")[-1].strip()
-            )
-        )
-        df["Max Netzgröße"] = df["Max Netzgröße"].apply(
-            lambda x: "unlimited" if "".startswith("g") else x
-        )
-
-        df["Min Netzgröße"] = (
-            df["Min Netzgröße"].str.replace(",", ".").str.replace("MW", "").str.strip()
-        )
-        df["Min Netzgröße"] = pd.to_numeric(df["Min Netzgröße"], errors="coerce")
-        df["Max Netzgröße"] = pd.to_numeric(df["Max Netzgröße"], errors="coerce")
-
-        df["Min Netzgröße"] = df[column_name4].apply(
-            lambda x: (
-                0
-                if "bis" in x
-                else (x if "größer" in x else x.split("-")[0].strip())
-                .replace("größer", "")
-                .replace("MW", "")
-                .strip()
-            )
-        )
-        df["Max Netzgröße"] = df[column_name4].apply(
-            lambda x: (
-                x
-                if "bis" in x
-                else ("unlimited" if "größer" in x else x.split("-")[-1].strip())
-            )
-        )
-
-        df["Max Netzgröße"] = (
-            df["Max Netzgröße"]
-            .str.replace("MW", "")
-            .str.replace(",", ".")
-            .str.replace("bis", "")
-            .str.strip()
-        )
+        sizes = df[column_name4].apply(parse_network_size)
+        df["Min Netzgröße"] = pd.to_numeric(sizes.str[0], errors="coerce")
+        # no upper limit ("größer als x") is stored as NULL
+        df["Max Netzgröße"] = pd.to_numeric(sizes.str[1], errors="coerce")
 
         column_name7 = "Anteil EE & KE erneuerbare Energieträger und Abwärme gemäß § 3 WPG (Wärmeplanungsgesetz)"
         df[["Min EE & KN", "Max EE & KN"]] = (

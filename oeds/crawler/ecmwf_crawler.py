@@ -16,12 +16,10 @@ Columns written to ``ecmwf`` / ``ecmwf_eu``
 
 from __future__ import annotations
 
-import csv
 import logging
 import shutil
 import zipfile
-from datetime import date, datetime, timedelta
-from io import StringIO
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import cdsapi
@@ -34,7 +32,10 @@ from oeds.base_crawler import (
     DEFAULT_CONFIG_LOCATION,
     ContinuousCrawler,
     CrawlerConfig,
+    as_utc,
+    copy_insert,
     load_config,
+    utcnow,
 )
 
 ##################
@@ -71,10 +72,10 @@ weather_variables = [
 # 5 variables × 24 h → max 8 days/chunk under CDS ~1000-item limit
 DAY_CHUNK = 8
 
-TEMPORAL_START = datetime(2022, 1, 1)
+TEMPORAL_START = datetime(2022, 1, 1, tzinfo=UTC)
 
 _TABLE_SQL = (
-    "time timestamp without time zone NOT NULL, "
+    "time timestamptz NOT NULL, "
     "latitude double precision, "
     "longitude double precision, "
     "temp_air real, "
@@ -127,29 +128,11 @@ def save_era5_request_to_file(request: dict, client: cdsapi.Client) -> Path:
     raise FileNotFoundError(f"CDS download missing → {target}")
 
 
-def psql_insert_copy(table, conn, keys: list[str], data_iter):
-    with conn.connection.cursor() as cur:
-        s_buf = StringIO()
-        writer = csv.writer(s_buf)
-        writer.writerows(data_iter)
-        s_buf.seek(0)
-
-        columns = ", ".join(f'"{k}"' for k in keys)
-        if table.schema:
-            table_name = f"{table.schema}.{table.name}"
-        else:
-            table_name = table.name
-
-        sql = f"COPY {table_name} ({columns}) FROM STDIN WITH CSV"
-        cur.copy_expert(sql=sql, file=s_buf)
-
-
 def daterange(start_date: datetime, end_date: datetime = None):
     if not end_date:
         end_date = date.today()
-    for n in range(
-        int((datetime.combine(end_date, datetime.min.time()) - start_date).days)
-    ):
+    end = datetime.combine(end_date, datetime.min.time(), tzinfo=start_date.tzinfo)
+    for n in range(int((end - start_date).days)):
         yield start_date + timedelta(days=n)
 
 
@@ -287,6 +270,8 @@ def process_era5_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise KeyError(f"ERA5 columns missing {missing}; got {list(df.columns)}")
 
+    # cfgrib times are naive and refer to UTC
+    df["time"] = pd.to_datetime(df["time"], utc=True)
     df["wind_speed"] = (df["wind_zonal"] ** 2 + df["wind_meridional"] ** 2) ** 0.5
     df = df.round({"latitude": 2, "longitude": 2})
     df = df.sort_values(by=["latitude", "longitude", "time"])
@@ -336,10 +321,16 @@ class EcmwfCrawler(ContinuousCrawler):
             ) from e
 
     def get_latest_data(self) -> datetime:
-        query = text("SELECT MAX(time) FROM ecmwf")
+        # ecmwf and ecmwf_eu are written together, but may differ after a crash
         try:
             with self.engine.connect() as conn:
-                return conn.execute(query).scalar() or TEMPORAL_START
+                latest = [
+                    conn.execute(text(f"SELECT MAX(time) FROM {table}")).scalar()
+                    for table in ("ecmwf", "ecmwf_eu")
+                ]
+            if None in latest:
+                return TEMPORAL_START
+            return as_utc(min(latest))
         except Exception:
             log.error("No ecmwf latest found")
             return TEMPORAL_START
@@ -348,7 +339,7 @@ class EcmwfCrawler(ContinuousCrawler):
         query = text("SELECT MIN(time) FROM ecmwf")
         try:
             with self.engine.connect() as conn:
-                return conn.execute(query).scalar() or TEMPORAL_START
+                return as_utc(conn.execute(query).scalar() or TEMPORAL_START)
         except Exception:
             log.error("No ecmwf first found")
             return TEMPORAL_START
@@ -362,7 +353,7 @@ class EcmwfCrawler(ContinuousCrawler):
         if begin < TEMPORAL_START:
             begin = TEMPORAL_START
 
-        data_available_until = datetime.now() - self.get_minimum_offset()
+        data_available_until = utcnow() - self.get_minimum_offset()
         if end > data_available_until:
             end = data_available_until
 
@@ -373,7 +364,7 @@ class EcmwfCrawler(ContinuousCrawler):
 
         # the requests are build from 00:00 - 23:00 for each day
         # however, for recent dates the cds API delivers data up until the latest hour of the day it can deliver
-        # as the time is stored without time zone, we check for 0
+        # the hour is UTC, we check for 0
         if begin.hour != 0:
             log.info(
                 "Creating request for single day because begin hour is %s", begin.hour
@@ -402,26 +393,7 @@ class EcmwfCrawler(ContinuousCrawler):
         weather_data = process_era5_dataframe(open_grib_as_dataframe(file_path))
         weather_data = weather_data.set_index(["time", "latitude", "longitude"])
 
-        log.info("preparing to write dataframe into ecmwf database")
-        if write_lat_lon:
-            try:
-                weather_data.to_sql(
-                    "ecmwf",
-                    con=self.engine,
-                    if_exists="append",
-                    chunksize=10000,
-                    method=psql_insert_copy,
-                )
-            except Exception:
-                log.error(
-                    "no postgresql? - could not write using psql_insert_copy - using multi method"
-                )
-                weather_data.to_sql(
-                    "ecmwf",
-                    con=self.engine,
-                    if_exists="append",
-                    chunksize=10000,
-                )
+        grid_data = weather_data
 
         nuts3 = self.nuts_data
         weather_data = weather_data.reset_index()
@@ -443,24 +415,26 @@ class EcmwfCrawler(ContinuousCrawler):
         weather_data = weather_data.set_index(
             ["time", "latitude", "longitude", "nuts_id"]
         )
-        log.info("preparing to write nuts dataframe into ecmwf_eu database")
-        try:
-            weather_data.to_sql(
+        # both tables are written in one transaction, so resuming from the
+        # latest time stays consistent
+        log.info("preparing to write dataframes into ecmwf and ecmwf_eu database")
+        with self.engine.begin() as conn:
+            if write_lat_lon:
+                self.replace_overlap(
+                    conn,
+                    "ecmwf",
+                    grid_data,
+                    "time",
+                    chunksize=10000,
+                    method=copy_insert,
+                )
+            self.replace_overlap(
+                conn,
                 "ecmwf_eu",
-                con=self.engine,
-                if_exists="append",
+                weather_data,
+                "time",
                 chunksize=10000,
-                method=psql_insert_copy,
-            )
-        except Exception:
-            log.error(
-                "no postgresql? - could not write using psql_insert_copy - using multi method"
-            )
-            weather_data.to_sql(
-                "ecmwf_eu",
-                con=self.engine,
-                if_exists="append",
-                chunksize=10000,
+                method=copy_insert,
             )
 
         for file in Path(file_path.parent).glob(file_path.stem + "*"):

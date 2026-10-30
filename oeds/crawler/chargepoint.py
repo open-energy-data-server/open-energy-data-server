@@ -14,7 +14,16 @@ from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load
 log = logging.getLogger(__name__)
 
 CHARGEPOINT_MAP_URL = "https://mc-eu.chargepoint.com/map-prod/get"
+REQUEST_TIMEOUT = 30
+MAX_FAILED_SHARE = 0.1
 PRICE_URL = "https://de.chargepoint.com/dashboard/getStationPricingDetails"
+
+
+def parse_number(text: str) -> float:
+    """Parses a German formatted number like 0,39 or 1.234,5."""
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    return float(text)
 
 
 def read_stations(max_locations: int | None = None):
@@ -35,6 +44,8 @@ def read_stations(max_locations: int | None = None):
     if max_locations is not None:
         locations = locations[:max_locations]
 
+    requests_total = 0
+    requests_failed = 0
     for location in locations:
         for sort in ["installation_date", "distance"]:
             # f-string would be unreadable here
@@ -47,20 +58,39 @@ def read_stations(max_locations: int | None = None):
                 + '","filter":{"network_chargepoint":true},"include_map_bound":true,"estimated_fee_input":{"arrival_time":"12:45","battery_size":30}}}'
             )
 
-            resp = requests.get(url)
-            j = resp.json()
+            requests_total += 1
+            try:
+                resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+                resp.raise_for_status()
+                j = resp.json()
+                summaries = j["station_list"]["summaries"]
+            except (requests.RequestException, ValueError, KeyError, TypeError):
+                log.exception("could not read stations for %s", location)
+                requests_failed += 1
+                continue
 
             log.info(
                 "Summary Count for %s: %s",
                 location,
-                len(j["station_list"]["summaries"]),
+                len(summaries),
             )
 
             new_stations = 0
-            for station in j["station_list"]["summaries"]:
-                response = requests.post(
-                    PRICE_URL, data={"deviceId": station["device_id"]}
-                )
+            for station in summaries:
+                device_id = station.get("device_id")
+                if device_id is None:
+                    log.warning("skipping station without device_id in %s", location)
+                    continue
+                try:
+                    response = requests.post(
+                        PRICE_URL,
+                        data={"deviceId": device_id},
+                        timeout=REQUEST_TIMEOUT,
+                    )
+                    response.raise_for_status()
+                except requests.RequestException:
+                    log.exception("could not read price of %s", device_id)
+                    continue
                 soup = BeautifulSoup(response.text, "html.parser")
                 price_text = (
                     soup.get_text()
@@ -71,31 +101,39 @@ def read_stations(max_locations: int | None = None):
                     .splitlines()
                 )
 
-                if station["device_id"] not in stations.keys():
+                if device_id not in stations:
                     new_stations += 1
 
-                stations[station["device_id"]] = {
+                stations[device_id] = {
                     "lat": station["lat"],
                     "lon": station["lon"],
                     "price": price_text,
                 }
             log.info("added %s new stations", new_stations)
 
+    if requests_failed > MAX_FAILED_SHARE * requests_total:
+        # the caller replaces the stored table, which must not happen with a partial crawl
+        raise RuntimeError(
+            f"{requests_failed} of {requests_total} station requests failed"
+        )
+
     for s_id, station in stations.items():
         for line in station["price"]:
-            if line.endswith("€/kWh"):
-                price_line = line.split(" ")[0]
-                station["price_e_kwh"] = float(price_line.replace(",", "."))
-            if line.startswith("Preis (Festgelegt von "):
-                station["kunde"] = (
-                    line.replace("Preis (Festgelegt von ", "").replace(")", "").strip()
-                )
-            if line.endswith("€/Std."):
-                parking_line = line.split(" ")[0]
-                station["parking"] = float(parking_line.replace(",", "."))
-            elif line.endswith("€/Min."):
-                parking_line = line.split(" ")[0]
-                station["parking"] = float(parking_line.replace(",", ".")) * 60
+            try:
+                if line.endswith("€/kWh"):
+                    station["price_e_kwh"] = parse_number(line.split(" ")[0])
+                if line.startswith("Preis (Festgelegt von "):
+                    station["kunde"] = (
+                        line.replace("Preis (Festgelegt von ", "")
+                        .replace(")", "")
+                        .strip()
+                    )
+                if line.endswith("€/Std."):
+                    station["parking"] = parse_number(line.split(" ")[0])
+                elif line.endswith("€/Min."):
+                    station["parking"] = parse_number(line.split(" ")[0]) * 60
+            except ValueError:
+                log.warning("could not parse price line %r of %s", line, s_id)
 
     log.info("Found %s stations", len(stations.keys()))
     return stations
