@@ -32,7 +32,7 @@ except ImportError:
 
 
 from requests.exceptions import HTTPError
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from tqdm import tqdm
 
 from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, ContinuousCrawler, load_config
@@ -167,6 +167,30 @@ class EntsoeCrawler(ContinuousCrawler):
             areas.to_sql("areas", conn, if_exists="replace")
             psrtype.to_sql("psrtype", conn, if_exists="replace")
 
+    def _add_missing_columns(self, conn, data, tablename):
+        existing = {c["name"] for c in inspect(conn).get_columns(tablename)}
+        for col in data.columns:
+            if col in existing:
+                continue
+            if pd.api.types.is_numeric_dtype(data[col]):
+                sqltype = "DOUBLE PRECISION"
+            else:
+                sqltype = "TEXT"
+            log.info(f"adding column {col} to {tablename}")
+            conn.execute(
+                text(f'ALTER TABLE "{tablename}" ADD COLUMN "{col}" {sqltype}')
+            )
+
+    def append_to_table(self, data, tablename):
+        """
+        Appends data to tablename, adding columns which do not exist in the table yet.
+        This avoids re-reading and replacing the whole table when new series appear.
+        """
+        with self.engine.begin() as conn:
+            if inspect(conn).has_table(tablename):
+                self._add_missing_columns(conn, data, tablename)
+            data.to_sql(tablename, conn, if_exists="append")
+
     def query_with_retries(self, proc, *args, start, end):
         """
         Calls proc and retries on server and connection errors with increasing delay.
@@ -224,23 +248,7 @@ class EntsoeCrawler(ContinuousCrawler):
 
             # add country column
             data["country"] = country
-            try:
-                with self.engine.begin() as conn:
-                    data.to_sql(proc.__name__, conn, if_exists="append")
-            except Exception as e:
-                with self.engine.begin() as conn:
-                    log.info(f"handling {repr(e)} by concat")
-                    # merge old data with new data
-                    prev = pd.read_sql_query(
-                        f"select * from {proc.__name__}",
-                        conn,
-                        index_col="index",
-                    )
-                    dat = pd.concat([prev, data])
-                    # convert type as pandas needs it
-                    dat.index = pd.to_datetime(dat.index, utc=True)
-                    dat.to_sql(proc.__name__, conn, if_exists="replace")
-                    log.info(f"replaced table {proc.__name__}")
+            self.append_to_table(data, proc.__name__)
         except NoMatchingDataError:
             log.error(f"no data found for {proc.__name__}, {country}, {start}, {end}")
         except Exception as e:
@@ -397,21 +405,9 @@ class EntsoeCrawler(ContinuousCrawler):
 
         data.columns = [x.lower() for x in data.columns]
         try:
-            with self.engine.begin() as conn:
-                data.to_sql(proc.__name__, conn, if_exists="append")
+            self.append_to_table(data, proc.__name__)
         except Exception as e:
             log.error(f"error saving crossboarders {e}")
-            with self.engine.begin() as conn:
-                prev = pd.read_sql_query(
-                    f"select * from {proc.__name__}",
-                    conn,
-                    index_col="index",
-                )
-
-                ges = pd.concat([prev, data])
-                ges.index = pd.to_datetime(ges.index, utc=True)
-                ges.to_sql(proc.__name__, conn, if_exists="replace")
-            log.info("fixed error by adding new columns to crossborders")
 
         self.create_single_hypertable_if_not_exists(proc.__name__, "index")
 
