@@ -12,6 +12,7 @@ and here: https://github.com/openego/eGon-data
 """
 
 import logging
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -22,6 +23,8 @@ from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load
 
 log = logging.getLogger("oep")
 log.setLevel(logging.INFO)
+
+REQUEST_TIMEOUT = 300
 
 oep_ego_file_path = Path(__file__).parent.parent / "oep_ego.csv"
 # the file is about 10GB of size
@@ -48,9 +51,20 @@ class OepCrawler(DownloadOnceCrawler):
         if oep_ego_file_path.is_file():
             log.info("%s already exists", oep_ego_file_path)
         else:
-            oep_ego_file = requests.get(ego_url)
-            with open(oep_ego_file_path, "wb") as f:
-                f.write(oep_ego_file.content)
+            part_path = oep_ego_file_path.with_name(oep_ego_file_path.name + ".part")
+            try:
+                with requests.get(
+                    ego_url, stream=True, timeout=REQUEST_TIMEOUT
+                ) as resp:
+                    resp.raise_for_status()
+                    with open(part_path, "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                            f.write(chunk)
+                os.replace(part_path, oep_ego_file_path)
+            except Exception:
+                # a broken download leaves up to 10 GB behind
+                part_path.unlink(missing_ok=True)
+                raise
             log.info("downloaded ego_demand to %s", oep_ego_file_path)
         demand = pd.read_csv(oep_ego_file_path)
         # delete geometries, as NUTS is available in public already
