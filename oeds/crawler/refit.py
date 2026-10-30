@@ -11,15 +11,21 @@ REFIT (An electrical load measurements dataset of United Kingdom households from
 This dataset is typically used for NILM applications (non-intrusive load monitoring).
 """
 
-import io
 import logging
+import tempfile
+from pathlib import Path
 
 import cloudscraper
 import pandas as pd
 import py7zr
 from sqlalchemy import text
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, DownloadOnceCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    DownloadOnceCrawler,
+    copy_insert,
+    load_config,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -43,6 +49,7 @@ REFIT_URL = (
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 }
+STAGING_TABLE = "refit_staging"
 
 
 class RefitCrawler(DownloadOnceCrawler):
@@ -67,20 +74,45 @@ class RefitCrawler(DownloadOnceCrawler):
     def download_refit_data(self):
         # 2025-08-19 this only works with cloudflare circumvention
         scraper = cloudscraper.create_scraper()
-        response = scraper.get(REFIT_URL, headers=headers)
-        response.raise_for_status()
-        log.info("Write refit to database")
-        with py7zr.SevenZipFile(io.BytesIO(response.content), mode="r") as z:
-            names = z.getnames()
-            for name in names:
-                file = z.read([name])[name]
-                df = pd.read_csv(file, index_col="Time", parse_dates=["Time"])
-                del df["Unix"]
-                df["house"] = name
-                log.info(f"writing {name}")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            archive = Path(tmpdir) / "refit.7z"
+            with scraper.get(REFIT_URL, headers=headers, stream=True) as response:
+                response.raise_for_status()
+                with open(archive, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        f.write(chunk)
+            target = Path(tmpdir) / "csv"
+            with py7zr.SevenZipFile(archive, mode="r") as z:
+                # py7zr >= 1.0 has no read(), extract to disk instead
+                names = [info.filename for info in z.list() if not info.is_directory]
+                z.extractall(path=target)
+            log.info("Write refit to database")
+            self.write_houses(target, names)
 
-                with self.engine.begin() as conn:
-                    df.to_sql("refit", conn, if_exists="append", chunksize=10000)
+    def write_houses(self, target: Path, names: list[str]):
+        # houses are appended to a staging table, which replaces refit only when
+        # complete, so an interrupted crawl is not mistaken for a finished one
+        with self.engine.begin() as conn:
+            conn.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE}"))
+        for name in names:
+            df = pd.read_csv(target / name)
+            # the Time column is UK local time, Unix is epoch seconds (UTC)
+            df["Time"] = pd.to_datetime(df["Unix"], unit="s", utc=True)
+            df = df.drop(columns="Unix").set_index("Time")
+            df["house"] = name
+            log.info(f"writing {name}")
+
+            with self.engine.begin() as conn:
+                df.to_sql(
+                    STAGING_TABLE,
+                    conn,
+                    if_exists="append",
+                    chunksize=500000,
+                    method=copy_insert if conn.dialect.name == "postgresql" else None,
+                )
+        with self.engine.begin() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS refit"))
+            conn.execute(text(f"ALTER TABLE {STAGING_TABLE} RENAME TO refit"))
 
 
 if __name__ == "__main__":

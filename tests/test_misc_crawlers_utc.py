@@ -24,3 +24,9 @@ def test_london_datetime_is_written_as_utc():
     assert pd.to_datetime(df["DateTime"], utc=True).iloc[0] == pd.Timestamp(
         "2013-10-27 00:00", tz="UTC"
     )
+
+
+def test_unix_seconds_are_utc():
+    ts = pd.to_datetime(pd.Series([1382832000]), unit="s", utc=True)
+    assert ts.dt.tz is not None
+    assert ts.iloc[0] == pd.Timestamp("2013-10-27 00:00", tz="UTC")
