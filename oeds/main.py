@@ -19,9 +19,9 @@ log = logging.getLogger("OEDS")
 log.setLevel(logging.INFO)
 
 
-def start_crawler(crawler: BaseCrawler):
+def start_crawler(crawler: BaseCrawler, recreate: bool = False):
     if isinstance(crawler, DownloadOnceCrawler):
-        crawler.crawl_structural()
+        crawler.crawl_structural(recreate=recreate)
     if isinstance(crawler, ContinuousCrawler):
         crawler.crawl_temporal()
 
@@ -46,6 +46,11 @@ def cli(args=None):
         choices=set(logging._nameToLevel.keys()),
     )
     parser.add_argument("--config", type=str, help="Path to config.yaml")
+    parser.add_argument(
+        "--recreate",
+        action="store_true",
+        help="download snapshot data (e.g. mastr) again, even if it exists",
+    )
     parsed_args = parser.parse_args(args)
 
     logging.basicConfig(level=parsed_args.loglevel)
@@ -74,22 +79,27 @@ def cli(args=None):
     elif ("db_uri" not in config or not config["db_uri"]) and os.getenv("OEDS_DB_URI"):
         config["db_uri"] = os.getenv("OEDS_DB_URI")
 
+    failed = []
     for crawler_name in selected_crawlers:
         log.info("Starting crawler: %s", crawler_name)
         try:
             crawler_class = crawlers[crawler_name]
-        except Exception:
+        except KeyError:
             raise ValueError(f"crawler {crawler_name} does not exist")
 
-        crawler = crawler_class(crawler_name, config)
-        start_crawler(crawler)
+        # one failing crawler must not abort the others
+        try:
+            crawler = crawler_class(crawler_name, config)
+            start_crawler(crawler, recreate=parsed_args.recreate)
+        except Exception:
+            log.exception("crawler %s failed", crawler_name)
+            failed.append(crawler_name)
+
+    if failed:
+        log.error("%d crawler(s) failed: %s", len(failed), ", ".join(failed))
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    from oeds.crawler import crawlers
-
-    config = load_config(Path(__file__).parent.parent / "config.yml")
-    for schema_name, crawler_class in crawlers.items():
-        crawler = crawler_class(schema_name, config)
-        start_crawler(crawler)
+    raise SystemExit(cli())
