@@ -11,7 +11,6 @@ entsoe-py
 geoalchemy2
 geopandas
 geopy
-git+https://github.com/maurerle/roiti-gie@maurerle
 jao-py
 json5
 lxml
@@ -22,12 +21,14 @@ open-mastr
 pandas
 psycopg[binary]
 tzdata # for additional timezones like Europe/Kiev in entsoe
-py7zr<1
+py7zr>=0.20.0
 pyarrow
+pyogrio
 pygrib
 pyshp
 python-dateutil
 requests
+roiti-gie>=1.0.1
 scipy
 shapely
 sqlalchemy
