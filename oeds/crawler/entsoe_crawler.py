@@ -61,6 +61,10 @@ neighbours = pd.DataFrame({"from": from_n, "to": to_n})
 
 all_countries = [e.name for e in Area]
 
+# seconds to wait for the server, entsoe-py waits forever by default
+REQUEST_TIMEOUT = 300
+MAX_ATTEMPTS = 5
+
 
 def sanitize_series(seriesname):
     """
@@ -140,7 +144,9 @@ class EntsoeCrawler(ContinuousCrawler):
 
     def __init__(self, schema_name, config):
         super().__init__(schema_name, config)
-        self.client = EntsoePandasClient(api_key=self.config["entsoe_api_key"])
+        self.client = EntsoePandasClient(
+            api_key=self.config["entsoe_api_key"], timeout=REQUEST_TIMEOUT
+        )
         self.init_base_sql()
         self.save_power_system_data()
 
@@ -160,6 +166,29 @@ class EntsoeCrawler(ContinuousCrawler):
             psrtype.columns = [x.lower() for x in psrtype.columns]
             areas.to_sql("areas", conn, if_exists="replace")
             psrtype.to_sql("psrtype", conn, if_exists="replace")
+
+    def query_with_retries(self, proc, *args, start, end):
+        """
+        Calls proc and retries on server and connection errors with increasing delay.
+        Raises NoMatchingDataError, InvalidBusinessParameterError and HTTP 400 directly.
+        """
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                return proc(*args, start=start, end=end)
+            except (NoMatchingDataError, InvalidBusinessParameterError):
+                raise
+            except HTTPError as e:
+                if e.response is not None and e.response.status_code == 400:
+                    raise
+                error = e
+            except Exception as e:
+                error = e
+            if attempt == MAX_ATTEMPTS:
+                raise error
+            log.info(
+                f"retrying ({attempt}/{MAX_ATTEMPTS - 1}) {proc.__name__}, {args}, {start}, {end}: {repr(error)}"
+            )
+            time.sleep(30 * attempt)
 
     def fetch_and_write_entsoe_df_to_db(self, country, proc, start, end):
         """
@@ -181,23 +210,9 @@ class EntsoeCrawler(ContinuousCrawler):
 
         """
         try:
-            try:
-                data = pd.DataFrame(proc(country, start=start, end=end))
-            except NoMatchingDataError:
-                raise
-            except HTTPError as e:
-                log.error(f"{e.response.status_code} - {e.response.reason}")
-                if e.response.status_code == 400:
-                    raise
-                else:
-                    log.info(f"retrying HTTPError: {repr(e)}, {start}, {end}")
-                    time.sleep(10)
-                    data = pd.DataFrame(proc(country, start=start, end=end))
-
-            except Exception as e:
-                log.info(f"retrying Generic Error: {repr(e)}, {start}, {end}")
-                time.sleep(10)
-                data = pd.DataFrame(proc(country, start=start, end=end))
+            data = pd.DataFrame(
+                self.query_with_retries(proc, country, start=start, end=end)
+            )
 
             # replace spaces and invalid chars in column names
             data.columns = [sanitize_series(x).lower() for x in data.columns]
@@ -369,7 +384,9 @@ class EntsoeCrawler(ContinuousCrawler):
             for n2 in NEIGHBOURS[n1]:
                 try:
                     if (len(n1) == 2 and len(n2) == 2) or allZones:
-                        dataN = proc(n1, n2, start=start_, end=end_)
+                        dataN = self.query_with_retries(
+                            proc, n1, n2, start=start_, end=end_
+                        )
                         data[n1 + "-" + n2] = dataN
                 except (NoMatchingDataError, InvalidBusinessParameterError):
                     # log.info('no data found for ',n1,n2)
