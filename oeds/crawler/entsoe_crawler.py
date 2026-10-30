@@ -11,6 +11,9 @@ More information can be found here: https://transparencyplatform.zendesk.com/hc/
 
 Rate Limit information found here: https://transparencyplatform.zendesk.com/hc/en-us/articles/12783148966036-API-Rate-Limit-Part-1
 Primary Limit: 400 requests per minute per user account (API token).
+
+Optional config keys (or environment variables):
+- entsoe_countries (ENTSOE_COUNTRIES): list or comma-separated string of area names to crawl, e.g. "DE_LU,DE_AT_LU,DE" (default: all areas)
 """
 
 import logging
@@ -147,6 +150,16 @@ class EntsoeCrawler(ContinuousCrawler):
         self.client = EntsoePandasClient(
             api_key=self.config["entsoe_api_key"], timeout=REQUEST_TIMEOUT
         )
+
+        countries = self.config.get("entsoe_countries") or os.getenv("ENTSOE_COUNTRIES")
+        if isinstance(countries, str):
+            countries = [c.strip() for c in countries.split(",") if c.strip()]
+        self.countries = countries or all_countries
+        unknown = set(self.countries) - set(all_countries)
+        if unknown:
+            raise ValueError(f"unknown ENTSO-E areas: {sorted(unknown)}")
+        log.info(f"crawling {len(self.countries)} areas")
+
         self.init_base_sql()
         self.save_power_system_data()
 
@@ -358,7 +371,7 @@ class EntsoeCrawler(ContinuousCrawler):
         if create_hypertable:
             self.create_single_hypertable_if_not_exists(proc.__name__, "index")
 
-    def pull_crossborders(self, start, end, allZones=True):
+    def pull_crossborders(self, start, end, allZones=True, countries=None):
         """
         Pulls transmissions across borders from entsoe
 
@@ -370,11 +383,14 @@ class EntsoeCrawler(ContinuousCrawler):
             param end:
         allZones :
             Default value = True)
+        countries : list[str]
+            only borders where at least one side is in countries (default: self.countries)
 
         Returns
         -------
 
         """
+        countries = countries or self.countries
         proc = self.client.query_crossborder_flows
         start, end = self.get_latest_crawled_timestamp(proc.__name__, start, end)
         log.info(f"****** {proc.__name__} *******")
@@ -390,6 +406,8 @@ class EntsoeCrawler(ContinuousCrawler):
 
         for n1 in tqdm(NEIGHBOURS):
             for n2 in NEIGHBOURS[n1]:
+                if n1 not in countries and n2 not in countries:
+                    continue
                 try:
                     if (len(n1) == 2 and len(n2) == 2) or allZones:
                         dataN = self.query_with_retries(
@@ -551,7 +569,7 @@ class EntsoeCrawler(ContinuousCrawler):
         self,
         begin: datetime | None = None,
         end: datetime | None = None,
-        countries=all_countries,
+        countries=None,
     ):
         """
         Runs everything which is needed to update the database and pull the data since the last successful pull.
@@ -559,11 +577,13 @@ class EntsoeCrawler(ContinuousCrawler):
         Args:
             begin (datetime): included begin datetime from which to crawl
             end (datetime): exclusive end datetime until which to crawl
+            countries (list[str]): areas to crawl (default: self.countries)
 
         Returns
         -------
 
         """
+        countries = countries or self.countries
         proc_cap = self.client.query_installed_generation_capacity
         start_, end_ = self.get_latest_crawled_timestamp(proc_cap.__name__, begin, end)
         delta = end_ - start_
@@ -590,11 +610,11 @@ class EntsoeCrawler(ContinuousCrawler):
             start_, end_ = self.get_latest_crawled_timestamp(proc.__name__, begin, end)
             self.download_entsoe(countries, proc, start_, end_)
 
-        self.pull_crossborders(begin, end)
+        self.pull_crossborders(begin, end, countries=countries)
 
-        plant_countries = self.countries_with_plant_data()
+        plant_countries = self.countries_with_plant_data(countries)
 
-        self.download_entsoe_plant_data(plant_countries[:], begin, end)
+        self.download_entsoe_plant_data(plant_countries, begin, end)
 
         log.info("****** finished updating ENTSO-E *******")
 

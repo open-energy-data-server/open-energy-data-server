@@ -6,6 +6,8 @@ db_uri: "postgresql://opendata:opendata@localhost:6432/opendata?options=--search
 # for local sqlite database
 # db_uri: "sqlite:///{DBNAME}.db"
 entsoe_api_key: "YOUR_ENTSOE_API_KEY"
+# optional: only crawl these ENTSO-E areas (default: all), e.g. Germany
+# entsoe_countries: "DE,DE_LU,DE_AT_LU,DE_50HZ,DE_AMPRION,DE_TENNET,DE_TRANSNET,DE_AMP_LU"
 gie_api_key: "YOUR_GIE_API_KEY"
 ipnt_client_id: "YOUR_IPNT_CLIENT_ID"
 ipnt_client_secret: "YOUR_IPNT_CLIENT_SECRET"
