@@ -74,22 +74,27 @@ def cli(args=None):
     elif ("db_uri" not in config or not config["db_uri"]) and os.getenv("OEDS_DB_URI"):
         config["db_uri"] = os.getenv("OEDS_DB_URI")
 
+    failed = []
     for crawler_name in selected_crawlers:
         log.info("Starting crawler: %s", crawler_name)
         try:
             crawler_class = crawlers[crawler_name]
-        except Exception:
+        except KeyError:
             raise ValueError(f"crawler {crawler_name} does not exist")
 
-        crawler = crawler_class(crawler_name, config)
-        start_crawler(crawler)
+        # one failing crawler must not abort the others
+        try:
+            crawler = crawler_class(crawler_name, config)
+            start_crawler(crawler)
+        except Exception:
+            log.exception("crawler %s failed", crawler_name)
+            failed.append(crawler_name)
+
+    if failed:
+        log.error("%d crawler(s) failed: %s", len(failed), ", ".join(failed))
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    from oeds.crawler import crawlers
-
-    config = load_config(Path(__file__).parent.parent / "config.yml")
-    for schema_name, crawler_class in crawlers.items():
-        crawler = crawler_class(schema_name, config)
-        start_crawler(crawler)
+    raise SystemExit(cli())
