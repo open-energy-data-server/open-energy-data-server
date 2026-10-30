@@ -5,7 +5,7 @@
 import bz2
 import logging
 import multiprocessing as mp
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import geopandas as gpd
@@ -17,7 +17,12 @@ from shapely.geometry import Point
 from sqlalchemy import text
 from tqdm import tqdm
 
-from oeds.base_crawler import DEFAULT_CONFIG_LOCATION, ContinuousCrawler, load_config
+from oeds.base_crawler import (
+    DEFAULT_CONFIG_LOCATION,
+    ContinuousCrawler,
+    as_utc,
+    load_config,
+)
 
 log = logging.getLogger("openDWD_cosmo")
 log.setLevel(logging.INFO)
@@ -39,6 +44,7 @@ to_download = dict(
 geo_path = Path(__file__).parent.parent / "shapes" / "NUTS_RG_01M_2021_4326.shp"
 DOWNLOAD_DIR = Path(__file__).parent.parent / "grb_files"
 DATA_PATH = Path(__file__).parent.parent / "data"
+COSMO_START = datetime(1995, 1, 1, tzinfo=UTC)
 
 geo_information = None
 if geo_path.exists():
@@ -82,7 +88,7 @@ class DWDCrawler(ContinuousCrawler):
             conn.execute(
                 text(
                     "CREATE TABLE IF NOT EXISTS cosmo( "
-                    "time timestamp without time zone NOT NULL, "
+                    "time timestamptz NOT NULL, "
                     "nuts text, "
                     "country text, "
                     "temp_air double precision, "
@@ -134,8 +140,9 @@ class DWDCrawler(ContinuousCrawler):
             )
             df = pd.DataFrame(df.groupby(["nuts"])[key].mean())
             df["nuts"] = df.index
+            # COSMO-REA6 is in UTC
             df["time"] = pd.to_datetime(
-                f"{year}{month}", format="%Y%m"
+                f"{year}{month}", format="%Y%m", utc=True
             ) + pd.DateOffset(hours=k)
             data_frames.append(df)
 
@@ -145,15 +152,29 @@ class DWDCrawler(ContinuousCrawler):
 
         return pd.concat(data_frames, ignore_index=True)
 
+    def get_latest_data(self) -> datetime:
+        with self.engine.begin() as conn:
+            latest = conn.execute(text("SELECT max(time) FROM cosmo")).scalar()
+        return as_utc(latest) if latest else COSMO_START
+
+    def get_first_data(self) -> datetime:
+        with self.engine.begin() as conn:
+            first = conn.execute(text("SELECT min(time) FROM cosmo")).scalar()
+        return as_utc(first) if first else COSMO_START
+
     def crawl_from_to(self, begin: datetime, end: datetime):
         date_range = pd.date_range(
-            start=start,
-            end=end,
+            start=as_utc(begin)
+            .tz_localize(None)
+            .to_period("M")
+            .to_timestamp()
+            .tz_localize("UTC"),
+            end=as_utc(end),
             freq="MS",
             # month start
         )
-        with self.engine.begin() as conn:
-            for date in tqdm(date_range):
+        for date in tqdm(date_range):
+            with self.engine.begin() as conn:
                 try:
                     df = pd.DataFrame(columns=[key for key in to_download.keys()])
                     for key in to_download.keys():
@@ -173,6 +194,14 @@ class DWDCrawler(ContinuousCrawler):
                     del df["time"], df["nuts"]
                     log.info(
                         f"built data for  {date.month_name()} and start import to db"
+                    )
+                    # data is stored per month: replace it if it exists
+                    conn.execute(
+                        text("DELETE FROM cosmo WHERE time >= :first AND time < :next"),
+                        {
+                            "first": date.to_pydatetime(),
+                            "next": (date + pd.DateOffset(months=1)).to_pydatetime(),
+                        },
                     )
                     df.to_sql("cosmo", con=conn, if_exists="append")
                     log.info("import in db complete --> start with next hour")
@@ -211,6 +240,6 @@ if __name__ == "__main__":
     crawler.create_table()
     crawler.create_hypertable_if_not_exists()
 
-    start = datetime(1995, 1, 1)
-    end = datetime(1995, 12, 1)
+    start = datetime(1995, 1, 1, tzinfo=UTC)
+    end = datetime(1995, 12, 1, tzinfo=UTC)
     crawler.crawl_from_to(start, end)
