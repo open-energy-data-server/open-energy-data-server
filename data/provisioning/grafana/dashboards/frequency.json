@@ -1,0 +1,889 @@
+{
+  "uid": "oeds-frequency",
+  "title": "OEDS Grid Frequency",
+  "tags": [
+    "oeds",
+    "grid",
+    "frequency",
+    "germany"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2018-01-01T00:00:00.000Z",
+    "to": "2018-02-01T00:00:00.000Z"
+  },
+  "description": "German grid frequency in Hz, 1 second resolution, 2011 to 2019-08 (TransnetBW archive).",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "frequency.frequency",
+      "description": "First and latest timestamp and approximate number of 1 s samples. The source archive ends in 2019-08, so there is no live data. Large time ranges are slow: 253 million rows, keep the range to a few weeks.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(index))*1000)::bigint as \"First\", (extract(epoch from max(index))*1000)::bigint as \"Latest\", approximate_row_count('frequency.frequency'::regclass) as \"Rows (approx.)\"\nFROM frequency.frequency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Selected range: statistics",
+      "description": "Statistics of the valid samples in the selected range. Nominal frequency is 50 Hz, the normal band is +-50 mHz, +-200 mHz is the limit of the normal operation range (ENTSO-E).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(frequency) AS \"Mean\", stddev(frequency)*1000 AS \"Std. dev.\", min(frequency) AS \"Min\", max(frequency) AS \"Max\", 100.0*count(*) FILTER (WHERE abs(frequency-50) > 0.05)/count(*) AS \"Outside +-50 mHz\", 100.0*count(*) FILTER (WHERE abs(frequency-50) > 0.2)/count(*) AS \"Outside +-200 mHz\"\nFROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mean"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Std. dev."
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: mHz"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Min"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Outside +-50 mHz"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Outside +-200 mHz"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "Frequency in the selected range",
+      "collapsed": false,
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Grid frequency (min / mean / max per bin)",
+      "description": "Minimum, mean and maximum of the 1 s values per time bin. The dashed lines mark the +-200 mHz limit. The raw data contains sentinel values (0 Hz for missing readings, 48 Hz and 52 Hz as limits, e.g. a constant 48 Hz in 2015-04 to 2015-06). Panels use only values between 49 and 51 Hz. Early 2011 data has 4 s resolution. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,$__interval), min(frequency) AS \"Min\", avg(frequency) AS \"Mean\", max(frequency) AS \"Max\"\nFROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none",
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "unit": "hertz",
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "transparent",
+                "value": 49.8
+              },
+              {
+                "color": "red",
+                "value": 50.2
+              }
+            ]
+          },
+          "min": 49.75,
+          "max": 50.25
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Frequency histogram",
+      "description": "Number of seconds per 5 mHz class between 49.8 and 50.2 Hz (the first and last class contain everything beyond). The distribution is close to normal around 50.00 Hz.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(49.8 + (greatest(least(width_bucket(frequency, 49.8, 50.2, 80), 80), 1) - 0.5) * 0.005, 'FM00.000') AS \"Frequency (Hz)\", count(*) AS \"Seconds\"\nFROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Frequency (Hz)",
+        "orientation": "vertical",
+        "xTickLabelRotation": -90,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Share of time outside the band per day",
+      "description": "Share of seconds per day with |f - 50 Hz| above 50 mHz, 100 mHz and 200 mHz.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,'1d'), 100.0*count(*) FILTER (WHERE abs(frequency-50) > 0.05)/count(*) AS \"> 50 mHz\", 100.0*count(*) FILTER (WHERE abs(frequency-50) > 0.1)/count(*) AS \"> 100 mHz\", 100.0*count(*) FILTER (WHERE abs(frequency-50) > 0.2)/count(*) AS \"> 200 mHz\"\nFROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily standard deviation",
+      "description": "Standard deviation of the frequency per day in mHz: a measure of how volatile the balance between generation and load was.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,'1d'), stddev(frequency)*1000 AS \"Std. dev.\", min(frequency) AS \"Daily min (Hz)\", max(frequency) AS \"Daily max (Hz)\" FROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(Hz\\)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "min",
+                "value": 49.7
+              },
+              {
+                "id": "max",
+                "value": 50.3
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "table",
+      "title": "Largest excursions",
+      "description": "The 10 lowest and 10 highest valid 1 s values in the selected range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "(SELECT (extract(epoch from index)*1000)::bigint AS \"Time\", frequency AS \"Frequency\" FROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 ORDER BY frequency ASC LIMIT 10)\nUNION ALL\n(SELECT (extract(epoch from index)*1000)::bigint, frequency FROM frequency.frequency WHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 ORDER BY frequency DESC LIMIT 10)\nORDER BY 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Frequency"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "hertz"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 12,
+        "y": 23,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Daily pattern",
+      "collapsed": false,
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "trend",
+      "title": "Mean deviation by minute of the day",
+      "description": "Mean frequency deviation from 50 Hz (mHz) for each minute of the local day (Europe/Berlin) in the selected range. Typical saw tooth: deviations build up around the full hour when market schedules of power plants change in steps while the load changes smoothly.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(hour from index AT TIME ZONE 'Europe/Berlin')*60 + extract(minute from index AT TIME ZONE 'Europe/Berlin'))::int AS \"Minute of day\", (avg(frequency)-50)*1000 AS \"Mean deviation (mHz)\" FROM frequency.frequency\nWHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Minute of day",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Volatility by hour of the day",
+      "description": "Standard deviation (mHz) and mean absolute deviation (mHz) of the frequency by local hour. Larger values around the morning and evening ramps.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from index AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", stddev(frequency)*1000 AS \"Std. dev. (mHz)\", avg(abs(frequency-50))*1000 AS \"Mean abs. deviation (mHz)\" FROM frequency.frequency\nWHERE $__timeFilter(index) AND frequency BETWEEN 49 AND 51 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Long term (sampled)",
+      "collapsed": false,
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Monthly volatility, sampled",
+      "description": "Standard deviation of the frequency (mHz) and share of time outside +-50 mHz, computed from a sample of 6 hours (00:00-06:00 UTC) on the 15th of every month over the whole archive 2011 to 2019, to stay fast on 253 million rows. Independent of the time range. Months with constant 48 Hz/0 Hz sentinels are excluded by the valid filter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT time, stddev(frequency)*1000 AS \"Std. dev. (mHz)\", 100.0*count(*) FILTER (WHERE abs(frequency-50) > 0.05)/count(*) AS \"Outside +-50 mHz (%)\"\nFROM (\nSELECT '2011-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-01-15 00:00+00' AND index < '2011-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-02-15 00:00+00' AND index < '2011-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-03-15 00:00+00' AND index < '2011-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-04-15 00:00+00' AND index < '2011-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-05-15 00:00+00' AND index < '2011-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-06-15 00:00+00' AND index < '2011-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-07-15 00:00+00' AND index < '2011-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-08-15 00:00+00' AND index < '2011-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-09-15 00:00+00' AND index < '2011-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-10-15 00:00+00' AND index < '2011-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-11-15 00:00+00' AND index < '2011-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2011-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2011-12-15 00:00+00' AND index < '2011-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-01-15 00:00+00' AND index < '2012-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-02-15 00:00+00' AND index < '2012-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-03-15 00:00+00' AND index < '2012-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-04-15 00:00+00' AND index < '2012-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-05-15 00:00+00' AND index < '2012-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-06-15 00:00+00' AND index < '2012-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-07-15 00:00+00' AND index < '2012-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-08-15 00:00+00' AND index < '2012-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-09-15 00:00+00' AND index < '2012-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-10-15 00:00+00' AND index < '2012-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-11-15 00:00+00' AND index < '2012-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2012-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2012-12-15 00:00+00' AND index < '2012-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-01-15 00:00+00' AND index < '2013-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-02-15 00:00+00' AND index < '2013-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-03-15 00:00+00' AND index < '2013-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-04-15 00:00+00' AND index < '2013-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-05-15 00:00+00' AND index < '2013-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-06-15 00:00+00' AND index < '2013-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-07-15 00:00+00' AND index < '2013-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-08-15 00:00+00' AND index < '2013-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-09-15 00:00+00' AND index < '2013-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-10-15 00:00+00' AND index < '2013-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-11-15 00:00+00' AND index < '2013-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2013-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2013-12-15 00:00+00' AND index < '2013-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-01-15 00:00+00' AND index < '2014-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-02-15 00:00+00' AND index < '2014-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-03-15 00:00+00' AND index < '2014-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-04-15 00:00+00' AND index < '2014-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-05-15 00:00+00' AND index < '2014-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-06-15 00:00+00' AND index < '2014-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-07-15 00:00+00' AND index < '2014-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-08-15 00:00+00' AND index < '2014-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-09-15 00:00+00' AND index < '2014-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-10-15 00:00+00' AND index < '2014-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-11-15 00:00+00' AND index < '2014-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2014-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2014-12-15 00:00+00' AND index < '2014-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-01-15 00:00+00' AND index < '2015-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-02-15 00:00+00' AND index < '2015-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-03-15 00:00+00' AND index < '2015-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-04-15 00:00+00' AND index < '2015-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-05-15 00:00+00' AND index < '2015-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-06-15 00:00+00' AND index < '2015-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-07-15 00:00+00' AND index < '2015-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-08-15 00:00+00' AND index < '2015-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-09-15 00:00+00' AND index < '2015-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-10-15 00:00+00' AND index < '2015-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-11-15 00:00+00' AND index < '2015-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2015-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2015-12-15 00:00+00' AND index < '2015-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-01-15 00:00+00' AND index < '2016-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-02-15 00:00+00' AND index < '2016-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-03-15 00:00+00' AND index < '2016-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-04-15 00:00+00' AND index < '2016-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-05-15 00:00+00' AND index < '2016-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-06-15 00:00+00' AND index < '2016-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-07-15 00:00+00' AND index < '2016-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-08-15 00:00+00' AND index < '2016-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-09-15 00:00+00' AND index < '2016-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-10-15 00:00+00' AND index < '2016-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-11-15 00:00+00' AND index < '2016-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2016-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2016-12-15 00:00+00' AND index < '2016-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-01-15 00:00+00' AND index < '2017-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-02-15 00:00+00' AND index < '2017-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-03-15 00:00+00' AND index < '2017-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-04-15 00:00+00' AND index < '2017-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-05-15 00:00+00' AND index < '2017-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-06-15 00:00+00' AND index < '2017-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-07-15 00:00+00' AND index < '2017-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-08-15 00:00+00' AND index < '2017-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-09-15 00:00+00' AND index < '2017-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-10-15 00:00+00' AND index < '2017-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-11-15 00:00+00' AND index < '2017-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2017-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2017-12-15 00:00+00' AND index < '2017-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-01-15 00:00+00' AND index < '2018-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-02-15 00:00+00' AND index < '2018-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-03-15 00:00+00' AND index < '2018-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-04-15 00:00+00' AND index < '2018-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-05-15 00:00+00' AND index < '2018-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-06-15 00:00+00' AND index < '2018-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-07-15 00:00+00' AND index < '2018-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-08-15 00:00+00' AND index < '2018-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-09-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-09-15 00:00+00' AND index < '2018-09-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-10-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-10-15 00:00+00' AND index < '2018-10-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-11-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-11-15 00:00+00' AND index < '2018-11-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2018-12-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2018-12-15 00:00+00' AND index < '2018-12-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-01-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-01-15 00:00+00' AND index < '2019-01-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-02-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-02-15 00:00+00' AND index < '2019-02-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-03-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-03-15 00:00+00' AND index < '2019-03-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-04-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-04-15 00:00+00' AND index < '2019-04-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-05-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-05-15 00:00+00' AND index < '2019-05-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-06-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-06-15 00:00+00' AND index < '2019-06-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-07-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-07-15 00:00+00' AND index < '2019-07-15 06:00+00' AND frequency BETWEEN 49 AND 51\nUNION ALL\nSELECT '2019-08-15'::timestamptz AS time, frequency FROM frequency.frequency WHERE index >= '2019-08-15 00:00+00' AND index < '2019-08-15 06:00+00' AND frequency BETWEEN 49 AND 51\n) s GROUP BY time ORDER BY time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 24,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

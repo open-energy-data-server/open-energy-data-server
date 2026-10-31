@@ -1,0 +1,918 @@
+{
+  "uid": "oeds-windmodel",
+  "title": "OEDS Wind Turbine Power Curves",
+  "tags": [
+    "oeds",
+    "wind",
+    "turbine",
+    "power-curve"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "description": "Power curves of about 400 wind turbine models from wind-turbine-models.com (power in kW over wind speed 1-21 m/s in 0.01 m/s steps).",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "t1",
+        "label": "Turbine 1",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT column_name AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='windmodel' AND table_name='turbine_data' AND column_name <> 'wind_speed' ORDER BY 1",
+        "definition": "SELECT column_name AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='windmodel' AND table_name='turbine_data' AND column_name <> 'wind_speed' ORDER BY 1",
+        "current": {
+          "text": "Vestas V164-8.0",
+          "value": "Vestas V164-8.0"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": ""
+      },
+      {
+        "type": "query",
+        "name": "t2",
+        "label": "Turbine 2",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT column_name AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='windmodel' AND table_name='turbine_data' AND column_name <> 'wind_speed' ORDER BY 1",
+        "definition": "SELECT column_name AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='windmodel' AND table_name='turbine_data' AND column_name <> 'wind_speed' ORDER BY 1",
+        "current": {
+          "text": "Enercon E-82 E2 2.300",
+          "value": "Enercon E-82 E2 2.300"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": ""
+      },
+      {
+        "type": "query",
+        "name": "t3",
+        "label": "Turbine 3",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT column_name AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='windmodel' AND table_name='turbine_data' AND column_name <> 'wind_speed' ORDER BY 1",
+        "definition": "SELECT column_name AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='windmodel' AND table_name='turbine_data' AND column_name <> 'wind_speed' ORDER BY 1",
+        "current": {
+          "text": "Nordex N117 Gamma",
+          "value": "Nordex N117 Gamma"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "windmodel.turbine_data",
+      "description": "Static power curve table: wind speed range, number of curve points and turbine models with a non-zero curve. No time dimension.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"Curve points\", min(wind_speed) AS \"Min wind speed (m/s)\", max(wind_speed) AS \"Max wind speed (m/s)\", (SELECT count(*) FROM (SELECT key AS turbine, max(value::float) AS rated, min(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_in, max(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_out FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') GROUP BY key HAVING max(value::float) > 0) u) AS \"Turbine models\" FROM windmodel.turbine_data"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Curve points"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Turbine models"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Largest and smallest turbine",
+      "description": "Largest rated power and the number of models above 3 MW and below 100 kW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(rated)/1000 AS \"Largest rated power\", count(*) FILTER (WHERE rated > 3000) AS \"Models above 3 MW\", count(*) FILTER (WHERE rated < 100) AS \"Models below 100 kW\" FROM (SELECT key AS turbine, max(value::float) AS rated, min(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_in, max(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_out FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') GROUP BY key HAVING max(value::float) > 0) u"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Largest rated power"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MW"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Models above 3 MW"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Models below 100 kW"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "Selected turbines",
+      "collapsed": false,
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "trend",
+      "title": "Power curves",
+      "description": "Curves are interpolated by the crawler (polynomial of order 3, negative values set to 0), so low-wind parts can show small artefacts, e.g. a few kW below the real cut-in speed. Wind speed is the x axis in m/s. Compare up to three models with the variables at the top. Rated power is reached at 10-14 m/s; the curve drops to 0 at the cut-out speed.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT wind_speed AS \"Wind speed (m/s)\", (to_jsonb(t)->>'$t1')::float AS \"$t1\", (to_jsonb(t)->>'$t2')::float AS \"$t2\", (to_jsonb(t)->>'$t3')::float AS \"$t3\" FROM windmodel.turbine_data t ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "kwatt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Wind speed (m/s)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 10
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Normalised power curves",
+      "description": "Power divided by the rated power of each model (maximum of the curve): shows the shape independent of size; low specific-power turbines reach rated power later but start producing earlier relative to their size.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT wind_speed AS \"Wind speed (m/s)\", (to_jsonb(t)->>'$t1')::float / NULLIF((SELECT max(((to_jsonb(t)->>'$t1')::float)) FROM windmodel.turbine_data t), 0) AS \"$t1\", (to_jsonb(t)->>'$t2')::float / NULLIF((SELECT max(((to_jsonb(t)->>'$t2')::float)) FROM windmodel.turbine_data t), 0) AS \"$t2\", (to_jsonb(t)->>'$t3')::float / NULLIF((SELECT max(((to_jsonb(t)->>'$t3')::float)) FROM windmodel.turbine_data t), 0) AS \"$t3\" FROM windmodel.turbine_data t ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1.05
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Wind speed (m/s)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 10
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Capacity factor vs mean wind speed (Rayleigh)",
+      "description": "Estimated capacity factor if the wind follows a Rayleigh distribution (Weibull k=2) with the given annual mean wind speed at hub height, ignoring losses and air density. 7-8 m/s gives 30-45 % for modern turbines.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH c AS MATERIALIZED (SELECT wind_speed AS w, (to_jsonb(t)->>'$t1')::float AS v1, (to_jsonb(t)->>'$t2')::float AS v2, (to_jsonb(t)->>'$t3')::float AS v3 FROM windmodel.turbine_data t)\nSELECT u AS \"Mean wind speed (m/s)\", sum(v1 * (pi()/2) * (w/(u*u)) * exp(-pi()/4 * power(w/u, 2))) * 0.01 / NULLIF(max(v1), 0) AS \"$t1\", sum(v2 * (pi()/2) * (w/(u*u)) * exp(-pi()/4 * power(w/u, 2))) * 0.01 / NULLIF(max(v2), 0) AS \"$t2\", sum(v3 * (pi()/2) * (w/(u*u)) * exp(-pi()/4 * power(w/u, 2))) * 0.01 / NULLIF(max(v3), 0) AS \"$t3\"\nFROM c, generate_series(3, 11, 0.5) u GROUP BY u ORDER BY u"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Mean wind speed (m/s)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "table",
+      "title": "Key data of the selected turbines",
+      "description": "Rated power, first wind speed with output (cut-in), last wind speed with output (cut-out) and power at 6, 8 and 10 m/s. Based on the curve (> 0.5 kW), not on manufacturer data.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT k AS \"Turbine\", max(v) AS \"Rated power (kW)\", min(w) FILTER (WHERE v > 0.5) AS \"Cut-in (m/s)\", max(w) FILTER (WHERE v > 0.5) AS \"Last output (m/s)\", max(v) FILTER (WHERE abs(w-6) < 0.001) AS \"At 6 m/s (kW)\", max(v) FILTER (WHERE abs(w-8) < 0.001) AS \"At 8 m/s (kW)\", max(v) FILTER (WHERE abs(w-10) < 0.001) AS \"At 10 m/s (kW)\" FROM (SELECT '$t1' AS k, wind_speed AS w, (to_jsonb(t)->>'$t1')::float AS v FROM windmodel.turbine_data t UNION ALL SELECT '$t2' AS k, wind_speed AS w, (to_jsonb(t)->>'$t2')::float AS v FROM windmodel.turbine_data t UNION ALL SELECT '$t3' AS k, wind_speed AS w, (to_jsonb(t)->>'$t3')::float AS v FROM windmodel.turbine_data t) x GROUP BY k"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rated power (kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "At 6 m/s (kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "At 8 m/s (kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "At 10 m/s (kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatt"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "row",
+      "title": "All turbine models",
+      "collapsed": false,
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Rated power classes",
+      "description": "Number of turbine models per rated power class (maximum of the curve).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN rated < 100 THEN '1: <100 kW' WHEN rated < 500 THEN '2: 100-500 kW' WHEN rated < 1000 THEN '3: 0.5-1 MW' WHEN rated < 2000 THEN '4: 1-2 MW' WHEN rated < 3000 THEN '5: 2-3 MW' WHEN rated < 4000 THEN '6: 3-4 MW' WHEN rated < 6000 THEN '7: 4-6 MW' ELSE '8: >6 MW' END AS \"Class\", count(*) AS \"Models\" FROM (SELECT key AS turbine, max(value::float) AS rated, min(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_in, max(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_out FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') GROUP BY key HAVING max(value::float) > 0) u GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Class",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Cut-in wind speed",
+      "description": "Number of models by the lowest wind speed (m/s) at which the curve is above 0.5 kW. Resolution of the source curves is coarse (1 m/s), so most models start at 2-4 m/s.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad(floor(cut_in)::int::text, 2, '0') || ' m/s' AS \"Cut-in\", count(*) AS \"Models\" FROM (SELECT key AS turbine, max(value::float) AS rated, min(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_in, max(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_out FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') GROUP BY key HAVING max(value::float) > 0) u WHERE cut_in IS NOT NULL GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Cut-in",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 8,
+        "y": 26,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Largest turbines",
+      "description": "The 15 models with the highest rated power (kW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT turbine AS \"Turbine\", rated AS \"Rated power (kW)\" FROM (SELECT key AS turbine, max(value::float) AS rated, min(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_in, max(wind_speed) FILTER (WHERE value::float > 0.5) AS cut_out FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') GROUP BY key HAVING max(value::float) > 0) u ORDER BY 2 DESC LIMIT 15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "kwatt",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-green"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Turbine",
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 16,
+        "y": 26,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "xychart",
+      "title": "Rated power vs power at 8 m/s",
+      "description": "Each point is a turbine model: rated power (kW) against its power at 8 m/s. Points far below the diagonal trend have high rated wind speed.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(v) AS \"Rated power (kW)\", max(v) FILTER (WHERE abs(wind_speed - 8) < 0.001) AS \"Power at 8 m/s (kW)\" FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') AS j(k, val), LATERAL (SELECT val::float AS v) q GROUP BY k HAVING max(v) > 0"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "pointSize": {
+              "fixed": 4
+            },
+            "show": "points"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Rated wind speed",
+      "description": "Number of models by the wind speed (m/s) at which the curve first reaches 95 % of the rated power; indicates the design wind class.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad(floor(w)::int::text, 2, '0') || ' m/s' AS \"Rated wind speed\", count(*) AS \"Models\" FROM (SELECT key, min(wind_speed) FILTER (WHERE value::float >= 0.95 * m) AS w FROM (SELECT t.wind_speed, j.key, j.value, max(j.value::float) OVER (PARTITION BY j.key) AS m FROM windmodel.turbine_data t, jsonb_each_text(to_jsonb(t) - 'wind_speed') j) z WHERE m > 0 GROUP BY key) y WHERE w IS NOT NULL GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Rated wind speed",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

@@ -1,0 +1,579 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Zentrale Übersicht des Open Energy Data Servers: Aktualität der laufend aktualisierten Quellen, Datenbankgröße je Schema und Links zu allen OEDS-Dashboards. Alter = Zeit seit dem neuesten Zeitstempel der Haupttabelle (grün unter 2 Tagen, orange unter 7 Tagen, rot darüber). Quellen mit Datenverzug (z.B. Gas-Tage oder Netzbetreiberdaten) können dauerhaft etwas älter sein.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Aktualität der Datenquellen",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Alter der neuesten Daten",
+      "description": "Tage seit dem neuesten Datenpunkt der Haupttabelle je Quelle. Grün unter 2 Tagen, orange unter 7 Tagen, rot ab 7 Tagen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select quelle, tabelle, letzter_wert, round((extract(epoch from (now() - letzter_wert))/86400)::numeric, 1)::float as alter_tage from (\nselect 'ENTSO-E (Last)' as quelle, 'entsoe.query_load' as tabelle, max(\"index\") as letzter_wert from entsoe.query_load\nunion all select 'SMARD (Erzeugung)' as quelle, 'smard.generation' as tabelle, max(datum_von) as letzter_wert from smard.generation\nunion all select 'ENTSOG (physische Flüsse)' as quelle, 'entsog.physical_flow' as tabelle, max(periodfrom) as letzter_wert from entsog.physical_flow\nunion all select 'GIE AGSI (Gasspeicher)' as quelle, 'gie.gie_agsi_country' as tabelle, max(gasdaystart)::timestamptz as letzter_wert from gie.gie_agsi_country\nunion all select 'eview (Netzfrequenz/Verbrauch)' as quelle, 'eview.eview' as tabelle, max(datetime) as letzter_wert from eview.eview\nunion all select 'JAO (Auktionen)' as quelle, 'jao.auctions' as tabelle, max(\"date\") as letzter_wert from jao.auctions\nunion all select 'Regelleistung (FCR)' as quelle, 'regelleistung.fcr_ergebnisse' as tabelle, max(date_from) as letzter_wert from regelleistung.fcr_ergebnisse\nunion all select 'ECMWF (Wetter EU)' as quelle, 'ecmwf.ecmwf_eu' as tabelle, max(\"time\") at time zone 'UTC' as letzter_wert from ecmwf.ecmwf_eu\nunion all select 'Instrat (EU ETS)' as quelle, 'instrat_pl.eu_ets' as tabelle, max(\"date\") at time zone 'UTC' as letzter_wert from instrat_pl.eu_ets\nunion all select 'OPEC (Ölpreis)' as quelle, 'opec.opec' as tabelle, max(\"date\") at time zone 'UTC' as letzter_wert from opec.opec) f order by alter_tage desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: d",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 7
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^alter_tage$/",
+          "values": true
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Neueste Zeitstempel",
+      "description": "Neuester Zeitstempel der Haupttabelle je Quelle (Spalte siehe Tabellenname) und Alter in Tagen. ENTSO-E und SMARD enthalten teils Daten bis in die nahe Zukunft (Prognosen). ECMWF und OPEC werden aktuell nicht mehr aktualisiert (letzte Werte im Februar 2026).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select quelle, tabelle, letzter_wert, round((extract(epoch from (now() - letzter_wert))/86400)::numeric, 1)::float as alter_tage from (\nselect 'ENTSO-E (Last)' as quelle, 'entsoe.query_load' as tabelle, max(\"index\") as letzter_wert from entsoe.query_load\nunion all select 'SMARD (Erzeugung)' as quelle, 'smard.generation' as tabelle, max(datum_von) as letzter_wert from smard.generation\nunion all select 'ENTSOG (physische Flüsse)' as quelle, 'entsog.physical_flow' as tabelle, max(periodfrom) as letzter_wert from entsog.physical_flow\nunion all select 'GIE AGSI (Gasspeicher)' as quelle, 'gie.gie_agsi_country' as tabelle, max(gasdaystart)::timestamptz as letzter_wert from gie.gie_agsi_country\nunion all select 'eview (Netzfrequenz/Verbrauch)' as quelle, 'eview.eview' as tabelle, max(datetime) as letzter_wert from eview.eview\nunion all select 'JAO (Auktionen)' as quelle, 'jao.auctions' as tabelle, max(\"date\") as letzter_wert from jao.auctions\nunion all select 'Regelleistung (FCR)' as quelle, 'regelleistung.fcr_ergebnisse' as tabelle, max(date_from) as letzter_wert from regelleistung.fcr_ergebnisse\nunion all select 'ECMWF (Wetter EU)' as quelle, 'ecmwf.ecmwf_eu' as tabelle, max(\"time\") at time zone 'UTC' as letzter_wert from ecmwf.ecmwf_eu\nunion all select 'Instrat (EU ETS)' as quelle, 'instrat_pl.eu_ets' as tabelle, max(\"date\") at time zone 'UTC' as letzter_wert from instrat_pl.eu_ets\nunion all select 'OPEC (Ölpreis)' as quelle, 'opec.opec' as tabelle, max(\"date\") at time zone 'UTC' as letzter_wert from opec.opec) f order by alter_tage desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "alter_tage"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: d"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.width",
+                "value": 110
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 2
+                    },
+                    {
+                      "color": "red",
+                      "value": 7
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "letzter_wert"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              },
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 8
+      }
+    },
+    {
+      "type": "dashlist",
+      "title": "OEDS-Dashboards",
+      "description": "Alle Dashboards mit dem Tag 'oeds'.",
+      "options": {
+        "showStarred": false,
+        "showRecentlyViewed": false,
+        "showSearch": true,
+        "showHeadings": false,
+        "maxItems": 60,
+        "query": "",
+        "tags": [
+          "oeds"
+        ],
+        "includeVars": false,
+        "keepTime": false
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Datenbank",
+      "collapsed": false,
+      "id": 5,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Datenbankgröße",
+      "description": "Gesamtgröße der Datenbank inklusive Timescale-Chunks.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select pg_database_size(current_database()) as groesse",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 19
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Schemas",
+      "description": "Anzahl Schemas mit Daten (ohne System- und Timescale-Schemas).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from information_schema.schemata where schema_name not like 'pg\\_%' and schema_name not like '\\_timescaledb%' and schema_name not in ('information_schema','public')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 19
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Hypertables",
+      "description": "Anzahl Timescale-Hypertables (Zeitreihentabellen).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from timescaledb_information.hypertables",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 8,
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 19
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Größe je Schema (Top 25)",
+      "description": "Speicherbedarf der Schemas einschließlich Indizes und Chunks von Hypertables. Sortiert nach Größe.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select s as schema, sum(sz) as groesse from (\nselect hypertable_schema as s, hypertable_size(format('%I.%I', hypertable_schema, hypertable_name)::regclass) as sz from timescaledb_information.hypertables\nunion all select n.nspname, pg_total_relation_size(c.oid) from pg_class c join pg_namespace n on n.oid = c.relnamespace\nwhere c.relkind in ('r','m') and n.nspname not like 'pg\\_%' and n.nspname not like '\\_timescaledb%' and n.nspname <> 'information_schema') t\ngroup by 1 order by 2 desc limit 25",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      }
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "overview"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS Übersicht",
+  "uid": "oeds-overview",
+  "version": 1,
+  "weekStart": ""
+}

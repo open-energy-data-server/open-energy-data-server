@@ -1,0 +1,1346 @@
+{
+  "uid": "oeds-e2watch",
+  "title": "OEDS E2Watch Municipal Buildings",
+  "tags": [
+    "oeds",
+    "buildings",
+    "energy",
+    "heat",
+    "aachen"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2023-01-01T00:00:00.000Z",
+    "to": "2024-01-01T00:00:00.000Z"
+  },
+  "description": "Hourly electricity, heat and water consumption of about 160 municipal buildings in Aachen (E2Watch energy management), 2022-01 to 2025-04.",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "building",
+        "label": "Building",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT beschreibung || ' (' || bilanzkreis_id || ')' AS __text, bilanzkreis_id::text AS __value FROM e2watch.buildings ORDER BY 1",
+        "definition": "SELECT beschreibung || ' (' || bilanzkreis_id || ')' AS __text, bilanzkreis_id::text AS __value FROM e2watch.buildings ORDER BY 1",
+        "current": {
+          "text": "Städt. GS Rombachstraße (130)",
+          "value": "130"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "e2watch.e2watch",
+      "description": "First and latest timestamp, approximate rows and age. The E2Watch source went offline: the newest value is from 2025-04-14, so the age is red by design.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(timestamp))*1000)::bigint as \"First\", (extract(epoch from max(timestamp))*1000)::bigint as \"Latest\", approximate_row_count('e2watch.e2watch'::regclass) as \"Rows (approx.)\", extract(epoch from now() - max(timestamp)) as \"Age\"\nFROM e2watch.e2watch"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 259200
+                    },
+                    {
+                      "color": "red",
+                      "value": 604800
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Buildings",
+      "description": "Buildings in the master table, buildings with data in the selected range, and buildings with coordinates.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (SELECT count(*) FROM e2watch.buildings) AS \"Buildings\", (SELECT count(DISTINCT bilanzkreis_id) FROM e2watch.e2watch WHERE $__timeFilter(timestamp)) AS \"With data in range\", (SELECT count(lat) FROM e2watch.buildings) AS \"With coordinates\""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Buildings"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "With data in range"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "With coordinates"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Selected range: all buildings",
+      "description": "Implausible values are dropped: electricity < 0 or > 5000 kWh/h (meter resets, one spike of +-71,000 kWh), heat > 5000 kWh/h, water > 100 m3/h. The source is offline: the last data is from 2025-04-14 and coverage dropped from 160 to 2 buildings between 2024-12 and 2025-04. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000)/1000 AS \"Electricity\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000)/1000 AS \"Heat\", sum(wasser_m3) FILTER (WHERE wasser_m3 BETWEEN 0 AND 100) AS \"Water\", avg(temperatur) AS \"Mean temperature\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Electricity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MWh"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heat"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MWh"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Water"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: m3"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mean temperature"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "All buildings",
+      "collapsed": false,
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily electricity and heat of all buildings",
+      "description": "Sum over all buildings per day (MWh), and the mean outdoor temperature (right axis). Heat follows the temperature; electricity is nearly constant. Implausible values are dropped: electricity < 0 or > 5000 kWh/h (meter resets, one spike of +-71,000 kWh), heat > 5000 kWh/h, water > 100 m3/h. The source is offline: the last data is from 2025-04-14 and coverage dropped from 160 to 2 buildings between 2024-12 and 2025-04. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,'1d'), sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000)/1000 AS \"Electricity\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000)/1000 AS \"Heat\", avg(temperatur) AS \"Temperature\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "MWh",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temperature"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "min",
+                "value": null
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 16,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily water consumption",
+      "description": "Sum over all buildings per day (m3).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,'1d'), sum(wasser_m3) FILTER (WHERE wasser_m3 BETWEEN 0 AND 100) AS \"Water\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "m3",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Energy by building type",
+      "description": "Electricity and heat per building type in the selected range (MWh). Type derived from the building name (school, daycare, administration, pool, sport, culture); swimming pools have the highest heat demand per building.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN b.beschreibung ~* 'schwimm|hallenbad' THEN 'Pool' WHEN b.beschreibung ~* 'verwaltung|rathaus|stadtbetrieb' THEN 'Administration' WHEN b.beschreibung ~* 'kita|kinder|familienzentrum' THEN 'Daycare' WHEN b.beschreibung ~* 'museum|theater|bibliothek' THEN 'Culture' WHEN b.beschreibung ~* 'gym|schule|\\mg?g?hs\\M|\\mgs\\M|\\mggs\\M|\\mrs\\M|gesamtschule|berufskolleg|kolleg' THEN 'School' WHEN b.beschreibung ~* 'halle|sport|umkleide' THEN 'Sport' ELSE 'Other' END AS \"Type\", sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000)/1000 AS \"Electricity\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000)/1000 AS \"Heat\" FROM e2watch.e2watch e JOIN e2watch.buildings b ON b.bilanzkreis_id::text = e.bilanzkreis_id WHERE $__timeFilter(e.timestamp) GROUP BY 1 ORDER BY 3 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "MWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Type",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 15 buildings by heat",
+      "description": "Heat consumption of the 15 largest buildings in the selected range (MWh).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT left(b.beschreibung, 32) AS \"Building\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000)/1000 AS \"Heat (MWh)\" FROM e2watch.e2watch e JOIN e2watch.buildings b ON b.bilanzkreis_id::text = e.bilanzkreis_id WHERE $__timeFilter(e.timestamp) GROUP BY 1 ORDER BY 2 DESC NULLS LAST LIMIT 15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "MWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-red"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Building",
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 8,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 15 buildings by electricity",
+      "description": "Electricity consumption of the 15 largest buildings in the selected range (MWh).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT left(b.beschreibung, 32) AS \"Building\", sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000)/1000 AS \"Electricity (MWh)\" FROM e2watch.e2watch e JOIN e2watch.buildings b ON b.bilanzkreis_id::text = e.bilanzkreis_id WHERE $__timeFilter(e.timestamp) GROUP BY 1 ORDER BY 2 DESC NULLS LAST LIMIT 15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "MWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Building",
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 16,
+        "y": 19,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "table",
+      "title": "Buildings: annual overview",
+      "description": "Per building in the selected range: electricity, heat, water, hours with data and the heat/electricity ratio.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT b.beschreibung AS \"Building\", CASE WHEN b.beschreibung ~* 'schwimm|hallenbad' THEN 'Pool' WHEN b.beschreibung ~* 'verwaltung|rathaus|stadtbetrieb' THEN 'Administration' WHEN b.beschreibung ~* 'kita|kinder|familienzentrum' THEN 'Daycare' WHEN b.beschreibung ~* 'museum|theater|bibliothek' THEN 'Culture' WHEN b.beschreibung ~* 'gym|schule|\\mg?g?hs\\M|\\mgs\\M|\\mggs\\M|\\mrs\\M|gesamtschule|berufskolleg|kolleg' THEN 'School' WHEN b.beschreibung ~* 'halle|sport|umkleide' THEN 'Sport' ELSE 'Other' END AS \"Type\", sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000) AS \"Electricity (kWh)\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000) AS \"Heat (kWh)\", sum(wasser_m3) FILTER (WHERE wasser_m3 BETWEEN 0 AND 100) AS \"Water (m3)\", count(*) AS \"Hours with data\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000)/NULLIF(sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000), 0) AS \"Heat / electricity\" FROM e2watch.e2watch e JOIN e2watch.buildings b ON b.bilanzkreis_id::text = e.bilanzkreis_id WHERE $__timeFilter(e.timestamp) GROUP BY 1,2 ORDER BY 3 DESC NULLS LAST"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Electricity (kWh)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatth"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heat (kWh)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatth"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Water (m3)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "m3"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Map of the buildings",
+      "description": "Locations of the buildings; marker size is the electricity consumption in the selected range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT b.lat AS latitude, b.lon AS longitude, b.beschreibung AS \"Building\", sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000)/1000 AS \"Electricity (MWh)\" FROM e2watch.e2watch e JOIN e2watch.buildings b ON b.bilanzkreis_id::text = e.bilanzkreis_id WHERE $__timeFilter(e.timestamp) AND b.lat IS NOT NULL GROUP BY 1,2,3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 50.77,
+          "lon": 6.08,
+          "zoom": 11
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Buildings",
+            "location": {
+              "mode": "coords",
+              "latitude": "latitude",
+              "longitude": "longitude"
+            },
+            "config": {
+              "style": {
+                "size": {
+                  "field": "Electricity (MWh)",
+                  "min": 3,
+                  "max": 14,
+                  "fixed": 5
+                },
+                "color": {
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.6
+              },
+              "showLegend": false
+            },
+            "tooltip": true
+          }
+        ]
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Reporting buildings per day",
+      "description": "Buildings with data per day: the number drops in 2022-07 and from 2024-12 on, when the source was shut down.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,'1d'), count(DISTINCT bilanzkreis_id) AS \"Buildings\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 6
+      }
+    },
+    {
+      "type": "row",
+      "title": "Building $building",
+      "collapsed": false,
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Electricity, heat and temperature",
+      "description": "Hourly electricity and heat (kWh per hour = kW) of the selected building and outdoor temperature (right). Implausible values are dropped: electricity < 0 or > 5000 kWh/h (meter resets, one spike of +-71,000 kWh), heat > 5000 kWh/h, water > 100 m3/h. The source is offline: the last data is from 2025-04-14 and coverage dropped from 160 to 2 buildings between 2024-12 and 2025-04. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,$__interval), avg(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000) AS \"Electricity\", avg(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000) AS \"Heat\", avg(temperatur) AS \"Temperature\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) AND bilanzkreis_id = '$building' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temperature"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 16,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Water",
+      "description": "Water consumption of the selected building per time bin (m3). Continuous consumption at night indicates leaks.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,$__interval), sum(wasser_m3) FILTER (WHERE wasser_m3 BETWEEN 0 AND 100) AS \"Water\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) AND bilanzkreis_id = '$building' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "m3",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 16,
+        "y": 43,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "xychart",
+      "title": "Heating signature",
+      "description": "Daily heat (kWh) vs mean daily outdoor temperature (degC) of the selected building: heat rises linearly below the heating limit (~15 degC) and is flat above (hot water only).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(temperatur) AS \"Mean temperature (degC)\", sum(waerme_kwh) AS \"Heat (kWh/day)\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) AND bilanzkreis_id = '$building' AND waerme_kwh BETWEEN 0 AND 5000 GROUP BY date_trunc('day', timestamp) HAVING count(*) >= 20"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "pointSize": {
+              "fixed": 4
+            },
+            "show": "points"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Typical day (weekday / weekend)",
+      "description": "Mean electricity and heat power by hour of the day (Europe/Berlin) for the selected building: schools and offices show a clear working-day pattern, weekends fall to the base load.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from timestamp AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000 AND extract(isodow from timestamp AT TIME ZONE 'Europe/Berlin') < 6) AS \"Electricity weekday\", avg(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000 AND extract(isodow from timestamp AT TIME ZONE 'Europe/Berlin') >= 6) AS \"Electricity weekend\", avg(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000 AND extract(isodow from timestamp AT TIME ZONE 'Europe/Berlin') < 6) AS \"Heat weekday\", avg(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000 AND extract(isodow from timestamp AT TIME ZONE 'Europe/Berlin') >= 6) AS \"Heat weekend\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) AND bilanzkreis_id = '$building' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "kwatt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "x": 8,
+        "y": 51,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Monthly energy",
+      "description": "Electricity and heat per month of the selected building (kWh).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', timestamp AT TIME ZONE 'Europe/Berlin'), 'YYYY-MM') AS \"Month\", sum(strom_kwh) FILTER (WHERE strom_kwh BETWEEN 0 AND 5000) AS \"Electricity\", sum(waerme_kwh) FILTER (WHERE waerme_kwh BETWEEN 0 AND 5000) AS \"Heat\" FROM e2watch.e2watch WHERE $__timeFilter(timestamp) AND bilanzkreis_id = '$building' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "kwatth"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 19,
+      "gridPos": {
+        "x": 16,
+        "y": 51,
+        "w": 8,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

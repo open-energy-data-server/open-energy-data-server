@@ -1,0 +1,1376 @@
+{
+  "uid": "oeds-opsd",
+  "title": "OEDS Open Power System Data",
+  "tags": [
+    "oeds",
+    "heat",
+    "heat-pump",
+    "capacity",
+    "europe"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2014-01-01T00:00:00.000Z",
+    "to": "2015-01-01T00:00:00.000Z"
+  },
+  "description": "Open Power System Data: when2heat heat demand and heat pump COP profiles (hourly, 28 countries) and national generation capacities.",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "country",
+        "label": "Country",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT DISTINCT left(column_name,2) AS __value FROM information_schema.columns WHERE table_schema='opsd' AND table_name='when2heat' AND column_name ~ '^[A-Z]{2}_COP_ASHP_floor$' ORDER BY 1",
+        "definition": "SELECT DISTINCT left(column_name,2) AS __value FROM information_schema.columns WHERE table_schema='opsd' AND table_name='when2heat' AND column_name ~ '^[A-Z]{2}_COP_ASHP_floor$' ORDER BY 1",
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": "Country code (ISO 3166 alpha-2, GB for the UK)."
+      },
+      {
+        "type": "query",
+        "name": "source",
+        "label": "Capacity source",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT DISTINCT source FROM opsd.national_generation_capacity ORDER BY 1",
+        "definition": "SELECT DISTINCT source FROM opsd.national_generation_capacity ORDER BY 1",
+        "current": {
+          "text": "EUROSTAT",
+          "value": "EUROSTAT"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": "Source of the national generation capacities. EUROSTAT is the only one that covers 1990-2016 for 40 countries."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "opsd.when2heat",
+      "description": "First and latest timestamp and approximate rows of the hourly when2heat table (28 countries x demand, COP and profile columns). Heat demand (MW) is only available until 2015-12-31 (NULL afterwards); COPs and profiles reach 2022-12-31. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(utc_timestamp))*1000)::bigint as \"First\", (extract(epoch from max(utc_timestamp))*1000)::bigint as \"Latest\", approximate_row_count('opsd.when2heat'::regclass) as \"Rows (approx.)\"\nFROM opsd.when2heat"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "opsd.national_generation_capacity",
+      "description": "Countries, years and rows of the stacked national generation capacity table (annual MW, several sources).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(DISTINCT country) AS \"Countries\", min(year) AS \"First year\", max(year) AS \"Last year\", count(*) AS \"Rows\", count(DISTINCT source) AS \"Sources\" FROM opsd.national_generation_capacity"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First year"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last year"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "$country in the selected range",
+      "description": "Heat energy (hourly MW summed), peak demand and mean heat pump COPs (ASHP: air-source, GSHP: ground-source; radiator heating 35-55 degC flow temperature, floor heating 30-35 degC).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(\"${country}_heat_demand_total\")/1e6 AS \"Heat demand\", max(\"${country}_heat_demand_total\")/1000 AS \"Peak demand\", avg(\"${country}_COP_ASHP_radiator\") AS \"COP ASHP radiator\", avg(\"${country}_COP_GSHP_radiator\") AS \"COP GSHP radiator\", avg(\"${country}_COP_ASHP_water\") AS \"COP ASHP hot water\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heat demand"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: TWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak demand"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GW"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "COP ASHP radiator"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "COP GSHP radiator"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "COP ASHP hot water"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "Heat demand of $country",
+      "collapsed": false,
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Heat demand: space heating and hot water",
+      "description": "Hourly heat demand of all buildings in the country for space heating and domestic hot water (MW, stacked). Weather driven (temperature, wind, irradiation): space heating peaks in cold spells and nearly vanishes in summer; hot water is almost constant. Heat demand (MW) is only available until 2015-12-31 (NULL afterwards); COPs and profiles reach 2022-12-31. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(utc_timestamp,$__interval), avg(\"${country}_heat_demand_space\") AS \"Space heating\", avg(\"${country}_heat_demand_water\") AS \"Hot water\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 16,
+        "h": 9
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Heat demand duration curve",
+      "description": "Hourly total heat demand sorted from highest to lowest (GW). x is the share of hours in which the demand is exceeded: the peak hours define the required heat generation capacity.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (1-i/50.0)*100 AS \"Share of hours exceeded (%)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY \"${country}_heat_demand_total\") / 1000 AS \"Heat demand\"\nFROM opsd.when2heat, generate_series(0,50) i WHERE $__timeFilter(utc_timestamp) GROUP BY i ORDER BY i DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Share of hours exceeded (%)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 8,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Heat demand by building type",
+      "description": "Space heating plus hot water demand split into single-family houses (SFH), multi-family houses (MFH) and commercial buildings (COM), daily mean (MW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(utc_timestamp,'1d'), avg(\"${country}_heat_demand_space_SFH\") + avg(\"${country}_heat_demand_water_SFH\") AS \"Single-family houses\", avg(\"${country}_heat_demand_space_MFH\") + avg(\"${country}_heat_demand_water_MFH\") AS \"Multi-family houses\", avg(\"${country}_heat_demand_space_COM\") + avg(\"${country}_heat_demand_water_COM\") AS \"Commercial\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Monthly heat demand",
+      "description": "Heat energy per calendar month (TWh) in the selected range, space heating and hot water stacked. The strong winter/summer ratio is what makes heat pump electricity demand seasonal.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', utc_timestamp), 'YYYY-MM') AS \"Month\", sum(\"${country}_heat_demand_space\")/1e6 AS \"Space heating\", sum(\"${country}_heat_demand_water\")/1e6 AS \"Hot water\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "suffix: TWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "normal",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Daily profile of the heat demand (local time)",
+      "description": "Mean total heat demand (MW) by hour of the day (Europe/Berlin) for the heating season (Nov-Mar) and summer (Jun-Aug) within the range. The morning and evening peaks are the occupancy pattern of the reference profiles.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from utc_timestamp AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(\"${country}_heat_demand_total\") FILTER (WHERE extract(month from utc_timestamp) IN (11,12,1,2,3)) AS \"Heating season (Nov-Mar)\", avg(\"${country}_heat_demand_total\") FILTER (WHERE extract(month from utc_timestamp) IN (6,7,8)) AS \"Summer (Jun-Aug)\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "MW",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Reference heat profiles by hour of the day",
+      "description": "Normalised when2heat reference profiles (dimensionless weights, local hour Europe/Berlin) for space heating and hot water of SFH, MFH and commercial buildings, mean over the range. Profiles are the input that is scaled to the national demand.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from utc_timestamp AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(\"${country}_heat_profile_space_SFH\") AS \"space SFH\", avg(\"${country}_heat_profile_space_MFH\") AS \"space MFH\", avg(\"${country}_heat_profile_space_COM\") AS \"space COM\", avg(\"${country}_heat_profile_water_SFH\") AS \"water SFH\", avg(\"${country}_heat_profile_water_MFH\") AS \"water MFH\", avg(\"${country}_heat_profile_water_COM\") AS \"water COM\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 8,
+        "y": 27,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Heat demand by country (selected range)",
+      "description": "Total heat demand (TWh) of all 28 countries summed over the selected range. Choose a range within 2008-2015.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT left(key,2) AS \"Country\", sum(value::float)/1e6 AS \"Heat demand (TWh)\" FROM opsd.when2heat t, jsonb_each_text(to_jsonb(t)) WHERE $__timeFilter(utc_timestamp) AND key ~ '^[A-Z]{2}_heat_demand_total$' AND value IS NOT NULL GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-red"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Country",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 16,
+        "y": 27,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Heat pump COP of $country",
+      "collapsed": false,
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Coefficient of performance (daily mean)",
+      "description": "COP of air-source (ASHP), ground-source (GSHP) and water-source (WSHP) heat pumps depends on the source and flow temperature. Radiator: ~35-55 degC, floor ~30-35 degC, water: hot-water preparation (~50-60 degC). ASHP COPs fall in cold spells, GSHP/WSHP stay more stable.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(utc_timestamp,'1d'), avg(\"${country}_COP_ASHP_floor\") AS \"ASHP floor\", avg(\"${country}_COP_ASHP_radiator\") AS \"ASHP radiator\", avg(\"${country}_COP_ASHP_water\") AS \"ASHP water\", avg(\"${country}_COP_GSHP_floor\") AS \"GSHP floor\", avg(\"${country}_COP_GSHP_radiator\") AS \"GSHP radiator\", avg(\"${country}_COP_GSHP_water\") AS \"GSHP water\", avg(\"${country}_COP_WSHP_floor\") AS \"WSHP floor\", avg(\"${country}_COP_WSHP_radiator\") AS \"WSHP radiator\", avg(\"${country}_COP_WSHP_water\") AS \"WSHP water\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "none",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 16,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "COP by country (ASHP radiator, selected range)",
+      "description": "Mean COP of air-source heat pumps with radiator heating per country: warmer countries have higher COP.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT left(key,2) AS \"Country\", avg(value::float) AS \"COP ASHP radiator\" FROM opsd.when2heat t, jsonb_each_text(to_jsonb(t)) WHERE $__timeFilter(utc_timestamp) AND key ~ '^[A-Z]{2}_COP_ASHP_radiator$' AND value IS NOT NULL GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-green"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Country",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 16,
+        "y": 36,
+        "w": 8,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Seasonal COP (mean per month)",
+      "description": "Mean COP per calendar month over the selected range for the main heat pump types. Air-source COPs are lowest in winter exactly when the heat demand is highest.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad(extract(month from utc_timestamp)::int::text, 2, '0') AS \"Month\", avg(\"${country}_COP_ASHP_radiator\") AS \"ASHP radiator\", avg(\"${country}_COP_ASHP_floor\") AS \"ASHP floor\", avg(\"${country}_COP_ASHP_water\") AS \"ASHP water\", avg(\"${country}_COP_GSHP_radiator\") AS \"GSHP radiator\", avg(\"${country}_COP_GSHP_floor\") AS \"GSHP floor\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "none",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "COP over the day",
+      "description": "Mean COP by hour of the day (UTC) for the range: air-source heat pumps perform best in the warm afternoon hours.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from utc_timestamp)::int AS \"Hour (UTC)\", avg(\"${country}_COP_ASHP_radiator\") AS \"ASHP radiator\", avg(\"${country}_COP_ASHP_floor\") AS \"ASHP floor\", avg(\"${country}_COP_GSHP_radiator\") AS \"GSHP radiator\"\nFROM opsd.when2heat WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "none",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour (UTC)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 12,
+        "y": 45,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "National generation capacity of $country (source: $source)",
+      "collapsed": false,
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Installed capacity by technology",
+      "description": "Installed generation capacity (MW) per year by main technology group of the selected source; the source defines what is counted. Independent of the time range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT year::text AS \"Year\", max(capacity) FILTER (WHERE technology = 'Nuclear') AS \"Nuclear\", max(capacity) FILTER (WHERE technology = 'Fossil fuels') AS \"Fossil fuels\", max(capacity) FILTER (WHERE technology = 'Hydro') AS \"Hydro\", max(capacity) FILTER (WHERE technology = 'Wind') AS \"Wind\", max(capacity) FILTER (WHERE technology = 'Solar') AS \"Solar\", max(capacity) FILTER (WHERE technology = 'Bioenergy and renewable waste') AS \"Bioenergy and renewable waste\"\nFROM opsd.national_generation_capacity WHERE country = '${country}' AND source = '${source}' GROUP BY year ORDER BY year"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Year",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "normal",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 19,
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Wind and solar capacity by source",
+      "description": "Installed wind and solar capacity (MW) for the selected country as reported by all available sources, to show how much they disagree.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT year AS \"Year\", max(capacity) FILTER (WHERE technology = 'Wind' AND source = 'EUROSTAT') AS \"Wind - EUROSTAT\", max(capacity) FILTER (WHERE technology = 'Wind' AND source = 'ENTSO-E SOAF') AS \"Wind - ENTSO-E SOAF\", max(capacity) FILTER (WHERE technology = 'Wind' AND source = 'ENTSO-E Data Portal') AS \"Wind - ENTSO-E Data Portal\", max(capacity) FILTER (WHERE technology = 'Wind' AND source = 'ENTSO-E Power Statistics') AS \"Wind - ENTSO-E Power Statistics\", max(capacity) FILTER (WHERE technology = 'Wind' AND source = 'ENTSO-E Transparency Platform') AS \"Wind - ENTSO-E Transparency Platform\", max(capacity) FILTER (WHERE technology = 'Solar' AND source = 'EUROSTAT') AS \"Solar - EUROSTAT\", max(capacity) FILTER (WHERE technology = 'Solar' AND source = 'ENTSO-E SOAF') AS \"Solar - ENTSO-E SOAF\", max(capacity) FILTER (WHERE technology = 'Solar' AND source = 'ENTSO-E Data Portal') AS \"Solar - ENTSO-E Data Portal\", max(capacity) FILTER (WHERE technology = 'Solar' AND source = 'ENTSO-E Power Statistics') AS \"Solar - ENTSO-E Power Statistics\", max(capacity) FILTER (WHERE technology = 'Solar' AND source = 'ENTSO-E Transparency Platform') AS \"Solar - ENTSO-E Transparency Platform\"\nFROM opsd.national_generation_capacity WHERE country = '${country}' GROUP BY year ORDER BY year"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "auto",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Year",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 20,
+      "gridPos": {
+        "x": 12,
+        "y": 54,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Wind + solar capacity by country (latest year of the source)",
+      "description": "Installed wind and solar capacity (MW) of the countries in the selected source, latest year available per country.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT country AS \"Country\", wind AS \"Wind\", solar AS \"Solar\" FROM (SELECT country, max(capacity) FILTER (WHERE technology = 'Wind' AND year = y) AS wind, max(capacity) FILTER (WHERE technology = 'Solar' AND year = y) AS solar FROM (SELECT *, max(year) OVER (PARTITION BY country) AS y FROM opsd.national_generation_capacity WHERE source = '${source}') s GROUP BY country) x WHERE wind IS NOT NULL OR solar IS NOT NULL ORDER BY coalesce(wind,0)+coalesce(solar,0) DESC LIMIT 25"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Country",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "normal",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "table",
+      "title": "Capacity table",
+      "description": "All technologies of the selected country and source in the latest year (MW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT technology AS \"Technology\", capacity_definition AS \"Definition\", year AS \"Year\", capacity AS \"Capacity (MW)\" FROM opsd.national_generation_capacity WHERE country = '${country}' AND source = '${source}' AND year = (SELECT max(year) FROM opsd.national_generation_capacity WHERE country = '${country}' AND source = '${source}') ORDER BY capacity DESC NULLS LAST"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity (MW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 22,
+      "gridPos": {
+        "x": 12,
+        "y": 63,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

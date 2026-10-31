@@ -1,0 +1,1167 @@
+{
+  "uid": "oeds-ninja",
+  "title": "OEDS Renewables.ninja",
+  "tags": [
+    "oeds",
+    "wind",
+    "solar",
+    "europe",
+    "weather"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2007-01-01T00:00:00.000Z",
+    "to": "2017-01-01T00:00:00.000Z"
+  },
+  "description": "Hourly capacity factors of wind (on/offshore) and solar PV for European countries from renewables.ninja (MERRA-2 reanalysis based, 1980-2016).",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "country",
+        "label": "Country",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT upper(column_name) AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='ninja' AND table_name='capacity_wind_on' AND column_name <> 'time' ORDER BY 1",
+        "definition": "SELECT upper(column_name) AS __text, column_name AS __value FROM information_schema.columns WHERE table_schema='ninja' AND table_name='capacity_wind_on' AND column_name <> 'time' ORDER BY 1",
+        "current": {
+          "text": "DE",
+          "value": "de"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": "Country code of the renewables.ninja column. Offshore wind exists only for countries with a coast line (BE, DE, DK, FI, FR, GB, IE, NL, NO, SE)."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "ninja.capacity_wind_on",
+      "description": "Wind onshore: first and latest timestamp and approximate rows (hourly, one column per country; values are capacity factors 0..1).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(time))*1000)::bigint as \"First\", (extract(epoch from max(time))*1000)::bigint as \"Latest\", approximate_row_count('ninja.capacity_wind_on'::regclass) as \"Rows (approx.)\"\nFROM ninja.capacity_wind_on"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "ninja.capacity_wind_off",
+      "description": "Wind offshore: first and latest timestamp and approximate rows (hourly, one column per country; values are capacity factors 0..1).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(time))*1000)::bigint as \"First\", (extract(epoch from max(time))*1000)::bigint as \"Latest\", approximate_row_count('ninja.capacity_wind_off'::regclass) as \"Rows (approx.)\"\nFROM ninja.capacity_wind_off"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "ninja.capacity_solar_merra2",
+      "description": "Solar PV: first and latest timestamp and approximate rows (hourly, one column per country; values are capacity factors 0..1). PV starts 1985.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(time))*1000)::bigint as \"First\", (extract(epoch from max(time))*1000)::bigint as \"Latest\", approximate_row_count('ninja.capacity_solar_merra2'::regclass) as \"Rows (approx.)\"\nFROM ninja.capacity_solar_merra2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Selected country: mean capacity factors",
+      "description": "Mean capacity factor in the selected range and the resulting full load hours per year (CF x 8760 h). Offshore is empty for countries without offshore wind.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (SELECT 100*avg((to_jsonb(t)->>'$country')::float) FROM ninja.capacity_wind_on t WHERE $__timeFilter(time)) AS \"Wind onshore CF\", (SELECT 100*avg((to_jsonb(t)->>'$country')::float) FROM ninja.capacity_wind_off t WHERE $__timeFilter(time)) AS \"Wind offshore CF\", (SELECT 100*avg((to_jsonb(t)->>'$country')::float) FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time)) AS \"Solar PV CF\", (SELECT 8760*avg((to_jsonb(t)->>'$country')::float) FROM ninja.capacity_wind_on t WHERE $__timeFilter(time)) AS \"Wind onshore h/a\", (SELECT 8760*avg((to_jsonb(t)->>'$country')::float) FROM ninja.capacity_wind_off t WHERE $__timeFilter(time)) AS \"Wind offshore h/a\", (SELECT 8760*avg((to_jsonb(t)->>'$country')::float) FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time)) AS \"Solar PV h/a\""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind onshore CF"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind offshore CF"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar PV CF"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind onshore h/a"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h/a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind offshore h/a"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h/a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar PV h/a"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h/a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "Time series of $country",
+      "collapsed": false,
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily mean capacity factor",
+      "description": "Daily mean of the hourly capacity factor (0 = no output, 1 = full nominal output) for wind onshore, wind offshore and PV. Wind is stormy in winter and calmer in summer, solar the opposite.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time,'1d'), avg((to_jsonb(t)->>'$country')::float) AS \"Wind onshore\" FROM ninja.capacity_wind_on t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time,'1d'), avg((to_jsonb(t)->>'$country')::float) AS \"Wind offshore\" FROM ninja.capacity_wind_off t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(time,'1d'), avg((to_jsonb(t)->>'$country')::float) AS \"Solar PV\" FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Annual mean capacity factor",
+      "description": "Mean capacity factor per calendar year within the selected range: interannual variability of the wind and solar resource (wind years vary by up to +-15 %).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT y::text AS \"Year\", j_on.v AS \"Wind onshore\", j_off.v AS \"Wind offshore\", j_pv.v AS \"Solar PV\" FROM generate_series(extract(year from $__timeFrom()::timestamptz)::int, extract(year from $__timeTo()::timestamptz - interval '1 second')::int) y LEFT JOIN (SELECT extract(year from time)::int AS y, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_wind_on t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_on USING (y) LEFT JOIN (SELECT extract(year from time)::int AS y, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_wind_off t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_off USING (y) LEFT JOIN (SELECT extract(year from time)::int AS y, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_pv USING (y) ORDER BY y"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Year",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Seasonal profile (mean per month)",
+      "description": "Mean capacity factor per calendar month over the selected range. Wind and PV are complementary: wind peaks in winter, PV in summer.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad(m::text, 2, '0') AS \"Month\", j_on.v AS \"Wind onshore\", j_off.v AS \"Wind offshore\", j_pv.v AS \"Solar PV\" FROM generate_series(1,12) m LEFT JOIN (SELECT extract(month from time)::int AS m, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_wind_on t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_on USING (m) LEFT JOIN (SELECT extract(month from time)::int AS m, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_wind_off t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_off USING (m) LEFT JOIN (SELECT extract(month from time)::int AS m, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_pv USING (m) ORDER BY m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Daily profile (mean per hour of day, UTC)",
+      "description": "Mean capacity factor by hour of the day (UTC). PV follows the sun; onshore wind has a weak diurnal cycle (minimum around dawn, maximum in the evening); offshore wind is almost flat.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT h AS \"Hour (UTC)\", j_on.v AS \"Wind onshore\", j_off.v AS \"Wind offshore\", j_pv.v AS \"Solar PV\" FROM generate_series(0,23) h LEFT JOIN (SELECT extract(hour from time)::int AS h, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_wind_on t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_on USING (h) LEFT JOIN (SELECT extract(hour from time)::int AS h, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_wind_off t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_off USING (h) LEFT JOIN (SELECT extract(hour from time)::int AS h, avg((to_jsonb(t)->>'$country')::float) AS v FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_pv USING (h) ORDER BY h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour (UTC)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Capacity factor duration curve",
+      "description": "Hourly capacity factors sorted from highest to lowest: x is the share of hours in which the capacity factor is exceeded. The area under the curve is the mean capacity factor.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH j_on AS (SELECT percentile_cont((SELECT array_agg(i/50.0 ORDER BY i) FROM generate_series(0,50) i)) WITHIN GROUP (ORDER BY (to_jsonb(t)->>'$country')::float) AS r FROM ninja.capacity_wind_on t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL), j_off AS (SELECT percentile_cont((SELECT array_agg(i/50.0 ORDER BY i) FROM generate_series(0,50) i)) WITHIN GROUP (ORDER BY (to_jsonb(t)->>'$country')::float) AS r FROM ninja.capacity_wind_off t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL), j_pv AS (SELECT percentile_cont((SELECT array_agg(i/50.0 ORDER BY i) FROM generate_series(0,50) i)) WITHIN GROUP (ORDER BY (to_jsonb(t)->>'$country')::float) AS r FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL)\nSELECT (1-i/50.0)*100 AS \"Share of hours exceeded (%)\", j_on.r[i+1] AS \"Wind onshore\", j_off.r[i+1] AS \"Wind offshore\", j_pv.r[i+1] AS \"Solar PV\"\nFROM generate_series(0,50) i, j_on, j_off, j_pv ORDER BY i DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Share of hours exceeded (%)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 8,
+        "y": 26,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Distribution of hourly capacity factors",
+      "description": "Share of hours per capacity factor class of 5 percentage points. PV has many zero hours (night), wind a skewed distribution with a peak at low values and a plateau at full load.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad((c*5)::text, 2, '0') || '-' || (c*5+5) || ' %' AS \"Capacity factor class\", j_on.v AS \"Wind onshore\", j_off.v AS \"Wind offshore\", j_pv.v AS \"Solar PV\" FROM generate_series(0,19) c LEFT JOIN (SELECT least(floor((to_jsonb(t)->>'$country')::float*20),19)::int AS c, 100.0*count(*)/sum(count(*)) OVER () AS v FROM ninja.capacity_wind_on t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_on USING (c) LEFT JOIN (SELECT least(floor((to_jsonb(t)->>'$country')::float*20),19)::int AS c, 100.0*count(*)/sum(count(*)) OVER () AS v FROM ninja.capacity_wind_off t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_off USING (c) LEFT JOIN (SELECT least(floor((to_jsonb(t)->>'$country')::float*20),19)::int AS c, 100.0*count(*)/sum(count(*)) OVER () AS v FROM ninja.capacity_solar_merra2 t WHERE $__timeFilter(time) AND (to_jsonb(t)->>'$country')::float IS NOT NULL GROUP BY 1) j_pv USING (c) ORDER BY c"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Capacity factor class",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 16,
+        "y": 26,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Comparison of countries",
+      "collapsed": false,
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Mean capacity factor by country: Wind onshore",
+      "description": "Mean capacity factor of all countries in the selected range (sorted). Differences reflect the wind and irradiation conditions of the countries.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT upper(key) AS \"Country\", avg(value::float) AS \"Mean capacity factor\" FROM ninja.capacity_wind_on t, jsonb_each_text(to_jsonb(t) - 'time') WHERE $__timeFilter(time) AND value IS NOT NULL GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Country",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Mean capacity factor by country: Solar PV",
+      "description": "Mean capacity factor of all countries in the selected range (sorted). Differences reflect the wind and irradiation conditions of the countries.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT upper(key) AS \"Country\", avg(value::float) AS \"Mean capacity factor\" FROM ninja.capacity_solar_merra2 t, jsonb_each_text(to_jsonb(t) - 'time') WHERE $__timeFilter(time) AND value IS NOT NULL GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-orange"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Country",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 8,
+        "y": 35,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Mean capacity factor by country: Wind offshore",
+      "description": "Mean capacity factor of all countries in the selected range (sorted). Differences reflect the wind and irradiation conditions of the countries.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT upper(key) AS \"Country\", avg(value::float) AS \"Mean capacity factor\" FROM ninja.capacity_wind_off t, jsonb_each_text(to_jsonb(t) - 'time') WHERE $__timeFilter(time) AND value IS NOT NULL GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-purple"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Country",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 16,
+        "y": 35,
+        "w": 8,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

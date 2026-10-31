@@ -1,0 +1,2211 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "JRC-IDEES: Integrierte Datenbank des europäischen Energiesystems (EU27 und Mitgliedstaaten, 2000-2021). Die Excel-Blätter wurden in 604 Tabellen je Sektor geladen (Zeile = Jahr und Land, Spalte = Energieträger/Kennzahl). Dieses Dashboard nutzt die Energie- und Emissionsbilanzen (energybalance_*, emissionbalance_*) und die Stromerzeugungsübersicht (powergen_*). Energie in ktoe wird in TWh umgerechnet (1 ktoe = 0,01163 TWh), Emissionen in kt CO2 in Mt.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Tabellen",
+      "description": "Anzahl Tabellen im Schema jrc_idees (je Excel-Blatt eine, plus Marker crawl_complete).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from pg_tables where schemaname='jrc_idees'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Länder",
+      "description": "Mitgliedstaaten plus EU27-Summe in den Energiebilanzen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct zone) as n from jrc_idees.energybalance_fc_e",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Zeitraum",
+      "description": "Erstes und letztes Jahr der Energiebilanz.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select min(extract(year from year))::int::text || ' - ' || max(extract(year from year))::int::text as zeitraum from jrc_idees.energybalance_fc_e",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Endenergieverbrauch",
+      "description": "Endenergieverbrauch des gewählten Landes im gewählten Jahr (Energiebilanz fc_e).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Total_TOTAL\"*0.01163 as twh from jrc_idees.energybalance_fc_e where zone='$zone' and extract(year from year)=$year",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Strom-Anteil",
+      "description": "Anteil von Strom am Endenergieverbrauch.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 100*\"Electricity_E7000\"/\"Total_TOTAL\" as p from jrc_idees.energybalance_fc_e where zone='$zone' and extract(year from year)=$year",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "CO2 Endverbrauch",
+      "description": "CO2-Emissionen aus dem Endenergieverbrauch (ohne Umwandlungssektor) des gewählten Landes und Jahres.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Total_TOTAL\"/1000 as mt from jrc_idees.emissionbalance_fc_e where zone='$zone' and extract(year from year)=$year",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: Mt",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Endenergieverbrauch",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Endenergieverbrauch nach Sektor",
+      "description": "Endenergieverbrauch des gewählten Landes in TWh je Sektor (Energiebilanz fc_ind/tra/oth).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, 'Industrie' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Verkehr' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_tra_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Haushalte' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Dienstleistungen' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_cp_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Landwirtschaft/Forst/Fischerei' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_aff_e where zone='$zone' and $__timeFilter(year)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Industrie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Verkehr"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Haushalte"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dienstleistungen"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Landwirtschaft/Forst/Fischerei"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Energieträgermix im gewählten Sektor",
+      "description": "Endenergieverbrauch nach Energieträger in TWh. Sektor über die Variable wählbar.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, \"Solid fossil fuels_C0000X0350-0370\"*0.01163 as \"Feste fossile Brennstoffe\", \"Oil and petroleum products_O4000XBIO\"*0.01163 as \"Öl und Ölprodukte\",\n\"Natural gas_G3000\"*0.01163 as \"Erdgas\", \"Renewables and biofuels_RA000\"*0.01163 as \"Erneuerbare und Biokraftstoffe\", \"Non-renewable waste_W6100_6220\"*0.01163 as \"Nicht erneuerbarer Abfall\",\n\"Heat_H8000\"*0.01163 as \"Fernwärme\", \"Electricity_E7000\"*0.01163 as \"Strom\"\nfrom jrc_idees.energybalance_$sector where zone='$zone' and $__timeFilter(year) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Feste fossile Brennstoffe"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3D3D3D"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Öl und Ölprodukte"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erneuerbare und Biokraftstoffe"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Nicht erneuerbarer Abfall"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A0522D"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fernwärme"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Strom"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Strom-Anteil am Endenergieverbrauch",
+      "description": "Anteil von Strom am Endenergieverbrauch je Land im gewählten Jahr (Elektrifizierungsgrad).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select zone as land, 100*\"Electricity_E7000\"/\"Total_TOTAL\" as \"Strom-Anteil\" from jrc_idees.energybalance_fc_e where extract(year from year)=$year and zone <> 'EU27' order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "axisSoftMax": 40
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 14,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Endenergieverbrauch pro Einwohner",
+      "description": "Endenergieverbrauch in MWh pro Einwohner im gewählten Jahr (Einwohner aus residential_res_summary).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select e.zone as land, e.\"Total_TOTAL\"*0.01163*1e6/r.\"Population (inhabitants)\" as \"MWh/Einwohner\" from jrc_idees.energybalance_fc_e e\njoin jrc_idees.residential_res_summary r on r.zone = e.zone and r.year = e.year where extract(year from e.year)=$year and e.zone <> 'EU27' order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 14,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Endenergieverbrauch der Länder",
+      "description": "Endenergieverbrauch in TWh im gewählten Jahr.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select zone as land, \"Total_TOTAL\"*0.01163 as \"TWh\" from jrc_idees.energybalance_fc_e where extract(year from year)=$year and zone <> 'EU27' order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 14,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      }
+    },
+    {
+      "type": "row",
+      "title": "Sektoren im Detail",
+      "collapsed": false,
+      "id": 14,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Industrie nach Branche",
+      "description": "Endenergieverbrauch der Industrie in TWh nach Branche.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, 'Eisen und Stahl' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_is_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Chemie' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_cpc_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Nichteisenmetalle' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_nfm_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Steine und Erden' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_nmm_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Papier und Druck' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_ppp_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Nahrungsmittel' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_fbt_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Fahrzeugbau' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_te_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Maschinenbau' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_mac_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Bergbau' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_mq_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Holz' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_wp_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Textil und Leder' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_tl_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Sonstige Industrie' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_ind_nsp_e where zone='$zone' and $__timeFilter(year)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Verkehr nach Verkehrsträger",
+      "description": "Endenergieverbrauch des Verkehrs in TWh (ohne internationalen Luft- und Seeverkehr).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, 'Straße' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_tra_road_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Schiene' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_tra_rail_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Inlandsflug' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_tra_davi_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Binnen- und Küstenschifffahrt' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_tra_dnavi_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Pipelines' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_tra_pipe_e where zone='$zone' and $__timeFilter(year)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Haushalte nach Verwendungszweck",
+      "description": "Endenergieverbrauch der Haushalte in TWh nach Anwendung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, 'Raumwärme' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_sh_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Warmwasser' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_wh_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Kochen' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_co_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Beleuchtung' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_li_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Kühlen und Gefrieren' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_rf_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Geschirrspüler' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_dw_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Waschmaschinen' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_wm_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Trockner' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_dr_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Fernseher' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_tv_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Raumkühlung' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_sc_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Sonstige Geräte' as metric, \"Total_TOTAL\"*0.01163 as v from jrc_idees.energybalance_fc_oth_hh_oa_e where zone='$zone' and $__timeFilter(year)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Haushalte: Verbrauch pro Haushalt und Gradtage",
+      "description": "Endenergieverbrauch pro Haushalt in MWh (linke Achse) und tatsächliche Heizgradtage (rechte Achse). Kalte Jahre treiben den Verbrauch.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select e.year as time, e.\"Total_TOTAL\"*0.01163*1e6/r.\"Number of households\" as \"MWh pro Haushalt\", r.\"Actual heating degree-days\" as \"Heizgradtage\"\nfrom jrc_idees.energybalance_fc_oth_hh_e e join jrc_idees.residential_res_summary r on r.zone=e.zone and r.year=e.year where e.zone='$zone' and $__timeFilter(e.year) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "always",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heizgradtage"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "suffix: Kd"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "MWh pro Haushalt"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MWh"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 39
+      }
+    },
+    {
+      "type": "row",
+      "title": "Emissionen",
+      "collapsed": false,
+      "id": 19,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "CO2-Emissionen des Endverbrauchs nach Sektor",
+      "description": "Direkte CO2-Emissionen aus dem Endenergieverbrauch in Mt CO2 (ohne Umwandlungssektor; Strom- und Fernwärmeerzeugung erscheinen im Stromteil unten).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, 'Industrie' as metric, \"Total_TOTAL\"/1000 as v from jrc_idees.emissionbalance_fc_ind_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Verkehr' as metric, \"Total_TOTAL\"/1000 as v from jrc_idees.emissionbalance_fc_tra_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Haushalte' as metric, \"Total_TOTAL\"/1000 as v from jrc_idees.emissionbalance_fc_oth_hh_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Dienstleistungen' as metric, \"Total_TOTAL\"/1000 as v from jrc_idees.emissionbalance_fc_oth_cp_e where zone='$zone' and $__timeFilter(year) union all select year as time, 'Landwirtschaft/Forst/Fischerei' as metric, \"Total_TOTAL\"/1000 as v from jrc_idees.emissionbalance_fc_oth_aff_e where zone='$zone' and $__timeFilter(year)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: Mt",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Industrie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Verkehr"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Haushalte"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dienstleistungen"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Landwirtschaft/Forst/Fischerei"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 20,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 49
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "CO2-Emissionen des Endverbrauchs der Länder",
+      "description": "Direkte CO2-Emissionen aus dem Endenergieverbrauch im gewählten Jahr in Mt.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select zone as land, \"Total_TOTAL\"/1000 as \"Mt CO2\" from jrc_idees.emissionbalance_fc_e where extract(year from year)=$year and zone <> 'EU27' order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: Mt",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 21,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      }
+    },
+    {
+      "type": "row",
+      "title": "Stromerzeugung",
+      "collapsed": false,
+      "id": 22,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Installierte Kraftwerksleistung",
+      "description": "Brutto-Kraftwerkskapazität in GW nach Technologie (powergen_overviewpg).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, \"Nuclear\"/1000 as \"Kernenergie\", \"Conventional thermal\"/1000 as \"Konventionell thermisch\", \"Wind\"/1000 as \"Wind\",\n\"Solar photovoltaics\"/1000 as \"Photovoltaik\", \"Solar thermal\"/1000 as \"Solarthermie\", \"Geothermal\"/1000 as \"Geothermie\", \"Hydro\"/1000 as \"Wasserkraft\",\n\"Pumped storage\"/1000 as \"Pumpspeicher\" from jrc_idees.powergen_overviewpg where zone='$zone' and $__timeFilter(year) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Kernenergie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Konventionell thermisch"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6E6E6E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Photovoltaik"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solarthermie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 23,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 59
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Thermische Kraftwerke nach Brennstoff",
+      "description": "Brutto-Leistung konventioneller und Biomasse-Kraftwerke in GW nach Brennstoff (powergen_thermal).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, \"Coal\"/1000 as \"Steinkohle\", \"Lignite\"/1000 as \"Braunkohle\", \"Natural gas\"/1000 as \"Erdgas\", \"Biogas\"/1000 as \"Biogas\", \"Derived gas\"/1000 as \"Gichtgas u.ä.\",\n\"Diesel oil\"/1000 as \"Diesel\", \"Fuel oil\"/1000 as \"Schweröl\", \"Solid biomass\"/1000 as \"Feste Biomasse\", \"Waste\"/1000 as \"Abfall\" from jrc_idees.powergen_thermal where zone='$zone' and $__timeFilter(year) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3D3D3D"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8B5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biogas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Feste Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Abfall"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A0522D"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 24,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 59
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Stromerzeugung und CO2-Intensität",
+      "description": "Brutto-Stromerzeugung (ohne Pumpspeicher) in TWh und CO2-Intensität der Erzeugung in g CO2 pro kWh (CO2 der Stromerzeugung / Erzeugung).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select year as time, \"Total gross electricity prod. (without pumped storage) (GWh)\"/1000 as \"Bruttoerzeugung\",\n\"CO2 emissions  (kt CO2)\"*1000.0/nullif(\"Total gross electricity prod. (without pumped storage) (GWh)\",0) as \"CO2-Intensität\"\nfrom jrc_idees.powergen_overviewpg where zone='$zone' and $__timeFilter(year) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "always",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Bruttoerzeugung"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: TWh"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CO2-Intensität"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: g/kWh"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 25,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 68
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Wind- und Solaranteil an der Kraftwerksleistung",
+      "description": "Anteil von Wind plus Photovoltaik an der installierten Brutto-Leistung je Land im gewählten Jahr.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select zone as land, 100*(\"Wind\"+\"Solar photovoltaics\")/nullif(\"Total gross capacities (MW)\",0) as \"Wind+PV-Anteil\" from jrc_idees.powergen_overviewpg where extract(year from year)=$year and zone <> 'EU27' order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "axisSoftMax": 100
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 26,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 68
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "europe",
+    "energy-system"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "query",
+        "name": "zone",
+        "label": "Land",
+        "description": "Länderkürzel nach Eurostat (EL = Griechenland), EU27 = Summe der Mitgliedstaaten.",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select distinct zone from jrc_idees.energybalance_fc_e order by 1",
+        "query": {
+          "rawSql": "select distinct zone from jrc_idees.energybalance_fc_e order by 1",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "year",
+        "label": "Jahr (Ländervergleiche)",
+        "description": "",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select distinct extract(year from year)::int::text from jrc_idees.energybalance_fc_e order by 1 desc",
+        "query": {
+          "rawSql": "select distinct extract(year from year)::int::text from jrc_idees.energybalance_fc_e order by 1 desc",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "2021",
+          "value": "2021"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "sector",
+        "label": "Sektor (Energieträgermix)",
+        "description": "",
+        "query": "Gesamt : fc_e,Industrie : fc_ind_e,Verkehr : fc_tra_e,Haushalte : fc_oth_hh_e,Dienstleistungen : fc_oth_cp_e,Landwirtschaft/Forst/Fischerei : fc_oth_aff_e",
+        "current": {
+          "text": "Gesamt",
+          "value": "fc_e"
+        },
+        "options": [
+          {
+            "text": "Gesamt",
+            "value": "fc_e",
+            "selected": true
+          },
+          {
+            "text": "Industrie",
+            "value": "fc_ind_e",
+            "selected": false
+          },
+          {
+            "text": "Verkehr",
+            "value": "fc_tra_e",
+            "selected": false
+          },
+          {
+            "text": "Haushalte",
+            "value": "fc_oth_hh_e",
+            "selected": false
+          },
+          {
+            "text": "Dienstleistungen",
+            "value": "fc_oth_cp_e",
+            "selected": false
+          },
+          {
+            "text": "Landwirtschaft/Forst/Fischerei",
+            "value": "fc_oth_aff_e",
+            "selected": false
+          }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "2000-01-01T00:00:00.000Z",
+    "to": "2021-12-31T23:59:59.000Z"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS JRC-IDEES Energiesystem Europa",
+  "uid": "oeds-jrc-idees",
+  "version": 1,
+  "weekStart": ""
+}

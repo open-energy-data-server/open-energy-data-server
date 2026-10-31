@@ -1,0 +1,1528 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Synthetische Stromnachfrage deutscher Lastgebiete aus dem OpenEGO-Projekt (Open Energy Platform, ego_dp_loadarea). Je Zeile ein Lastgebiet mit Fläche, Einwohnern, Flächennutzung und jährlichem Stromverbrauch je Sektor. Die Tabelle enthält mehrere Modellversionen übereinander, daher muss immer eine Version gewählt werden. Geometrien wurden vom Crawler verworfen, die Karte nutzt die mittlere PLZ-Position der NUTS3-Region.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Lastgebiete",
+      "description": "Anzahl Lastgebiete in der gewählten Version.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from oep.ego_demand where version='$version'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Modellversionen",
+      "description": "Anzahl der in der Tabelle gespeicherten Versionen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct version) as n from oep.ego_demand",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Stromverbrauch",
+      "description": "Summe sector_consumption_sum der Version. Einheit GWh/a (Gesamtsumme ca. 475 TWh passt zum deutschen Nettostromverbrauch).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(sector_consumption_sum)/1000 as twh from oep.ego_demand where version='$version'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh/a",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Einwohner",
+      "description": "Summe zensus_sum (Zensus 2011-Einwohner, Rasterdaten) der Lastgebiete.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(zensus_sum)/1e6 as mio from oep.ego_demand where version='$version'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: Mio",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Fläche",
+      "description": "Summe area_ha aller Lastgebiete (nur besiedelte Flächen, nicht ganz Deutschland).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(area_ha)/100 as km2 from oep.ego_demand where version='$version'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: km²",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Spitzenlast (Summe)",
+      "description": "Summe der Spitzenlasten aller Sektoren. Einheit vermutlich GW (nicht dokumentiert, die Summe von ca. 80 passt zur deutschen Jahreshöchstlast).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select (sum(sector_peakload_residential)+sum(sector_peakload_retail)+sum(sector_peakload_industrial)+sum(sector_peakload_agricultural)) as gw from oep.ego_demand where version='$version'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Verbrauch nach Sektor und Region",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "piechart",
+      "title": "Stromverbrauch nach Sektor",
+      "description": "Jahresverbrauch nach Sektor in der gewählten Version (TWh).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 'Haushalte' as sektor, sum(sector_consumption_residential)/1000 as twh from oep.ego_demand where version='$version'\nunion all select 'Gewerbe/Handel/Dienstleistung', sum(sector_consumption_retail)/1000 from oep.ego_demand where version='$version'\nunion all select 'Industrie', sum(sector_consumption_industrial)/1000 from oep.ego_demand where version='$version'\nunion all select 'Landwirtschaft', sum(sector_consumption_agricultural)/1000 from oep.ego_demand where version='$version'",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Haushalte"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gewerbe/Handel/Dienstleistung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Industrie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Landwirtschaft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Stromverbrauch je Bundesland und Sektor",
+      "description": "Jahresverbrauch in TWh, NUTS1-Region aus dem NUTS-Code der Lastgebiete.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case left(nuts,3) when 'DE1' then 'Baden-Württemberg' when 'DE2' then 'Bayern' when 'DE3' then 'Berlin' when 'DE4' then 'Brandenburg'\nwhen 'DE5' then 'Bremen' when 'DE6' then 'Hamburg' when 'DE7' then 'Hessen' when 'DE8' then 'Mecklenburg-Vorpommern' when 'DE9' then 'Niedersachsen'\nwhen 'DEA' then 'Nordrhein-Westfalen' when 'DEB' then 'Rheinland-Pfalz' when 'DEC' then 'Saarland' when 'DED' then 'Sachsen' when 'DEE' then 'Sachsen-Anhalt'\nwhen 'DEF' then 'Schleswig-Holstein' when 'DEG' then 'Thüringen' else left(nuts,3) end as bundesland, sum(sector_consumption_residential)/1000 as \"Haushalte\", sum(sector_consumption_retail)/1000 as \"Gewerbe/Handel/Dienstleistung\",\nsum(sector_consumption_industrial)/1000 as \"Industrie\", sum(sector_consumption_agricultural)/1000 as \"Landwirtschaft\"\nfrom oep.ego_demand where version='$version' group by 1 order by sum(sector_consumption_sum) desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Haushalte"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gewerbe/Handel/Dienstleistung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Industrie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Landwirtschaft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Haushaltsstrom pro Einwohner",
+      "description": "Verbrauch der Haushalte in kWh pro Einwohner und Jahr je Bundesland (sector_consumption_residential / zensus_sum).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case left(nuts,3) when 'DE1' then 'Baden-Württemberg' when 'DE2' then 'Bayern' when 'DE3' then 'Berlin' when 'DE4' then 'Brandenburg'\nwhen 'DE5' then 'Bremen' when 'DE6' then 'Hamburg' when 'DE7' then 'Hessen' when 'DE8' then 'Mecklenburg-Vorpommern' when 'DE9' then 'Niedersachsen'\nwhen 'DEA' then 'Nordrhein-Westfalen' when 'DEB' then 'Rheinland-Pfalz' when 'DEC' then 'Saarland' when 'DED' then 'Sachsen' when 'DEE' then 'Sachsen-Anhalt'\nwhen 'DEF' then 'Schleswig-Holstein' when 'DEG' then 'Thüringen' else left(nuts,3) end as bundesland, sum(sector_consumption_residential)*1e6/nullif(sum(zensus_sum),0) as \"kWh/Einwohner\"\nfrom oep.ego_demand where version='$version' group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Anteil Industrie am Verbrauch",
+      "description": "Industrieverbrauch in Prozent des Gesamtverbrauchs je Bundesland.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case left(nuts,3) when 'DE1' then 'Baden-Württemberg' when 'DE2' then 'Bayern' when 'DE3' then 'Berlin' when 'DE4' then 'Brandenburg'\nwhen 'DE5' then 'Bremen' when 'DE6' then 'Hamburg' when 'DE7' then 'Hessen' when 'DE8' then 'Mecklenburg-Vorpommern' when 'DE9' then 'Niedersachsen'\nwhen 'DEA' then 'Nordrhein-Westfalen' when 'DEB' then 'Rheinland-Pfalz' when 'DEC' then 'Saarland' when 'DED' then 'Sachsen' when 'DEE' then 'Sachsen-Anhalt'\nwhen 'DEF' then 'Schleswig-Holstein' when 'DEG' then 'Thüringen' else left(nuts,3) end as bundesland, 100*sum(sector_consumption_industrial)/nullif(sum(sector_consumption_sum),0) as \"Industrieanteil\"\nfrom oep.ego_demand where version='$version' group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: %",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      }
+    },
+    {
+      "type": "row",
+      "title": "Räumliche Verteilung",
+      "collapsed": false,
+      "id": 13,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": []
+    },
+    {
+      "type": "geomap",
+      "title": "Stromverbrauch je NUTS3-Region",
+      "description": "Kreise (NUTS3) mit Jahresverbrauch in GWh (Größe) und Anteil der Industrie (Farbe, %). Position ist der Mittelwert der PLZ-Mittelpunkte der Region.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select p.lat, p.lon, e.nuts as nuts3, sum(e.sector_consumption_sum) as verbrauch_gwh, 100*sum(e.sector_consumption_industrial)/nullif(sum(e.sector_consumption_sum),0) as industrieanteil_pct,\nsum(e.zensus_sum) as einwohner from oep.ego_demand e join (select nuts3, avg(latitude) as lat, avg(longitude) as lon from public.plz group by 1) p on p.nuts3 = e.nuts where e.version='$version' group by 1,2,3",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-YlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.6,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 22,
+                  "field": "verbrauch_gwh"
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "industrieanteil_pct"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 20 NUTS3-Regionen nach Verbrauch",
+      "description": "Jahresverbrauch aller Sektoren in GWh.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select nuts as nuts3, sum(sector_consumption_sum) as gwh from oep.ego_demand where version='$version' group by 1 order by 2 desc limit 20",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      }
+    },
+    {
+      "type": "row",
+      "title": "Lastgebiete im Detail",
+      "collapsed": false,
+      "id": 16,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Flächennutzung der Lastgebiete",
+      "description": "Fläche der Sektoren in km² je Bundesland (sector_area_*).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case left(nuts,3) when 'DE1' then 'Baden-Württemberg' when 'DE2' then 'Bayern' when 'DE3' then 'Berlin' when 'DE4' then 'Brandenburg'\nwhen 'DE5' then 'Bremen' when 'DE6' then 'Hamburg' when 'DE7' then 'Hessen' when 'DE8' then 'Mecklenburg-Vorpommern' when 'DE9' then 'Niedersachsen'\nwhen 'DEA' then 'Nordrhein-Westfalen' when 'DEB' then 'Rheinland-Pfalz' when 'DEC' then 'Saarland' when 'DED' then 'Sachsen' when 'DEE' then 'Sachsen-Anhalt'\nwhen 'DEF' then 'Schleswig-Holstein' when 'DEG' then 'Thüringen' else left(nuts,3) end as bundesland, sum(sector_area_residential)/100 as \"Wohnen\", sum(sector_area_retail)/100 as \"Gewerbe/Handel\", sum(sector_area_industrial)/100 as \"Industrie\",\nsum(sector_area_agricultural)/100 as \"Landwirtschaft\" from oep.ego_demand where version='$version' group by 1 order by sum(sector_area_sum) desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: km²",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Verbrauchsdichte der Lastgebiete",
+      "description": "Anzahl Lastgebiete nach Jahresverbrauch je Fläche (MWh pro ha). Lastgebiete mit Fläche > 0 und Verbrauch > 0.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case b when 1 then '1) bis 1' when 2 then '2) 1-10' when 3 then '3) 10-50' when 4 then '4) 50-200' when 5 then '5) 200-1000' else '6) über 1000' end as mwh_pro_ha, count(*) as lastgebiete\nfrom (select width_bucket(sector_consumption_sum*1000/area_ha, array[1,10,50,200,1000]) + 1 as b from oep.ego_demand where version='$version' and area_ha > 0 and sector_consumption_sum > 0) x group by b order by b",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "mwh_pro_ha",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Gesamtverbrauch je Modellversion",
+      "description": "Zeigt, wie sich die Modellversionen unterscheiden (alle in der Tabelle vorhandenen Versionen). Die Summen ändern sich nur leicht, ab v0.4.0 sinkt die Haushaltslast.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select version, sum(sector_consumption_residential)/1000 as \"Haushalte\", sum(sector_consumption_retail)/1000 as \"Gewerbe/Handel/Dienstleistung\",\nsum(sector_consumption_industrial)/1000 as \"Industrie\", sum(sector_consumption_agricultural)/1000 as \"Landwirtschaft\" from oep.ego_demand group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Haushalte"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gewerbe/Handel/Dienstleistung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Industrie"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Landwirtschaft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "version",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 49
+      }
+    },
+    {
+      "type": "table",
+      "title": "Bundesländer im Überblick",
+      "description": "Kennzahlen je Bundesland in der gewählten Version.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case left(nuts,3) when 'DE1' then 'Baden-Württemberg' when 'DE2' then 'Bayern' when 'DE3' then 'Berlin' when 'DE4' then 'Brandenburg'\nwhen 'DE5' then 'Bremen' when 'DE6' then 'Hamburg' when 'DE7' then 'Hessen' when 'DE8' then 'Mecklenburg-Vorpommern' when 'DE9' then 'Niedersachsen'\nwhen 'DEA' then 'Nordrhein-Westfalen' when 'DEB' then 'Rheinland-Pfalz' when 'DEC' then 'Saarland' when 'DED' then 'Sachsen' when 'DEE' then 'Sachsen-Anhalt'\nwhen 'DEF' then 'Schleswig-Holstein' when 'DEG' then 'Thüringen' else left(nuts,3) end as bundesland, count(*) as lastgebiete, sum(zensus_sum) as einwohner, sum(area_ha)/100 as flaeche_km2, sum(sector_consumption_sum)/1000 as verbrauch_twh,\nsum(sector_consumption_sum)*1e6/nullif(sum(zensus_sum),0) as kwh_pro_einwohner,\nsum(sector_peakload_residential+sector_peakload_retail+sector_peakload_industrial+sector_peakload_agricultural) as spitzenlast_gw\nfrom oep.ego_demand where version='$version' group by 1 order by 5 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "einwohner"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "flaeche_km2"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: km²"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "verbrauch_twh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: TWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-BlPu"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kwh_pro_einwohner"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "spitzenlast_gw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GW"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 20,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "demand",
+    "germany"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "query",
+        "name": "version",
+        "label": "Modellversion",
+        "description": "Alle Versionen der Lastgebiete liegen in der Tabelle. Summen über mehrere Versionen wären mehrfach gezählt.",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select distinct version from oep.ego_demand order by 1 desc",
+        "query": {
+          "rawSql": "select distinct version from oep.ego_demand order by 1 desc",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "v0.4.5",
+          "value": "v0.4.5"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS OEP Stromnachfrage (eGo Lastgebiete)",
+  "uid": "oeds-oep",
+  "version": 1,
+  "weekStart": ""
+}

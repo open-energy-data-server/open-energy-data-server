@@ -1,0 +1,1141 @@
+{
+  "uid": "oeds-synpro",
+  "title": "OEDS synPRO Load Profiles",
+  "tags": [
+    "oeds",
+    "household",
+    "load",
+    "heat",
+    "synthetic"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2020-12-31T23:00:00.000Z",
+    "to": "2021-12-31T23:00:00.000Z"
+  },
+  "description": "Synthetic household load profiles from Fraunhofer ISE synPRO: electricity of 4 households, space heating and hot water of 4 buildings, 15 minute resolution, one year (2021).",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "custom",
+        "name": "el",
+        "label": "Electric profile",
+        "query": "Family (2 adults, 2 children) : family,2 full-time employees : two_fulltime_employees,2 persons over 65 : two_persons_over_65,Single person under 30 : single_person_under_30",
+        "current": {
+          "text": "Family (2 adults, 2 children)",
+          "value": "family"
+        },
+        "options": [
+          {
+            "text": "Family (2 adults, 2 children)",
+            "value": "family",
+            "selected": true
+          },
+          {
+            "text": "2 full-time employees",
+            "value": "two_fulltime_employees",
+            "selected": false
+          },
+          {
+            "text": "2 persons over 65",
+            "value": "two_persons_over_65",
+            "selected": false
+          },
+          {
+            "text": "Single person under 30",
+            "value": "single_person_under_30",
+            "selected": false
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "building",
+        "label": "Building",
+        "query": "SFH old (1979-2001) : old_single_family_house,SFH passive : passive_single_family_house,MFH old (1979-2001) : old_multi_party_house,MFH passive : passive_multi_party_house",
+        "current": {
+          "text": "SFH old (1979-2001)",
+          "value": "old_single_family_house"
+        },
+        "options": [
+          {
+            "text": "SFH old (1979-2001)",
+            "value": "old_single_family_house",
+            "selected": true
+          },
+          {
+            "text": "SFH passive",
+            "value": "passive_single_family_house",
+            "selected": false
+          },
+          {
+            "text": "MFH old (1979-2001)",
+            "value": "old_multi_party_house",
+            "selected": false
+          },
+          {
+            "text": "MFH passive",
+            "value": "passive_multi_party_house",
+            "selected": false
+          }
+        ],
+        "multi": false,
+        "includeAll": false,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "synpro tables",
+      "description": "First and latest timestamp of a profile table and its rows. 12 tables with 35,040 quarter hours each (one year). Static dataset without live updates.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(datetime))*1000)::bigint as \"First\", (extract(epoch from max(datetime))*1000)::bigint as \"Latest\", approximate_row_count('synpro.electric_family'::regclass) as \"Rows (approx.)\"\nFROM synpro.electric_family"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 10,
+        "h": 4
+      }
+    },
+    {
+      "type": "table",
+      "title": "Annual energy per profile",
+      "description": "Energy (sum x 0.25 h), mean and peak power of all 12 profiles in the selected range. Electric: P_el, heat: Q_htg space heating, hot water: Q_dhw. An old single-family house needs ~26 MWh/a for space heating, a passive house ~3 MWh/a.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT type AS \"Type\", name AS \"Profile\", sum(v)*0.25/1000 AS \"Energy (kWh)\", avg(v) AS \"Mean (W)\", max(v) AS \"Peak (W)\", 100.0*avg(v)/NULLIF(max(v), 0) AS \"Load factor (%)\" FROM (SELECT 'Electricity' AS type, * FROM (SELECT datetime, 'Family (2 adults, 2 children)' AS name, \"P_el\" AS v FROM synpro.electric_family\nUNION ALL\nSELECT datetime, '2 full-time employees' AS name, \"P_el\" AS v FROM synpro.electric_two_fulltime_employees\nUNION ALL\nSELECT datetime, '2 persons over 65' AS name, \"P_el\" AS v FROM synpro.electric_two_persons_over_65\nUNION ALL\nSELECT datetime, 'Single person under 30' AS name, \"P_el\" AS v FROM synpro.electric_single_person_under_30) a UNION ALL SELECT 'Space heating', * FROM (SELECT datetime, 'SFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_single_family_house\nUNION ALL\nSELECT datetime, 'SFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_single_family_house\nUNION ALL\nSELECT datetime, 'MFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_multi_party_house\nUNION ALL\nSELECT datetime, 'MFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_multi_party_house) b UNION ALL SELECT 'Hot water', * FROM (SELECT datetime, 'SFH old (1979-2001)' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_old_single_family_house UNION ALL SELECT datetime, 'SFH passive' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_passive_single_family_house UNION ALL SELECT datetime, 'MFH old (1979-2001)' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_old_multi_party_house UNION ALL SELECT datetime, 'MFH passive' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_passive_multi_party_house) c) x WHERE $__timeFilter(datetime) GROUP BY 1,2 ORDER BY 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy (kWh)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatth"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mean (W)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak (W)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load factor (%)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 10,
+        "y": 1,
+        "w": 14,
+        "h": 7
+      }
+    },
+    {
+      "type": "row",
+      "title": "Electricity of the households",
+      "collapsed": false,
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Electric load profiles",
+      "description": "Synthetic data (not measured): profiles from the synPRO model, in W per household/building at 15 minute resolution. Mean power per time bin. The family has the highest consumption, the single person the lowest.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,$__interval), name, avg(v) AS \"P_el\" FROM (SELECT datetime, 'Family (2 adults, 2 children)' AS name, \"P_el\" AS v FROM synpro.electric_family\nUNION ALL\nSELECT datetime, '2 full-time employees' AS name, \"P_el\" AS v FROM synpro.electric_two_fulltime_employees\nUNION ALL\nSELECT datetime, '2 persons over 65' AS name, \"P_el\" AS v FROM synpro.electric_two_persons_over_65\nUNION ALL\nSELECT datetime, 'Single person under 30' AS name, \"P_el\" AS v FROM synpro.electric_single_person_under_30) x WHERE $__timeFilter(datetime) GROUP BY 1,2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Weekday profile (local time)",
+      "description": "Mean power by quarter hour of the day (Europe/Berlin), Monday-Friday. Evening peak around 19-21 h for all households; the family also has a pronounced midday consumption, while the full-time employees are low during the day and the single person has the lowest, flattest profile.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(hour from datetime AT TIME ZONE 'Europe/Berlin')*4 + floor(extract(minute from datetime)/15))/4.0 AS \"Hour of day\", avg(v) FILTER (WHERE name = 'Family (2 adults, 2 children)') AS \"Family (2 adults, 2 children)\", avg(v) FILTER (WHERE name = '2 full-time employees') AS \"2 full-time employees\", avg(v) FILTER (WHERE name = '2 persons over 65') AS \"2 persons over 65\", avg(v) FILTER (WHERE name = 'Single person under 30') AS \"Single person under 30\" FROM (SELECT datetime, 'Family (2 adults, 2 children)' AS name, \"P_el\" AS v FROM synpro.electric_family\nUNION ALL\nSELECT datetime, '2 full-time employees' AS name, \"P_el\" AS v FROM synpro.electric_two_fulltime_employees\nUNION ALL\nSELECT datetime, '2 persons over 65' AS name, \"P_el\" AS v FROM synpro.electric_two_persons_over_65\nUNION ALL\nSELECT datetime, 'Single person under 30' AS name, \"P_el\" AS v FROM synpro.electric_single_person_under_30) x WHERE $__timeFilter(datetime) AND extract(isodow from datetime AT TIME ZONE 'Europe/Berlin') < 6 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour of day",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Weekend profile (local time)",
+      "description": "Mean power by quarter hour of the day (Europe/Berlin), Saturday and Sunday: the full-time employees are at home during the day, so their midday consumption rises compared to weekdays.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(hour from datetime AT TIME ZONE 'Europe/Berlin')*4 + floor(extract(minute from datetime)/15))/4.0 AS \"Hour of day\", avg(v) FILTER (WHERE name = 'Family (2 adults, 2 children)') AS \"Family (2 adults, 2 children)\", avg(v) FILTER (WHERE name = '2 full-time employees') AS \"2 full-time employees\", avg(v) FILTER (WHERE name = '2 persons over 65') AS \"2 persons over 65\", avg(v) FILTER (WHERE name = 'Single person under 30') AS \"Single person under 30\" FROM (SELECT datetime, 'Family (2 adults, 2 children)' AS name, \"P_el\" AS v FROM synpro.electric_family\nUNION ALL\nSELECT datetime, '2 full-time employees' AS name, \"P_el\" AS v FROM synpro.electric_two_fulltime_employees\nUNION ALL\nSELECT datetime, '2 persons over 65' AS name, \"P_el\" AS v FROM synpro.electric_two_persons_over_65\nUNION ALL\nSELECT datetime, 'Single person under 30' AS name, \"P_el\" AS v FROM synpro.electric_single_person_under_30) x WHERE $__timeFilter(datetime) AND extract(isodow from datetime AT TIME ZONE 'Europe/Berlin') >= 6 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour of day",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Monthly electricity consumption",
+      "description": "Energy per month (kWh) of the four electric profiles. The synthetic profiles are almost flat over the year with slightly more consumption in winter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', datetime AT TIME ZONE 'Europe/Berlin'), 'YYYY-MM') AS \"Month\", sum(v) FILTER (WHERE name = 'Family (2 adults, 2 children)')*0.25/1000 AS \"Family (2 adults, 2 children)\", sum(v) FILTER (WHERE name = '2 full-time employees')*0.25/1000 AS \"2 full-time employees\", sum(v) FILTER (WHERE name = '2 persons over 65')*0.25/1000 AS \"2 persons over 65\", sum(v) FILTER (WHERE name = 'Single person under 30')*0.25/1000 AS \"Single person under 30\" FROM (SELECT datetime, 'Family (2 adults, 2 children)' AS name, \"P_el\" AS v FROM synpro.electric_family\nUNION ALL\nSELECT datetime, '2 full-time employees' AS name, \"P_el\" AS v FROM synpro.electric_two_fulltime_employees\nUNION ALL\nSELECT datetime, '2 persons over 65' AS name, \"P_el\" AS v FROM synpro.electric_two_persons_over_65\nUNION ALL\nSELECT datetime, 'Single person under 30' AS name, \"P_el\" AS v FROM synpro.electric_single_person_under_30) x WHERE $__timeFilter(datetime) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "kwatth"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Load duration curves of the electric profiles",
+      "description": "Power sorted from highest to lowest: x is the share of time in which the power is exceeded. Short high peaks (cooking, water heating) over a low base load.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (1-i/50.0)*100 AS \"Share of time exceeded (%)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = 'Family (2 adults, 2 children)') AS \"Family (2 adults, 2 children)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = '2 full-time employees') AS \"2 full-time employees\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = '2 persons over 65') AS \"2 persons over 65\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = 'Single person under 30') AS \"Single person under 30\" FROM (SELECT datetime, 'Family (2 adults, 2 children)' AS name, \"P_el\" AS v FROM synpro.electric_family\nUNION ALL\nSELECT datetime, '2 full-time employees' AS name, \"P_el\" AS v FROM synpro.electric_two_fulltime_employees\nUNION ALL\nSELECT datetime, '2 persons over 65' AS name, \"P_el\" AS v FROM synpro.electric_two_persons_over_65\nUNION ALL\nSELECT datetime, 'Single person under 30' AS name, \"P_el\" AS v FROM synpro.electric_single_person_under_30) x, generate_series(0,50) i WHERE $__timeFilter(datetime) GROUP BY i ORDER BY i DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Share of time exceeded (%)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Heating and hot water of the buildings",
+      "collapsed": false,
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Space heating demand",
+      "description": "Synthetic data (not measured): profiles from the synPRO model, in W per household/building at 15 minute resolution. Daily mean heating power per building (W). Old buildings (1979-2001) need 4-8 times more heat than passive houses; demand follows the heating season.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,'1d'), name, avg(v) AS \"Q_htg\" FROM (SELECT datetime, 'SFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_single_family_house\nUNION ALL\nSELECT datetime, 'SFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_single_family_house\nUNION ALL\nSELECT datetime, 'MFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_multi_party_house\nUNION ALL\nSELECT datetime, 'MFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_multi_party_house) x WHERE $__timeFilter(datetime) GROUP BY 1,2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 16,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Monthly space heating energy",
+      "description": "Space heating energy per month (kWh) of the four buildings.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', datetime AT TIME ZONE 'Europe/Berlin'), 'YYYY-MM') AS \"Month\", sum(v) FILTER (WHERE name = 'SFH old (1979-2001)')*0.25/1000 AS \"SFH old (1979-2001)\", sum(v) FILTER (WHERE name = 'SFH passive')*0.25/1000 AS \"SFH passive\", sum(v) FILTER (WHERE name = 'MFH old (1979-2001)')*0.25/1000 AS \"MFH old (1979-2001)\", sum(v) FILTER (WHERE name = 'MFH passive')*0.25/1000 AS \"MFH passive\" FROM (SELECT datetime, 'SFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_single_family_house\nUNION ALL\nSELECT datetime, 'SFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_single_family_house\nUNION ALL\nSELECT datetime, 'MFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_multi_party_house\nUNION ALL\nSELECT datetime, 'MFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_multi_party_house) x WHERE $__timeFilter(datetime) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "kwatth"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 16,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Domestic hot water demand",
+      "description": "Daily mean hot water heat demand per building (W): moderately seasonal (about 40 % higher in winter than in August) and independent of the insulation standard; roughly twice as large for multi-family houses.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,'1d'), name, avg(v) AS \"Q_dhw\" FROM (SELECT datetime, 'SFH old (1979-2001)' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_old_single_family_house\nUNION ALL\nSELECT datetime, 'SFH passive' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_passive_single_family_house\nUNION ALL\nSELECT datetime, 'MFH old (1979-2001)' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_old_multi_party_house\nUNION ALL\nSELECT datetime, 'MFH passive' AS name, \"Q_dhw\" AS v FROM synpro.domestic_hot_water_passive_multi_party_house) x WHERE $__timeFilter(datetime) GROUP BY 1,2 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 16,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Heat duration curves",
+      "description": "Space heating power sorted from highest to lowest: the peak defines the required heat generator size, many hours are at low load. Peaks: old buildings 13-26 kW, passive houses 6-16 kW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (1-i/50.0)*100 AS \"Share of time exceeded (%)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = 'SFH old (1979-2001)') AS \"SFH old (1979-2001)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = 'SFH passive') AS \"SFH passive\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = 'MFH old (1979-2001)') AS \"MFH old (1979-2001)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY v) FILTER (WHERE name = 'MFH passive') AS \"MFH passive\" FROM (SELECT datetime, 'SFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_single_family_house\nUNION ALL\nSELECT datetime, 'SFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_single_family_house\nUNION ALL\nSELECT datetime, 'MFH old (1979-2001)' AS name, \"Q_htg\" AS v FROM synpro.heat_old_multi_party_house\nUNION ALL\nSELECT datetime, 'MFH passive' AS name, \"Q_htg\" AS v FROM synpro.heat_passive_multi_party_house) x, generate_series(0,50) i WHERE $__timeFilter(datetime) GROUP BY i ORDER BY i DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Share of time exceeded (%)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 16,
+        "y": 42,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Combined household: $el in building $building",
+      "collapsed": false,
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Electricity and heat demand of the selected household",
+      "description": "Selected electric profile plus space heating and hot water of the selected building (W, daily mean). Recommended combinations (dataset description): family with any single-family house, all electric profiles together with a multi-family house.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,'1d'), avg(\"P_el\") AS \"Electricity\", avg(\"Q_htg\") AS \"Space heating\", avg(\"Q_dhw\") AS \"Hot water\" FROM (SELECT e.datetime, e.\"P_el\", h.\"Q_htg\", w.\"Q_dhw\" FROM synpro.electric_${el} e JOIN synpro.heat_${building} h USING (datetime) JOIN synpro.domestic_hot_water_${building} w USING (datetime)) x WHERE $__timeFilter(datetime) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 16,
+        "h": 8
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Annual energy of the combination",
+      "description": "Energy in the selected range for the selected electric profile and building.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(\"P_el\")*0.25/1000 AS \"Electricity\", sum(\"Q_htg\")*0.25/1000 AS \"Space heating\", sum(\"Q_dhw\")*0.25/1000 AS \"Hot water\", 100.0*sum(\"Q_dhw\" + \"Q_htg\")/NULLIF(sum(\"Q_dhw\" + \"Q_htg\" + \"P_el\"), 0) AS \"Heat share\" FROM (SELECT e.datetime, e.\"P_el\", h.\"Q_htg\", w.\"Q_dhw\" FROM synpro.electric_${el} e JOIN synpro.heat_${building} h USING (datetime) JOIN synpro.domestic_hot_water_${building} w USING (datetime)) x WHERE $__timeFilter(datetime)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Electricity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatth"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Space heating"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatth"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hot water"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatth"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heat share"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "vertical"
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 16,
+        "y": 51,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Winter vs summer day of the combination",
+      "description": "Mean power by hour of the day (Europe/Berlin) of the selected electricity profile and hot water in January and July, and space heating in January: heating and hot water peaks coincide with the electricity peaks in the morning and evening.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(hour from datetime AT TIME ZONE 'Europe/Berlin')*4 + floor(extract(minute from datetime)/15))/4.0 AS \"Hour of day\", avg(\"P_el\") FILTER (WHERE extract(month from datetime AT TIME ZONE 'Europe/Berlin') = 1) AS \"Electricity Jan\", avg(\"P_el\") FILTER (WHERE extract(month from datetime AT TIME ZONE 'Europe/Berlin') = 7) AS \"Electricity Jul\", avg(\"Q_htg\") FILTER (WHERE extract(month from datetime AT TIME ZONE 'Europe/Berlin') = 1) AS \"Space heating Jan\", avg(\"Q_dhw\") FILTER (WHERE extract(month from datetime AT TIME ZONE 'Europe/Berlin') = 1) AS \"Hot water Jan\", avg(\"Q_dhw\") FILTER (WHERE extract(month from datetime AT TIME ZONE 'Europe/Berlin') = 7) AS \"Hot water Jul\" FROM (SELECT e.datetime, e.\"P_el\", h.\"Q_htg\", w.\"Q_dhw\" FROM synpro.electric_${el} e JOIN synpro.heat_${building} h USING (datetime) JOIN synpro.domestic_hot_water_${building} w USING (datetime)) x WHERE $__timeFilter(datetime) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour of day",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 59,
+        "w": 24,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

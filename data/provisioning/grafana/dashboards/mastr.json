@@ -1,0 +1,4556 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Marktstammdatenregister der Bundesnetzagentur: alle Strom- und Gasanlagen in Deutschland (Gesamtdatenexport, geladen mit open-mastr). Leistungen sind Bruttoleistungen der Einheiten (kW in der Datenbank, hier GW/MW). Die Tabellen *_extended enthalten Basis- und Zusatzdaten je Einheit. Bestandswerte betrachten Einheiten im Status 'In Betrieb'. Kleine Solaranlagen veröffentlichen meist keine Koordinaten, Karten zeigen daher nur Einheiten mit Standort.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Installierte Bruttoleistung in Betrieb",
+      "description": "Summe der Bruttoleistung aller Einheiten im Status 'In Betrieb' (Bundesland-Filter beachtet). Batteriespeicher und Pumpspeicher getrennt, Solar nach Bauart.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select tech, sum(kw)/1e6 as gw from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^gw$/",
+          "values": true
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 5,
+        "w": 14,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Einheiten in Betrieb",
+      "description": "Anzahl Einheiten im Status 'In Betrieb'. Solar umfasst 1,5 Mio. steckerfertige Balkonkraftwerke und 2,9 Mio. Heimspeicher gehören zu den Batterien.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select tech, count(*) as n from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^n$/",
+          "values": true
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 5,
+        "w": 10,
+        "x": 14,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Datenstand MaStR",
+      "description": "Datum des Gesamtdatenexports (Spalte DatumDownload, Windeinheiten).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(max(\"DatumDownload\"::date),'YYYY-MM-DD') as stand from mastr.wind_extended",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Einheiten in Planung",
+      "description": "Einheiten im Status 'In Planung' (alle Technologien).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 6
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Geplante Leistung",
+      "description": "Summe der Bruttoleistung der Einheiten im Status 'In Planung'. Enthält viele Großspeicher und Solarparks.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(kw)/1e6 as gw from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Planung' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 6
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Heimspeicher",
+      "description": "Batteriespeicher mit höchstens 30 kW Bruttoleistung in Betrieb (Anzahl).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and \"Technologie\"='Batterie' and \"Bruttoleistung\" <= 30 and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Marktakteure",
+      "description": "Näherungswert der Zeilenzahl in market_actors (Betreiber, Netzbetreiber, Händler).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select approximate_row_count('mastr.market_actors'::regclass) as n",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 8,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 6
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Anlagen mit Koordinaten (Solar)",
+      "description": "Anteil der Solareinheiten in Betrieb mit Längen- und Breitengrad. Kleinanlagen veröffentlichen ihren Standort nicht.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 100.0*count(\"Laengengrad\")/count(*) as p from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 6
+      }
+    },
+    {
+      "type": "row",
+      "title": "Bestand",
+      "collapsed": false,
+      "id": 10,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Bruttoleistung nach Technologie",
+      "description": "Installierte Bruttoleistung der Einheiten in Betrieb in GW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select tech, sum(kw)/1e6 as \"GW\" from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 11
+      }
+    },
+    {
+      "type": "piechart",
+      "title": "Anteile an der Bruttoleistung",
+      "description": "Anteil der Technologien an der installierten Bruttoleistung in Betrieb (ohne Pumpspeicher).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select tech, sum(kw)/1e6 as gw from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u where tech <> 'Pumpspeicher' group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Dach"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Freifläche"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind an Land"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind auf See"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batteriespeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie/Grubengas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF7383"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8C5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mineralöl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A16B4E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sonstige konventionelle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9FA7B3"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 11
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Photovoltaik nach Anlagengröße",
+      "description": "Installierte Leistung der Solaranlagen in Betrieb nach Größenklasse der Einheit (GW) und Bauart. Zeigt, wie viel Leistung in Dachanlagen unter 30 kW, Gewerbedächern und Solarparks steckt.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when kw < 10 then '1) bis 10 kW' when kw < 30 then '2) 10-30 kW' when kw < 100 then '3) 30-100 kW' when kw < 1000 then '4) 100 kW-1 MW' when kw < 10000 then '5) 1-10 MW' else '6) über 10 MW' end as groesse,\nsum(kw) filter (where tech='Solar Dach')/1e6 as \"Solar Dach\", sum(kw) filter (where tech='Solar Freifläche')/1e6 as \"Solar Freifläche\", sum(kw) filter (where tech='Balkonkraftwerk')/1e6 as \"Balkonkraftwerk\"\nfrom (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Dach"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Freifläche"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind an Land"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind auf See"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batteriespeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie/Grubengas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF7383"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8C5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mineralöl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A16B4E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sonstige konventionelle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9FA7B3"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "groesse",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 11
+      }
+    },
+    {
+      "type": "table",
+      "title": "Betriebsstatus nach Technologie",
+      "description": "Bruttoleistung in GW je Betriebsstatus. 'In Planung' sind angekündigte Einheiten, 'Endgültig stillgelegt' wurden abgemeldet.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select tech as technologie, sum(kw) filter (where st='In Betrieb')/1e6 as in_betrieb_gw, sum(kw) filter (where st='In Planung')/1e6 as in_planung_gw,\nsum(kw) filter (where st='Vorübergehend stillgelegt')/1e6 as voruebergehend_stillgelegt_gw, sum(kw) filter (where st='Endgültig stillgelegt')/1e6 as endgueltig_stillgelegt_gw,\ncount(*) filter (where st='In Betrieb') as einheiten_in_betrieb\nfrom (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where true and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u group by 1 order by 2 desc nulls last",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "in_betrieb_gw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GW"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-BlPu"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "in_planung_gw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GW"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "voruebergehend_stillgelegt_gw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GW"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "endgueltig_stillgelegt_gw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GW"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "einheiten_in_betrieb"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      }
+    },
+    {
+      "type": "row",
+      "title": "Zubau und Bestandsentwicklung",
+      "collapsed": false,
+      "id": 15,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Zubau pro Jahr nach Technologie",
+      "description": "Bruttoleistung der Einheiten, die im jeweiligen Jahr in Betrieb genommen wurden (Spalte Inbetriebnahmedatum; auch heute stillgelegte Einheiten sind enthalten). Das letzte Jahr ist unvollständig.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', d::timestamp) as time, tech as metric, sum(kw)/1e6 as v from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u where tech <> 'Pumpspeicher' group by 1,2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Dach"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Freifläche"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind an Land"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind auf See"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batteriespeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie/Grubengas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF7383"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8C5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mineralöl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A16B4E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sonstige konventionelle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9FA7B3"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Installierter Bestand (Zubau minus Stilllegungen)",
+      "description": "Kumulierte Bruttoleistung: Inbetriebnahmen abzüglich endgültiger Stilllegungen (Datum der Stilllegung). Vorübergehend stillgelegte Einheiten zählen mit. Vor 2000 sind die Registerdaten lückenhaft.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select time, metric, v from (select y as time, tech as metric, sum(sum(dkw)) over (partition by tech order by y)/1e6 as v from (\nselect date_trunc('year', v.dt::timestamp) as y, u.tech, v.dkw from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" in ('In Betrieb', 'Vorübergehend stillgelegt', 'Endgültig stillgelegt') and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u\ncross join lateral (values (u.d, u.kw), (case when u.st = 'Endgültig stillgelegt' then u.dend end, -u.kw)) v(dt, dkw)\nwhere v.dt >= '1990-01-01') e where tech <> 'Pumpspeicher' group by y, tech) s where $__timeFilter(time) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Dach"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Freifläche"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind an Land"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind auf See"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batteriespeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie/Grubengas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF7383"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8C5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mineralöl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A16B4E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sonstige konventionelle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9FA7B3"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Solar-Zubau pro Monat nach Bauart",
+      "description": "Monatlich in Betrieb genommene Photovoltaik-Leistung. Der Boom 2022-2024 (Balkonkraftwerke, Dach) und die Solarparks sind getrennt sichtbar.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('month', d::timestamp) as time, tech as metric, sum(kw)/1e6 as v from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')) u group by 1,2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Dach"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Freifläche"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind an Land"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind auf See"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batteriespeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie/Grubengas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF7383"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8C5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mineralöl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A16B4E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sonstige konventionelle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9FA7B3"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Windenergie: Anlagengröße bei Inbetriebnahme",
+      "description": "Mittlere Bruttoleistung (MW), Nabenhöhe (m) und Rotordurchmesser (m) der Windenergieanlagen an Land nach Jahr der Inbetriebnahme. Zeigt den Trend zu größeren Anlagen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', \"Inbetriebnahmedatum\"::timestamp) as time, avg(\"Bruttoleistung\")/1000 as \"Nennleistung Ø\", avg(\"Nabenhoehe\") as \"Nabenhöhe Ø\", avg(\"Rotordurchmesser\") as \"Rotordurchmesser Ø\"\nfrom mastr.wind_extended where \"WindAnLandOderAufSee\" = 'Windenergie an Land' and \"EinheitBetriebsstatus\" <> 'In Planung' and \"Inbetriebnahmedatum\" >= '1995-01-01' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')\ngroup by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "always",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Nennleistung Ø"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MW"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Nabenhöhe Ø"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: m"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rotordurchmesser Ø"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: m"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Batteriespeicher-Zubau nach Größe",
+      "description": "Neu in Betrieb genommene Batteriespeicher pro Jahr in GW nach Leistungsklasse: Heimspeicher (bis 30 kW), Gewerbespeicher (bis 1 MW) und Großspeicher (über 1 MW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', \"Inbetriebnahmedatum\"::timestamp) as time,\nsum(\"Bruttoleistung\") filter (where \"Bruttoleistung\" <= 30)/1e6 as \"Heimspeicher (bis 30 kW)\", sum(\"Bruttoleistung\") filter (where \"Bruttoleistung\" > 30 and \"Bruttoleistung\" <= 1000)/1e6 as \"Gewerbe (30 kW-1 MW)\",\nsum(\"Bruttoleistung\") filter (where \"Bruttoleistung\" > 1000)/1e6 as \"Großspeicher (über 1 MW)\"\nfrom mastr.storage_extended where \"Technologie\" = 'Batterie' and \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heimspeicher (bis 30 kW)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gewerbe (30 kW-1 MW)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Großspeicher (über 1 MW)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5A2A82"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 20,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Anzahl neuer Heimspeicher und Balkonkraftwerke",
+      "description": "Anzahl pro Jahr in Betrieb genommener Batteriespeicher bis 30 kW und steckerfertiger Solaranlagen. Nur Einheiten, die heute noch im Register stehen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', \"Inbetriebnahmedatum\"::timestamp) as time, 'Heimspeicher (Batterie bis 30 kW)' as metric, count(*)::float as v\nfrom mastr.storage_extended where \"Technologie\" = 'Batterie' and \"Bruttoleistung\" <= 30 and \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1\nunion all select date_trunc('year', \"Inbetriebnahmedatum\"::timestamp), 'Balkonkraftwerke', count(*) from mastr.solar_extended\nwhere \"ArtDerSolaranlage\" = 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' and \"Inbetriebnahmedatum\" >= '1990-01-01' and \"EinheitBetriebsstatus\" <> 'In Planung' and $__timeFilter(\"Inbetriebnahmedatum\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heimspeicher (Batterie bis 30 kW)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerke"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 21,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      }
+    },
+    {
+      "type": "row",
+      "title": "Regionen",
+      "collapsed": false,
+      "id": 22,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 54
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Bruttoleistung je Bundesland und Technologie",
+      "description": "Installierte Bruttoleistung in Betrieb in GW nach Bundesland (Bundesland-Filter nicht angewandt, ohne Pumpspeicher).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(bl, 'ohne Angabe') as bundesland, sum(kw) filter (where tech='Solar Dach')/1e6 as \"Solar Dach\", sum(kw) filter (where tech='Solar Freifläche')/1e6 as \"Solar Freifläche\",\nsum(kw) filter (where tech='Balkonkraftwerk')/1e6 as \"Balkonkraftwerk\", sum(kw) filter (where tech='Wind an Land')/1e6 as \"Wind an Land\", sum(kw) filter (where tech='Wind auf See')/1e6 as \"Wind auf See\",\nsum(kw) filter (where tech='Biomasse')/1e6 as \"Biomasse\", sum(kw) filter (where tech='Wasserkraft')/1e6 as \"Wasserkraft\", sum(kw) filter (where tech='Batteriespeicher')/1e6 as \"Batteriespeicher\"\nfrom (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb'\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb'\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb'\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb'\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb'\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb'\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb') u where tech <> 'Pumpspeicher' group by bl order by sum(kw) desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Dach"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar Freifläche"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Balkonkraftwerk"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind an Land"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind auf See"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Biomasse"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wasserkraft"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#19730E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Batteriespeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pumpspeicher"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F3BB8"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Geothermie/Grubengas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4162A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Erdgas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF7383"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Braunkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8C5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Steinkohle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mineralöl"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#A16B4E"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sonstige konventionelle"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#9FA7B3"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 23,
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 55
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 20 Landkreise (gewählte Technologie)",
+      "description": "Bruttoleistung in Betrieb je Landkreis für die oben gewählte Technologie (im Bundesland-Filter). Die Landkreis-Angabe fehlt bei einem Teil der Einheiten.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(lk, 'ohne Angabe') || ' (' || coalesce(bl, '?') || ')' as landkreis, sum(kw)/1e3 as \"MW\" from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Solar Dach','Solar Freifläche','Balkonkraftwerk')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Wind an Land','Wind auf See')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Biomasse')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Wasserkraft')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Batteriespeicher','Pumpspeicher')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Geothermie/Grubengas')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and '$tech' in ('Erdgas','Braunkohle','Steinkohle','Mineralöl','Sonstige konventionelle')) u\nwhere tech='$tech' and lk is not null group by lk, bl order by 2 desc limit 20",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 24,
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 55
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Einzelne Einheiten (gewählte Technologie)",
+      "description": "Einheiten in Betrieb mit Koordinaten, Größe und Farbe = Bruttoleistung. Höchstens die 30.000 größten Einheiten, Mindestleistung über die Variable. Bei Solar Dach haben nur ca. 4 % der Einheiten Koordinaten.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select lat, lon, kw as bruttoleistung_kw, lk as landkreis from (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Solar Dach','Solar Freifläche','Balkonkraftwerk')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Wind an Land','Wind auf See')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Biomasse')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Wasserkraft')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Batteriespeicher','Pumpspeicher')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Geothermie/Grubengas')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Erdgas','Braunkohle','Steinkohle','Mineralöl','Sonstige konventionelle')) u\nwhere tech='$tech' and kw >= $min_kw order by kw desc limit 30000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kW",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-YlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.6,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 2,
+                  "max": 14,
+                  "field": "bruttoleistung_kw"
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "bruttoleistung_kw"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 25,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 65
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Leistungsdichte im 0,1°-Raster (gewählte Technologie)",
+      "description": "Alle Einheiten in Betrieb mit Koordinaten, zu Rasterzellen von 0,1 Grad (ca. 7 x 11 km) zusammengefasst. Größe = Leistung in MW, Farbe = Anzahl Einheiten.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select round(lat::numeric,1)::float as lat, round(lon::numeric,1)::float as lon, sum(kw)/1e3 as leistung_mw, count(*) as einheiten\nfrom (select case \"ArtDerSolaranlage\" when 'Freiflächensolaranlage' then 'Solar Freifläche' when 'Steckerfertige Solaranlage (sog. Balkonkraftwerk)' then 'Balkonkraftwerk' else 'Solar Dach' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Solar Dach','Solar Freifläche','Balkonkraftwerk')\nunion all\nselect case \"WindAnLandOderAufSee\" when 'Windenergie auf See' then 'Wind auf See' else 'Wind an Land' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Wind an Land','Wind auf See')\nunion all\nselect 'Biomasse' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Biomasse')\nunion all\nselect 'Wasserkraft' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Wasserkraft')\nunion all\nselect case \"Technologie\" when 'Pumpspeicher' then 'Pumpspeicher' else 'Batteriespeicher' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Batteriespeicher','Pumpspeicher')\nunion all\nselect 'Geothermie/Grubengas' as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.gsgk_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Geothermie/Grubengas')\nunion all\nselect case \"Energietraeger\" when 'Erdgas' then 'Erdgas' when 'Braunkohle' then 'Braunkohle' when 'Steinkohle' then 'Steinkohle' when 'Mineralölprodukte' then 'Mineralöl' else 'Sonstige konventionelle' end as tech, \"Inbetriebnahmedatum\" as d, \"DatumEndgueltigeStilllegung\" as dend, \"Bruttoleistung\" as kw, \"EinheitBetriebsstatus\" as st, \"Bundesland\" as bl, \"Landkreis\" as lk, \"Laengengrad\" as lon, \"Breitengrad\" as lat from mastr.combustion_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Laengengrad\" is not null and '$tech' in ('Erdgas','Braunkohle','Steinkohle','Mineralöl','Sonstige konventionelle')) u where tech='$tech' group by 1,2",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-YlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.6,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 2,
+                  "max": 16,
+                  "field": "leistung_mw"
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "einheiten"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 26,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 65
+      }
+    },
+    {
+      "type": "row",
+      "title": "Windenergie",
+      "collapsed": false,
+      "id": 27,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 79
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Windenergie: Hersteller nach Leistung",
+      "description": "Bruttoleistung der Windenergieanlagen in Betrieb nach Hersteller (die zehn größten, GW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Hersteller\" as hersteller, sum(\"Bruttoleistung\")/1e6 as \"GW\" from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Hersteller\" is not null group by 1 order by 2 desc limit 10",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 28,
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 0,
+        "y": 80
+      }
+    },
+    {
+      "type": "table",
+      "title": "Windenergie: häufigste Anlagentypen",
+      "description": "Typen mit den meisten Anlagen in Betrieb: Hersteller, Typ, Anzahl, mittlere Leistung, Nabenhöhe und Rotordurchmesser.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Hersteller\" as hersteller, \"Typenbezeichnung\" as typ, count(*) as anlagen, avg(\"Bruttoleistung\")/1000 as leistung_mw, avg(\"Nabenhoehe\") as nabenhoehe_m, avg(\"Rotordurchmesser\") as rotor_m,\nmin(\"Inbetriebnahmedatum\") as erste_inbetriebnahme from mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Typenbezeichnung\" is not null group by 1,2 order by 3 desc limit 40",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "leistung_mw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MW"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nabenhoehe_m"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: m"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rotor_m"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: m"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "erste_inbetriebnahme"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "date"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 29,
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 80
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Offshore-Wind nach Meer und Inbetriebnahmejahr",
+      "description": "Bruttoleistung der Offshore-Windenergie in Betrieb nach Meer (Nord-/Ostsee) und Jahr der Inbetriebnahme, GW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select extract(year from \"Inbetriebnahmedatum\")::int::text as jahr, sum(\"Bruttoleistung\") filter (where \"Seelage\"='Nordsee')/1e6 as \"Nordsee\", sum(\"Bruttoleistung\") filter (where \"Seelage\"='Ostsee')/1e6 as \"Ostsee\"\nfrom mastr.wind_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and \"WindAnLandOderAufSee\"='Windenergie auf See' and \"Inbetriebnahmedatum\" is not null group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Nordsee"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F60C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Ostsee"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8AB8FF"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "jahr",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 30,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 89
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Wind an Land: Nabenhöhen in Betrieb",
+      "description": "Anzahl Windenergieanlagen an Land in Betrieb nach Nabenhöhe (20-m-Klassen).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(floor(\"Nabenhoehe\"/20)*20, 'FM000') || '-' || to_char(floor(\"Nabenhoehe\"/20)*20+19, 'FM000') as \"Nabenhöhe in m\", count(*) as anlagen from mastr.wind_extended\nwhere \"EinheitBetriebsstatus\" = 'In Betrieb' and \"WindAnLandOderAufSee\"='Windenergie an Land' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Nabenhoehe\" > 0 and \"Nabenhoehe\" < 300 group by floor(\"Nabenhoehe\"/20) order by floor(\"Nabenhoehe\"/20)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Nabenhöhe in m",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 31,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 89
+      }
+    },
+    {
+      "type": "row",
+      "title": "Solar, Biomasse, Wasserkraft, Speicher, KWK",
+      "collapsed": false,
+      "id": 32,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 97
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Größte Solarparks in Betrieb",
+      "description": "Die 25 größten Freiflächenanlagen nach Bruttoleistung (im Bundesland-Filter).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(\"NameDesSolarparks\", \"NameStromerzeugungseinheit\") as name, \"Bundesland\" as bundesland, \"Landkreis\" as landkreis, \"Bruttoleistung\"/1000 as leistung_mw,\n\"Inbetriebnahmedatum\" as inbetriebnahme from mastr.solar_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and \"ArtDerSolaranlage\"='Freiflächensolaranlage' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') order by \"Bruttoleistung\" desc nulls last limit 25",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "leistung_mw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MW"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 500
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "inbetriebnahme"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "date"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 33,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 98
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Biomasse nach Biomasseart und Brennstoff",
+      "description": "Bruttoleistung der Biomasseanlagen in Betrieb (MW), die zehn größten Hauptbrennstoffe, gefärbt nach Art.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Hauptbrennstoff\" as brennstoff, sum(\"Bruttoleistung\") filter (where \"Biomasseart\"='Gasförmige Biomasse')/1e3 as \"Gasförmig\", sum(\"Bruttoleistung\") filter (where \"Biomasseart\"='Feste Biomasse')/1e3 as \"Fest\",\nsum(\"Bruttoleistung\") filter (where \"Biomasseart\"='Flüssige Biomasse')/1e3 as \"Flüssig\" from mastr.biomass_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Hauptbrennstoff\" is not null\ngroup by 1 order by sum(\"Bruttoleistung\") desc limit 10",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gasförmig"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fest"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8B5A2B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Flüssig"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "brennstoff",
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 34,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 98
+      }
+    },
+    {
+      "type": "piechart",
+      "title": "Wasserkraft nach Anlagenart",
+      "description": "Bruttoleistung der Wasserkraftanlagen in Betrieb nach Art (MW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(\"ArtDerWasserkraftanlage\",'ohne Angabe') as art, sum(\"Bruttoleistung\")/1e3 as mw from mastr.hydro_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 35,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 107
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Batteriespeicher: Leistung und Kapazität",
+      "description": "Bruttoleistung (GW) und nutzbare Speicherkapazität (GWh) je Speichertechnologie in Betrieb. Die Kapazität stammt aus der Tabelle storage_units (Join über SpeMastrNummer). Pumpspeicher haben GWh-Werte in anderer Größenordnung und sind weggelassen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select e.\"Technologie\" as technologie, sum(e.\"Bruttoleistung\")/1e6 as \"Leistung (GW)\", sum(u.\"NutzbareSpeicherkapazitaet\")/1e6 as \"Kapazität (GWh)\" from mastr.storage_extended e\njoin mastr.storage_units u on u.\"MastrNummer\" = e.\"SpeMastrNummer\" where e.\"EinheitBetriebsstatus\" = 'In Betrieb' and e.\"Technologie\" in ('Batterie','Wasserstoffspeicher','Druckluft') and ('$bundesland'='Alle' or e.\"Bundesland\"='$bundesland') group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "technologie",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 36,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 107
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Batteriespeicher nach Batterietechnologie",
+      "description": "Bruttoleistung der Batteriespeicher in Betrieb nach Technologie (MW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(\"Batterietechnologie\", 'ohne Angabe') as technologie, sum(\"Bruttoleistung\")/1e3 as \"MW\" from mastr.storage_extended where \"EinheitBetriebsstatus\" = 'In Betrieb' and \"Technologie\"='Batterie' and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "technologie",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 37,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 107
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "KWK-Anlagen: Zubau",
+      "description": "Elektrische und thermische KWK-Leistung (MW) der im Jahr in Betrieb genommenen KWK-Anlagen (Tabelle kwk, kein Bundesland-Filter).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', \"Inbetriebnahmedatum\"::timestamp) as time, sum(\"ElektrischeKwkLeistung\")/1e3 as \"elektrisch\", sum(\"ThermischeNutzleistung\")/1e3 as \"thermisch\"\nfrom mastr.kwk where \"Inbetriebnahmedatum\" >= '1990-01-01' and $__timeFilter(\"Inbetriebnahmedatum\") group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "elektrisch"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2CC0C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "thermisch"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 38,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 115
+      }
+    },
+    {
+      "type": "row",
+      "title": "Tabellen im Schema mastr",
+      "collapsed": false,
+      "id": 39,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 123
+      },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Tabellen und Zeilenzahlen",
+      "description": "Näherungswert der Zeilen je Tabelle im Schema mastr (open-mastr). Die Tabellen heißen wie im MaStR (z.B. EinheitenSolar), die open-mastr-Namen (solar_extended, ...) sind Views darauf.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select c.relname as tabelle, approximate_row_count(c.oid) as zeilen, pg_size_pretty(pg_total_relation_size(c.oid)) as groesse from pg_class c join pg_namespace s on s.oid = c.relnamespace\nwhere s.nspname = 'mastr' and c.relkind in ('r','p') order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "zeilen"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 40,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 124
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "power-plants",
+    "germany"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "query",
+        "name": "bundesland",
+        "label": "Bundesland",
+        "description": "",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select b from (select 'Alle' as b, 0 as o union all select distinct \"Bundesland\", 1 from mastr.wind_extended where \"Bundesland\" is not null) x order by o, b",
+        "query": {
+          "rawSql": "select b from (select 'Alle' as b, 0 as o union all select distinct \"Bundesland\", 1 from mastr.wind_extended where \"Bundesland\" is not null) x order by o, b",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Alle",
+          "value": "Alle"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "tech",
+        "label": "Technologie (Karten, Landkreise)",
+        "description": "",
+        "query": "Wind an Land : Wind an Land,Wind auf See : Wind auf See,Solar Freifläche : Solar Freifläche,Solar Dach : Solar Dach,Biomasse : Biomasse,Wasserkraft : Wasserkraft,Batteriespeicher : Batteriespeicher,Pumpspeicher : Pumpspeicher,Geothermie/Grubengas : Geothermie/Grubengas,Erdgas : Erdgas,Braunkohle : Braunkohle,Steinkohle : Steinkohle,Mineralöl : Mineralöl,Sonstige konventionelle : Sonstige konventionelle",
+        "current": {
+          "text": "Wind an Land",
+          "value": "Wind an Land"
+        },
+        "options": [
+          {
+            "text": "Wind an Land",
+            "value": "Wind an Land",
+            "selected": true
+          },
+          {
+            "text": "Wind auf See",
+            "value": "Wind auf See",
+            "selected": false
+          },
+          {
+            "text": "Solar Freifläche",
+            "value": "Solar Freifläche",
+            "selected": false
+          },
+          {
+            "text": "Solar Dach",
+            "value": "Solar Dach",
+            "selected": false
+          },
+          {
+            "text": "Biomasse",
+            "value": "Biomasse",
+            "selected": false
+          },
+          {
+            "text": "Wasserkraft",
+            "value": "Wasserkraft",
+            "selected": false
+          },
+          {
+            "text": "Batteriespeicher",
+            "value": "Batteriespeicher",
+            "selected": false
+          },
+          {
+            "text": "Pumpspeicher",
+            "value": "Pumpspeicher",
+            "selected": false
+          },
+          {
+            "text": "Geothermie/Grubengas",
+            "value": "Geothermie/Grubengas",
+            "selected": false
+          },
+          {
+            "text": "Erdgas",
+            "value": "Erdgas",
+            "selected": false
+          },
+          {
+            "text": "Braunkohle",
+            "value": "Braunkohle",
+            "selected": false
+          },
+          {
+            "text": "Steinkohle",
+            "value": "Steinkohle",
+            "selected": false
+          },
+          {
+            "text": "Mineralöl",
+            "value": "Mineralöl",
+            "selected": false
+          },
+          {
+            "text": "Sonstige konventionelle",
+            "value": "Sonstige konventionelle",
+            "selected": false
+          }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "min_kw",
+        "label": "Karte: Leistung ab",
+        "description": "Mindest-Bruttoleistung der Einheiten in der Einzelkarte (die Karte zeigt höchstens die 30.000 größten Einheiten).",
+        "query": "alle : 0,100 kW : 100,1 MW : 1000,10 MW : 10000",
+        "current": {
+          "text": "alle",
+          "value": "0"
+        },
+        "options": [
+          {
+            "text": "alle",
+            "value": "0",
+            "selected": true
+          },
+          {
+            "text": "100 kW",
+            "value": "100",
+            "selected": false
+          },
+          {
+            "text": "1 MW",
+            "value": "1000",
+            "selected": false
+          },
+          {
+            "text": "10 MW",
+            "value": "10000",
+            "selected": false
+          }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-26y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS Marktstammdatenregister (MaStR)",
+  "uid": "oeds-mastr",
+  "version": 1,
+  "weekStart": ""
+}

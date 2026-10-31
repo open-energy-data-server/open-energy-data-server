@@ -1,0 +1,1426 @@
+{
+  "uid": "oeds-vea-industrial-load-profiles",
+  "title": "OEDS VEA Industrial Load Profiles",
+  "tags": [
+    "oeds",
+    "industry",
+    "load",
+    "germany"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2016-01-11T00:00:00.000Z",
+    "to": "2016-01-18T00:00:00.000Z"
+  },
+  "description": "5,359 quarter-hourly load profiles of German industrial and commercial sites (VEA, 2016, kW) with master data and grid high-load windows.",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "site",
+        "label": "Site",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT id || ' - ' || coalesce(sector_group_id, '?') || ' ' || coalesce(grid_level, '?') AS __text, id AS __value FROM vea_industrial_load_profiles.master ORDER BY id",
+        "definition": "SELECT id || ' - ' || coalesce(sector_group_id, '?') || ' ' || coalesce(grid_level, '?') AS __text, id AS __value FROM vea_industrial_load_profiles.master ORDER BY id",
+        "current": {
+          "text": "1",
+          "value": "1"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": "Site id with sector letter (WZ 2008 section) and grid level (NS low, MS medium voltage)."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "load",
+      "description": "Load profiles: 5,359 sites x 35,136 quarter hours (kW) for 2016. Static dataset, no live updates. Keep time ranges to a few weeks (188 million rows).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(timestamp))*1000)::bigint as \"First\", (extract(epoch from max(timestamp))*1000)::bigint as \"Latest\", approximate_row_count('vea_industrial_load_profiles.load'::regclass) as \"Rows (approx.)\"\nFROM vea_industrial_load_profiles.load"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "high_load_times",
+      "description": "High-load flags (0/1) per site and quarter hour: whether the connected grid operator had a high-load window. Static dataset, no live updates. Keep time ranges to a few weeks (188 million rows).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(timestamp))*1000)::bigint as \"First\", (extract(epoch from max(timestamp))*1000)::bigint as \"Latest\", approximate_row_count('vea_industrial_load_profiles.high_load_times'::regclass) as \"Rows (approx.)\"\nFROM vea_industrial_load_profiles.high_load_times"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Selected range",
+      "description": "Number of sites, total energy of all sites in the range, peak and mean of the aggregate demand. Local generation was removed from the profiles by the data provider. Profiles with negative or zero values exist (about 2 % zero values). ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(n) AS \"Sites\", sum(s)*0.25/1e6 AS \"Energy\", max(s)/1000 AS \"Peak (aggregate)\", avg(s)/1000 AS \"Mean (aggregate)\" FROM (SELECT timestamp, sum(value) AS s, count(*) AS n FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) GROUP BY 1) x"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sites"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak (aggregate)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MW"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mean (aggregate)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: MW"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "Aggregate demand",
+      "collapsed": false,
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Aggregate load of all sites and high-load windows",
+      "description": "Sum over all 5,359 sites (MW, left; mean and peak of the quarter hours per bin) and the share of sites that are in a high-load window of their grid operator (right). Sites are charged capacity prices on their peak in these windows, which creates incentives for peak shaving.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,$__interval), avg(s) AS \"Mean aggregate load\", max(s) AS \"Peak aggregate load\" FROM (SELECT timestamp, sum(value)/1000 AS s FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) GROUP BY 1) x GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,$__interval), 100*avg(value) AS \"Sites in high-load window\" FROM vea_industrial_load_profiles.high_load_times WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "suffix: MW",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sites in high-load window"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 40
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Weekday profile by sector (normalised)",
+      "description": "Mean load by hour of the day (Europe/Berlin), Monday-Friday, relative to each site's own mean over the range (1 = site average), averaged over the sites of the sector. Manufacturing is flat (shift work), trade and finance peak during office hours, water supply is almost constant.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT id, avg(value) AS mu FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) GROUP BY id HAVING avg(value) > 0)\nSELECT extract(hour from l.timestamp AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'C') AS \"C Manufacturing\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'G') AS \"G Trade\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'Q') AS \"Q Health and social\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'E') AS \"E Water, waste\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'K') AS \"K Finance\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'H') AS \"H Transport\"\nFROM vea_industrial_load_profiles.load l JOIN s ON s.id = l.id JOIN vea_industrial_load_profiles.master m ON m.id = l.id WHERE $__timeFilter(l.timestamp) AND extract(isodow from l.timestamp AT TIME ZONE 'Europe/Berlin') < 6 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Weekend profile by sector (normalised)",
+      "description": "Same as the weekday profile, Saturday and Sunday. Office sectors (trade, finance) drop to their base load, continuous manufacturing stays flat.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT id, avg(value) AS mu FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) GROUP BY id HAVING avg(value) > 0)\nSELECT extract(hour from l.timestamp AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'C') AS \"C Manufacturing\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'G') AS \"G Trade\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'Q') AS \"Q Health and social\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'E') AS \"E Water, waste\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'K') AS \"K Finance\", avg(l.value/s.mu) FILTER (WHERE m.sector_group_id = 'H') AS \"H Transport\"\nFROM vea_industrial_load_profiles.load l JOIN s ON s.id = l.id JOIN vea_industrial_load_profiles.master m ON m.id = l.id WHERE $__timeFilter(l.timestamp) AND extract(isodow from l.timestamp AT TIME ZONE 'Europe/Berlin') >= 6 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Load factor distribution",
+      "description": "Number of sites per load factor class (mean load / peak load of the site in the selected range). Continuous processes have a high load factor, intermittent sites a low one; the load factor determines the grid fee price band (more or less than 2,500 full-load hours).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad((c*10)::text, 2, '0') || '-' || (c*10+10) || ' %' AS \"Load factor class\", count(*) AS \"Sites\" FROM (SELECT least(floor(100*avg(value)/NULLIF(max(value), 0)/10), 9)::int AS c FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) GROUP BY id) x WHERE c IS NOT NULL GROUP BY c ORDER BY c"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Load factor class",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Mean load per site by sector",
+      "description": "Mean load per site (kW) in the selected range by economic sector (WZ 2008 section letter) and the number of sites.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(m.sector_group_id, '?') AS \"Sector\", avg(s.mu) AS \"Mean load per site (kW)\" FROM (SELECT id, avg(value) AS mu FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) GROUP BY id) s JOIN vea_industrial_load_profiles.master m ON m.id = s.id GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "kwatt",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Sector",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 8,
+        "y": 23,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Load in high-load windows relative to other times",
+      "description": "Mean load during high-load windows divided by the mean load outside, per sector (1 = no reaction). Values below 1 mean the sites reduce load in the windows of the grid operator (peak shaving). Only intervals of the selected range are used, so choose a range with high-load windows (winter weeks).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(m.sector_group_id, '?') AS \"Sector\", avg(l.value) FILTER (WHERE h.value = 1)/NULLIF(avg(l.value) FILTER (WHERE h.value = 0), 0) AS \"Ratio\" FROM vea_industrial_load_profiles.load l JOIN vea_industrial_load_profiles.high_load_times h ON h.id = l.id AND h.timestamp = l.timestamp JOIN vea_industrial_load_profiles.master m ON m.id = l.id WHERE $__timeFilter(l.timestamp) AND $__timeFilter(h.timestamp) GROUP BY 1 ORDER BY 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "semi-dark-orange"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Sector",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 16,
+        "y": 23,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "Master data",
+      "collapsed": false,
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Sites by sector and grid level",
+      "description": "Number of sites per economic sector (WZ 2008 section letter, ? = unknown) and grid level (NS low, MS medium voltage, MS/NS both).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(sector_group_id, '?') AS \"Sector\", count(*) FILTER (WHERE grid_level = 'NS') AS \"NS\", count(*) FILTER (WHERE grid_level = 'MS') AS \"MS\", count(*) FILTER (WHERE grid_level = 'MS/NS') AS \"MS/NS\", count(*) FILTER (WHERE grid_level IS NULL) AS \"unknown\" FROM vea_industrial_load_profiles.master GROUP BY 1 ORDER BY count(*) DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Sector",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "normal",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "table",
+      "title": "Grid fees by sector",
+      "description": "Mean grid fee prices of the sites by sector (annual full-load hours over or under 2,500 h): capacity price in EUR/kW and energy price in EUR/kWh. Low-voltage sites pay higher energy prices, medium-voltage sites pay a capacity price.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(sector_group_id, '?') AS \"Sector\", min(sector_group) AS \"Name\", count(*) AS \"Sites\", avg(capacity_price_over_2500h_eur_per_kw) AS \"Capacity price >2500 h (EUR/kW)\", avg(capacity_price_under_2500h_eur_per_kw) AS \"Capacity price <2500 h (EUR/kW)\", avg(energy_price_over_2500h_eur_per_kwh)*100 AS \"Energy price >2500 h (ct/kWh)\", avg(energy_price_under_2500h_eur_per_kwh)*100 AS \"Energy price <2500 h (ct/kWh)\" FROM vea_industrial_load_profiles.master GROUP BY 1 ORDER BY 3 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity price >2500 h (EUR/kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Capacity price <2500 h (EUR/kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Sites by postal code area",
+      "description": "Number of sites by 2-digit postal code area (the source only gives the first two digits; stored as integer, so 01 appears as 1).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT lpad(zip_code::text, 2, '0') AS \"PLZ area\", count(*) AS \"Sites\" FROM vea_industrial_load_profiles.master WHERE zip_code IS NOT NULL GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "PLZ area",
+        "orientation": "vertical",
+        "xTickLabelRotation": -90,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 8,
+        "h": 7
+      }
+    },
+    {
+      "type": "xychart",
+      "title": "Capacity price vs energy price (per site)",
+      "description": "Grid fee of the sites with more than 2,500 full-load hours: capacity price (EUR/kW) vs energy price (EUR/kWh x 100). Medium-voltage sites cluster at a low energy price.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT capacity_price_over_2500h_eur_per_kw AS \"Capacity price (EUR/kW)\", energy_price_over_2500h_eur_per_kwh*100 AS \"Energy price (ct/kWh)\" FROM vea_industrial_load_profiles.master WHERE capacity_price_over_2500h_eur_per_kw IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "pointSize": {
+              "fixed": 3
+            },
+            "show": "points"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 8,
+        "y": 40,
+        "w": 8,
+        "h": 7
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Sites by grid level",
+      "description": "Number of sites by connection grid level.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT coalesce(grid_level, 'unknown') AS \"Grid level\", count(*) AS \"Sites\" FROM vea_industrial_load_profiles.master GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Grid level",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 16,
+        "y": 40,
+        "w": 8,
+        "h": 7
+      }
+    },
+    {
+      "type": "row",
+      "title": "Single site $site",
+      "collapsed": false,
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Load of site $site and high-load window",
+      "description": "Quarter-hourly load of the selected site (kW, left) and its high-load window flag (right, 1 = in window).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,$__interval), avg(value) AS \"Load\", max(value) AS \"Peak in bin\" FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) AND id = $site GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(timestamp,$__interval), max(value) AS \"High-load window\" FROM vea_industrial_load_profiles.high_load_times WHERE $__timeFilter(timestamp) AND id = $site GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "High-load window"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 30
+              },
+              {
+                "id": "max",
+                "value": 1
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 16,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Load duration curve of $site",
+      "description": "Quarter-hourly load of the selected site sorted from highest to lowest: x is the share of time in which the load is exceeded.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (1-i/50.0)*100 AS \"Share of time exceeded (%)\", percentile_cont(i/50.0) WITHIN GROUP (ORDER BY value) AS \"Load\" FROM vea_industrial_load_profiles.load, generate_series(0,50) i WHERE $__timeFilter(timestamp) AND id = $site GROUP BY i ORDER BY i DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "kwatt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Share of time exceeded (%)",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 20,
+      "gridPos": {
+        "x": 16,
+        "y": 48,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Typical day of $site",
+      "description": "Mean load of the selected site by hour of the day (Europe/Berlin), weekdays vs weekends.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from timestamp AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(value) FILTER (WHERE extract(isodow from timestamp AT TIME ZONE 'Europe/Berlin') < 6) AS \"Weekday\", avg(value) FILTER (WHERE extract(isodow from timestamp AT TIME ZONE 'Europe/Berlin') >= 6) AS \"Weekend\" FROM vea_industrial_load_profiles.load WHERE $__timeFilter(timestamp) AND id = $site GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "kwatt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "table",
+      "title": "Master data of $site",
+      "description": "Sector, grid level, region and grid fee prices of the selected site.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id AS \"Id\", sector_group_id AS \"Sector\", sector_group AS \"Sector name\", grid_level AS \"Grid level\", zip_code AS \"ZIP\", capacity_price_over_2500h_eur_per_kw AS \"Capacity price >2500 h\", capacity_price_under_2500h_eur_per_kw AS \"Capacity price <2500 h\", energy_price_over_2500h_eur_per_kwh AS \"Energy price >2500 h\", energy_price_under_2500h_eur_per_kwh AS \"Energy price <2500 h\" FROM vea_industrial_load_profiles.master WHERE id = $site"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 22,
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}

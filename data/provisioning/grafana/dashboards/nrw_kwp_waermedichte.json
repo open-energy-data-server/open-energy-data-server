@@ -1,0 +1,1497 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Modellierter Wärmebedarf aller Gebäude in Nordrhein-Westfalen (Kommunale Wärmeplanung, LANUK NRW, Szenario 'Fortschreibung moderat') und Wärmeliniendichte je Straßenabschnitt. Wärmebedarf in kWh/a für Raumwärme (RW), Warmwasser (WW) und Prozesswärme im Gewerbe-Handel-Dienstleistung-Sektor (GHD_PW), heute (Ist) und für 2025 bis 2045. Die Gebäudetabelle hat 12,5 Mio. Zeilen, die Abfragen scannen sie komplett. Beim ersten Aufruf mit kaltem Cache kann das etwa eine halbe Minute dauern.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Gebäude",
+      "description": "Näherungswert der Zeilenzahl der Tabelle waermedichte (ein Datensatz je Gebäude/Teilgebäude).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select approximate_row_count('nrw_kwp_waermedichte.waermedichte'::regclass) as n",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Straßenabschnitte",
+      "description": "Näherungswert der Zeilenzahl der Tabelle waermelinien (Straßenabschnitte mit Wärmedichte).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select approximate_row_count('nrw_kwp_waermedichte.waermelinien'::regclass) as n",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Wärmebedarf heute",
+      "description": "Summe von Sum_Ist über alle Gebäude (Raumwärme, Warmwasser, Prozesswärme GHD).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"Sum_Ist\")/1e9 as twh from nrw_kwp_waermedichte.waermedichte",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh/a",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Wärmebedarf 2045",
+      "description": "Summe von Sum_45 über alle Gebäude (Szenario mit Sanierung).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"Sum_45\")/1e9 as twh from nrw_kwp_waermedichte.waermedichte",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh/a",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Gemeinden",
+      "description": "Anzahl Gemeinden (AGS) mit Gebäudedaten.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"AGS\") as n from nrw_kwp_waermedichte.waermelinien",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Straßennetz",
+      "description": "Summe der Straßenlänge der Wärmelinien.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"Strassenlaenge\")/1e3 as km from nrw_kwp_waermedichte.waermelinien",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: km",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Wärmebedarf heute und im Szenario",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Wärmebedarf bis 2045 nach Verwendung",
+      "description": "Summe über alle Gebäude in TWh pro Jahr: Raumwärme, Warmwasser und Prozesswärme GHD für heute (Ist) und die Stützjahre des Szenarios. Der Rückgang entsteht durch Sanierung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select v.jahr, v.rw/1e9 as \"Raumwärme\", v.ww/1e9 as \"Warmwasser\", v.g/1e9 as \"Prozesswärme GHD\" from (select\nsum(\"RW\") as rw0, sum(\"WW\") as ww0, sum(\"GHD_PW\") as g0, sum(\"RW_25\") as rw25, sum(\"WW_25\") as ww25, sum(\"GHD_PW_25\") as g25,\nsum(\"RW_30\") as rw30, sum(\"WW_30\") as ww30, sum(\"GHD_PW_30\") as g30, sum(\"RW_35\") as rw35, sum(\"WW_35\") as ww35, sum(\"GHD_PW_35\") as g35,\nsum(\"RW_40\") as rw40, sum(\"WW_40\") as ww40, sum(\"GHD_PW_40\") as g40, sum(\"RW_45\") as rw45, sum(\"WW_45\") as ww45, sum(\"GHD_PW_45\") as g45 from nrw_kwp_waermedichte.waermedichte) s\ncross join lateral (values ('Ist', s.rw0, s.ww0, s.g0), ('2025', s.rw25, s.ww25, s.g25), ('2030', s.rw30, s.ww30, s.g30), ('2035', s.rw35, s.ww35, s.g35),\n('2040', s.rw40, s.ww40, s.g40), ('2045', s.rw45, s.ww45, s.g45)) v(jahr, rw, ww, g)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Raumwärme"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Warmwasser"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Prozesswärme GHD"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "jahr",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Sanierungen je Stützjahr",
+      "description": "Anzahl Gebäude nach Jahr der Sanierung im Szenario (San_Jahr) und Sanierungsniveau. Gebäude ohne Sanierungsangabe (0, 9999 oder leer) sind nicht dargestellt.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"San_Jahr\"::text as sanierungsjahr, count(*) filter (where \"San_Niveau\"='konventionell') as \"konventionell\", count(*) filter (where \"San_Niveau\"='ambitioniert') as \"ambitioniert\"\nfrom nrw_kwp_waermedichte.waermedichte where \"San_Jahr\" between 2000 and 2100 group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "konventionell"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ambitioniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "sanierungsjahr",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Sanierungstiefe",
+      "description": "Anzahl sanierter Gebäude nach Sanierungsmaßnahmen: F = Fenster, D = Dach, W = Wand, B = Boden/Kellerdecke (Bedeutung der Kürzel aus den Daten abgeleitet, nicht dokumentiert).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"San_Tiefe\" as sanierungstiefe, count(*) filter (where \"San_Niveau\"='konventionell') as \"konventionell\", count(*) filter (where \"San_Niveau\"='ambitioniert') as \"ambitioniert\"\nfrom nrw_kwp_waermedichte.waermedichte where \"San_Jahr\" between 2000 and 2100 group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "konventionell"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ambitioniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "sanierungstiefe",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "piechart",
+      "title": "Heutiger Wärmebedarf nach Verwendung",
+      "description": "Anteile von Raumwärme, Warmwasser und Prozesswärme GHD am heutigen Wärmebedarf.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select v.verwendung, v.twh from (select sum(\"RW\")/1e9 as a, sum(\"WW\")/1e9 as b, sum(\"GHD_PW\")/1e9 as c from nrw_kwp_waermedichte.waermedichte) s\ncross join lateral (values ('Raumwärme', s.a), ('Warmwasser', s.b), ('Prozesswärme GHD', s.c)) v(verwendung, twh)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Raumwärme"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Warmwasser"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Prozesswärme GHD"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Straßenlänge nach Wärmeliniendichte",
+      "description": "Länge des Straßennetzes in km je Klasse der Wärmeliniendichte (Wärmebedarf der angeschlossenen Gebäude pro Meter Straße und Jahr). Als Richtwert gelten ab ca. 1.500 kWh/(m a) Wärmenetze als wirtschaftlich interessant. Abschnitte ohne Wert (ca. 110.000 km) sind nicht gezählt.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case b when 0 then '0) 0' when 1 then '1) bis 500' when 2 then '2) 500-1.000' when 3 then '3) 1.000-1.500' when 4 then '4) 1.500-2.000' when 5 then '5) 2.000-3.000'\nwhen 6 then '6) 3.000-5.000' when 7 then '7) 5.000-10.000' else '8) über 10.000' end as klasse_kwh_pro_m_a, sum(len)/1e3 as \"km Straße\"\nfrom (select width_bucket(\"Waermedichte_RW_WW_GHD_PW\", array[0.0001,500,1000,1500,2000,3000,5000,10000]) as b, \"Strassenlaenge\" as len from nrw_kwp_waermedichte.waermelinien where \"Waermedichte_RW_WW_GHD_PW\" is not null) x\ngroup by b order by b",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: km",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "klasse_kwh_pro_m_a",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      }
+    },
+    {
+      "type": "row",
+      "title": "Gemeinden",
+      "collapsed": false,
+      "id": 14,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "panels": []
+    },
+    {
+      "type": "geomap",
+      "title": "Wärmebedarf der Gemeinden",
+      "description": "Gemeinden in NRW. Größe = Wärmebedarf heute in GWh/a, Farbe = Wärmeliniendichte in kWh pro Meter Straße und Jahr (Wärmebedarf der Wärmelinien / Straßenlänge). Position ist die mittlere Lage der Straßenabschnitte der Gemeinde.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select gemeinde, lat, lon, bedarf_gwh, dichte_kwh_m_a from (with b as (select \"AGS\", sum(\"Sum_Ist\") as ist, sum(\"Sum_45\") as s45 from nrw_kwp_waermedichte.waermedichte group by 1),\nl as (select \"AGS\", max(\"Gemeinde\") as gemeinde, sum(\"Strassenlaenge\") as len, sum(\"RW_WW_GHD_PW\") as q,\navg(ST_X(ST_StartPoint(ST_GeometryN(geometry,1)))) as x, avg(ST_Y(ST_StartPoint(ST_GeometryN(geometry,1)))) as y from nrw_kwp_waermedichte.waermelinien group by 1)\nselect l.gemeinde, b.ist/1e6 as bedarf_gwh, b.s45/1e6 as bedarf_2045_gwh, 100*(1-b.s45/nullif(b.ist,0)) as rueckgang_pct,\nl.len/1e3 as strasse_km, l.q/nullif(l.len,0) as dichte_kwh_m_a,\nST_Y(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lat, ST_X(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lon\nfrom b join l using (\"AGS\")) m",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.45,
+          "lon": 7.5,
+          "zoom": 7,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.6,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 22,
+                  "field": "bedarf_gwh"
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "dichte_kwh_m_a"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 20 Gemeinden nach Wärmebedarf",
+      "description": "Wärmebedarf heute in GWh pro Jahr.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select gemeinde, bedarf_gwh from (with b as (select \"AGS\", sum(\"Sum_Ist\") as ist, sum(\"Sum_45\") as s45 from nrw_kwp_waermedichte.waermedichte group by 1),\nl as (select \"AGS\", max(\"Gemeinde\") as gemeinde, sum(\"Strassenlaenge\") as len, sum(\"RW_WW_GHD_PW\") as q,\navg(ST_X(ST_StartPoint(ST_GeometryN(geometry,1)))) as x, avg(ST_Y(ST_StartPoint(ST_GeometryN(geometry,1)))) as y from nrw_kwp_waermedichte.waermelinien group by 1)\nselect l.gemeinde, b.ist/1e6 as bedarf_gwh, b.s45/1e6 as bedarf_2045_gwh, 100*(1-b.s45/nullif(b.ist,0)) as rueckgang_pct,\nl.len/1e3 as strasse_km, l.q/nullif(l.len,0) as dichte_kwh_m_a,\nST_Y(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lat, ST_X(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lon\nfrom b join l using (\"AGS\")) m order by 2 desc limit 20",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Gemeinden mit der höchsten Wärmeliniendichte (ab 100 km Straße)",
+      "description": "Wärmedichte in kWh pro Meter Straße und Jahr. Ab ca. 1.500 kWh/(m a) sind Wärmenetze in der Regel wirtschaftlich darstellbar, hohe Werte deuten auf Fernwärmepotenzial hin.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select gemeinde, dichte_kwh_m_a from (with b as (select \"AGS\", sum(\"Sum_Ist\") as ist, sum(\"Sum_45\") as s45 from nrw_kwp_waermedichte.waermedichte group by 1),\nl as (select \"AGS\", max(\"Gemeinde\") as gemeinde, sum(\"Strassenlaenge\") as len, sum(\"RW_WW_GHD_PW\") as q,\navg(ST_X(ST_StartPoint(ST_GeometryN(geometry,1)))) as x, avg(ST_Y(ST_StartPoint(ST_GeometryN(geometry,1)))) as y from nrw_kwp_waermedichte.waermelinien group by 1)\nselect l.gemeinde, b.ist/1e6 as bedarf_gwh, b.s45/1e6 as bedarf_2045_gwh, 100*(1-b.s45/nullif(b.ist,0)) as rueckgang_pct,\nl.len/1e3 as strasse_km, l.q/nullif(l.len,0) as dichte_kwh_m_a,\nST_Y(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lat, ST_X(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lon\nfrom b join l using (\"AGS\")) m where strasse_km >= 100 order by 2 desc limit 20",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kWh/(m a)",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1500
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Größter Rückgang des Wärmebedarfs bis 2045",
+      "description": "Rückgang von Sum_45 gegenüber Sum_Ist in Prozent (ab 50 GWh Bedarf).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select gemeinde, rueckgang_pct from (with b as (select \"AGS\", sum(\"Sum_Ist\") as ist, sum(\"Sum_45\") as s45 from nrw_kwp_waermedichte.waermedichte group by 1),\nl as (select \"AGS\", max(\"Gemeinde\") as gemeinde, sum(\"Strassenlaenge\") as len, sum(\"RW_WW_GHD_PW\") as q,\navg(ST_X(ST_StartPoint(ST_GeometryN(geometry,1)))) as x, avg(ST_Y(ST_StartPoint(ST_GeometryN(geometry,1)))) as y from nrw_kwp_waermedichte.waermelinien group by 1)\nselect l.gemeinde, b.ist/1e6 as bedarf_gwh, b.s45/1e6 as bedarf_2045_gwh, 100*(1-b.s45/nullif(b.ist,0)) as rueckgang_pct,\nl.len/1e3 as strasse_km, l.q/nullif(l.len,0) as dichte_kwh_m_a,\nST_Y(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lat, ST_X(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lon\nfrom b join l using (\"AGS\")) m where bedarf_gwh >= 50 order by 2 desc limit 20",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: %",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      }
+    },
+    {
+      "type": "table",
+      "title": "Alle Gemeinden",
+      "description": "Wärmebedarf, Szenario 2045 und Wärmeliniendichte je Gemeinde.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select gemeinde, bedarf_gwh, bedarf_2045_gwh, rueckgang_pct, strasse_km, dichte_kwh_m_a from (with b as (select \"AGS\", sum(\"Sum_Ist\") as ist, sum(\"Sum_45\") as s45 from nrw_kwp_waermedichte.waermedichte group by 1),\nl as (select \"AGS\", max(\"Gemeinde\") as gemeinde, sum(\"Strassenlaenge\") as len, sum(\"RW_WW_GHD_PW\") as q,\navg(ST_X(ST_StartPoint(ST_GeometryN(geometry,1)))) as x, avg(ST_Y(ST_StartPoint(ST_GeometryN(geometry,1)))) as y from nrw_kwp_waermedichte.waermelinien group by 1)\nselect l.gemeinde, b.ist/1e6 as bedarf_gwh, b.s45/1e6 as bedarf_2045_gwh, 100*(1-b.s45/nullif(b.ist,0)) as rueckgang_pct,\nl.len/1e3 as strasse_km, l.q/nullif(l.len,0) as dichte_kwh_m_a,\nST_Y(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lat, ST_X(ST_Transform(ST_SetSRID(ST_MakePoint(l.x,l.y),25832),4326)) as lon\nfrom b join l using (\"AGS\")) m order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bedarf_gwh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GWh"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-YlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 3000
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "bedarf_2045_gwh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: GWh"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rueckgang_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: %"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "strasse_km"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: km"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dichte_kwh_m_a"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh/(m a)"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "heat",
+    "nrw"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS NRW Wärmedichte (Kommunale Wärmeplanung)",
+  "uid": "oeds-nrw-kwp-waermedichte",
+  "version": 1,
+  "weekStart": ""
+}
