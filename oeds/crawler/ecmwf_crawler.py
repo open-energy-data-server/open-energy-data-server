@@ -4,15 +4,16 @@
 
 """ECMWF / Copernicus weather crawler for OEDS.
 
-CDS dataset: ``reanalysis-era5-single-levels`` (~0.25°).
+Two CDS datasets are crawled, each by its own crawler and into its own tables of the
+schema ``ecmwf``, so that they never mix:
 
-The dataset is chosen with ``ecmwf_dataset`` in the config:
+- ``ecmwf`` (``EcmwfCrawler``): ``reanalysis-era5-single-levels``, ~0.25°, land and
+  sea, 100 m wind, tables ``era5`` (grid) and ``era5_eu`` (NUTS regions)
+- ``ecmwf_land`` (``EcmwfLandCrawler``): ``reanalysis-era5-land``, ~0.1°, land only,
+  10 m wind, tables ``era5_land`` and ``era5_land_eu``
 
-- ``era5`` (default): ``reanalysis-era5-single-levels``, ~0.25°, land and sea, 100 m wind
-- ``era5-land``: ``reanalysis-era5-land``, ~0.1°, land only, 10 m wind
-
-Columns written to ``ecmwf`` / ``ecmwf_eu``
-------------------------------------------
+Columns written to the grid and NUTS tables
+-------------------------------------------
 - ``ghi``: surface solar radiation downwards of the past hour (J/m²)
 - ``wind_zonal``, ``wind_meridional``, ``wind_speed``: wind (m/s)
 - ``temp_air``: 2 m temperature (K)
@@ -70,6 +71,9 @@ coords = [75, -15, 30, 42.5]
 DATASETS = {
     "era5": dict(
         name="reanalysis-era5-single-levels",
+        table="era5",
+        table_eu="era5_eu",
+        start=datetime(2019, 1, 1, tzinfo=UTC),
         accumulated=False,
         variables=[
             "100m_u_component_of_wind",
@@ -81,6 +85,11 @@ DATASETS = {
     ),
     "era5-land": dict(
         name="reanalysis-era5-land",
+        table="era5_land",
+        table_eu="era5_land_eu",
+        # 00 UTC closes the previous day: the hourly value of 2019-01-01 00 UTC needs
+        # the day before, so that 2019 is complete
+        start=datetime(2018, 12, 31, tzinfo=UTC),
         accumulated=True,
         variables=[
             "10m_u_component_of_wind",
@@ -96,7 +105,7 @@ ACCUMULATED_COLUMNS = ["ghi", "precipitation"]
 # 5 variables × 24 h → max 8 days/chunk under CDS ~1000-item limit
 DAY_CHUNK = 8
 
-TEMPORAL_START = datetime(2022, 1, 1, tzinfo=UTC)
+SCHEMA = "ecmwf"
 
 _TABLE_SQL = (
     "time timestamptz NOT NULL, "
@@ -111,11 +120,11 @@ _TABLE_SQL = (
 )
 
 
-def create_table_if_not_exists(engine):
+def create_table_if_not_exists(engine, table: str, table_eu: str):
     with engine.begin() as conn:
         conn.execute(
             text(
-                "CREATE TABLE IF NOT EXISTS ecmwf( "
+                f"CREATE TABLE IF NOT EXISTS {table}( "
                 f"{_TABLE_SQL}"
                 "PRIMARY KEY (time , latitude, longitude));"
             )
@@ -124,7 +133,7 @@ def create_table_if_not_exists(engine):
     with engine.begin() as conn:
         conn.execute(
             text(
-                "CREATE TABLE IF NOT EXISTS ecmwf_eu( "
+                f"CREATE TABLE IF NOT EXISTS {table_eu}( "
                 "nuts_id text, "
                 f"{_TABLE_SQL}"
                 "PRIMARY KEY (time , latitude, longitude, nuts_id));"
@@ -132,24 +141,24 @@ def create_table_if_not_exists(engine):
         )
 
 
-def _request_stem(request: dict) -> str:
+def _request_stem(request: dict, dataset: str = "era5") -> str:
     days = request["day"]
     if isinstance(days, str):
         days = [days]
     return (
         f"{request['year']}_{request['month']}_{days[0]}-"
-        f"{request['month']}_{days[-1]}_era5"
+        f"{request['month']}_{days[-1]}_{dataset}"
     )
 
 
 def save_era5_request_to_file(
     request: dict, client: cdsapi.Client, dataset: str = "era5"
 ) -> Path:
-    target = TEMP_DIR / f"{_request_stem(request)}.grib"
+    target = TEMP_DIR / f"{_request_stem(request, dataset)}.grib"
     client.retrieve(DATASETS[dataset]["name"], request, str(target))
     if target.exists():
         return target
-    for alt in TEMP_DIR.glob(_request_stem(request) + ".*"):
+    for alt in TEMP_DIR.glob(_request_stem(request, dataset) + ".*"):
         return alt
     raise FileNotFoundError(f"CDS download missing → {target}")
 
@@ -366,18 +375,19 @@ def process_era5_dataframe(
 
 
 class EcmwfCrawler(ContinuousCrawler):
+    """ERA5 single levels, see the module docstring for ERA5-Land."""
+
     # ERA5T and ERA5-Land are published about five days after real time
     OFFSET_FROM_NOW = timedelta(days=6)
     dataset = "era5"
 
     def __init__(self, schema_name: str, config: CrawlerConfig):
-        super().__init__(schema_name, config)
-        self.dataset = config.get("ecmwf_dataset") or "era5"
-        if self.dataset not in DATASETS:
-            raise ValueError(
-                f"unknown ecmwf_dataset {self.dataset}, use {list(DATASETS)}"
-            )
-        create_table_if_not_exists(self.engine)
+        # all datasets share one schema, whatever name the crawler is registered with
+        super().__init__(SCHEMA, config)
+        self.table = DATASETS[self.dataset]["table"]
+        self.table_eu = DATASETS[self.dataset]["table_eu"]
+        self.temporal_start = DATASETS[self.dataset]["start"]
+        create_table_if_not_exists(self.engine, self.table, self.table_eu)
         self.ecmwf_client = cdsapi.Client()
         TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -401,28 +411,28 @@ class EcmwfCrawler(ContinuousCrawler):
             ) from e
 
     def get_latest_data(self) -> datetime:
-        # ecmwf and ecmwf_eu are written together, but may differ after a crash
+        # the grid and the NUTS table are written together, but may differ after a crash
         try:
             with self.engine.connect() as conn:
                 latest = [
                     conn.execute(text(f"SELECT MAX(time) FROM {table}")).scalar()
-                    for table in ("ecmwf", "ecmwf_eu")
+                    for table in (self.table, self.table_eu)
                 ]
             if None in latest:
-                return TEMPORAL_START
+                return self.temporal_start
             return as_utc(min(latest))
         except Exception:
             log.error("No ecmwf latest found")
-            return TEMPORAL_START
+            return self.temporal_start
 
     def get_first_data(self) -> datetime:
-        query = text("SELECT MIN(time) FROM ecmwf")
+        query = text(f"SELECT MIN(time) FROM {self.table}")
         try:
             with self.engine.connect() as conn:
-                return as_utc(conn.execute(query).scalar() or TEMPORAL_START)
+                return as_utc(conn.execute(query).scalar() or self.temporal_start)
         except Exception:
             log.error("No ecmwf first found")
-            return TEMPORAL_START
+            return self.temporal_start
 
     def accumulated_before(self, first: pd.Timestamp) -> pd.DataFrame:
         """Sums the stored hourly values of the accumulation window before first.
@@ -436,7 +446,7 @@ class EcmwfCrawler(ContinuousCrawler):
             return pd.DataFrame(columns=ACCUMULATED_COLUMNS, dtype="float64")
         sums = ", ".join(f"sum({c}) as {c}" for c in ACCUMULATED_COLUMNS)
         query = text(
-            f"SELECT latitude, longitude, {sums} FROM ecmwf "
+            f"SELECT latitude, longitude, {sums} FROM {self.table} "
             "WHERE time >= :lo AND time < :hi GROUP BY latitude, longitude"
         )
         with self.engine.connect() as conn:
@@ -455,13 +465,13 @@ class EcmwfCrawler(ContinuousCrawler):
         )
 
     def create_hypertable_if_not_exists(self) -> None:
-        self.create_single_hypertable_if_not_exists("ecmwf", "time")
-        self.create_single_hypertable_if_not_exists("ecmwf_eu", "time")
+        self.create_single_hypertable_if_not_exists(self.table, "time")
+        self.create_single_hypertable_if_not_exists(self.table_eu, "time")
 
     def crawl_from_to(self, begin: datetime, end: datetime):
         """Crawls data from begin (inclusive) until end (exclusive)."""
-        if begin < TEMPORAL_START:
-            begin = TEMPORAL_START
+        if begin < self.temporal_start:
+            begin = self.temporal_start
 
         data_available_until = utcnow() - self.get_minimum_offset()
         if end > data_available_until:
@@ -501,7 +511,7 @@ class EcmwfCrawler(ContinuousCrawler):
         write_lat_lon: bool = True,
     ):
         if file_path is None:
-            file_path = TEMP_DIR / f"{_request_stem(request)}.grib"
+            file_path = TEMP_DIR / f"{_request_stem(request, self.dataset)}.grib"
 
         raw = open_grib_as_dataframe(file_path)
         accumulated = DATASETS[self.dataset]["accumulated"]
@@ -536,12 +546,12 @@ class EcmwfCrawler(ContinuousCrawler):
         )
         # both tables are written in one transaction, so resuming from the
         # latest time stays consistent
-        log.info("preparing to write dataframes into ecmwf and ecmwf_eu database")
+        log.info("preparing to write %s and %s", self.table, self.table_eu)
         with self.engine.begin() as conn:
             if write_lat_lon:
                 self.replace_overlap(
                     conn,
-                    "ecmwf",
+                    self.table,
                     grid_data,
                     "time",
                     chunksize=10000,
@@ -549,14 +559,14 @@ class EcmwfCrawler(ContinuousCrawler):
                 )
             self.replace_overlap(
                 conn,
-                "ecmwf_eu",
+                self.table_eu,
                 weather_data,
                 "time",
                 chunksize=10000,
                 method=copy_insert,
             )
 
-        for file in Path(file_path.parent).glob(file_path.stem + "*"):
+        for file in Path(file_path.parent).glob(file_path.stem + ".*"):
             try:
                 if file.is_dir():
                     shutil.rmtree(file)
@@ -565,6 +575,12 @@ class EcmwfCrawler(ContinuousCrawler):
                 log.info("removed file %s", file)
             except OSError as e:
                 log.error("Error removing files: %s", e)
+
+
+class EcmwfLandCrawler(EcmwfCrawler):
+    """ERA5-Land, accumulations since 00 UTC are converted to hourly values."""
+
+    dataset = "era5-land"
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ def test_crawler_registry():
         "chargepoint",
         "e2watch",
         "ecmwf",
+        "ecmwf_land",
         "entsoe",
         "entsog",
         "eview",
@@ -46,7 +47,7 @@ def test_instantiate_crawlers(tmp_path):
         "gie": "Requires GIE_API_KEY",
         "netztransparenz": "Requires ipnt credentials",
         "ecmwf": "Requires pre-existing NUTS database tables",
-        "weather": "Requires pre-existing NUTS database tables",
+        "ecmwf_land": "Requires pre-existing NUTS database tables",
     }
 
     for name, crawler_cls in crawlers.items():

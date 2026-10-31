@@ -89,6 +89,7 @@ def test_backfill_is_not_raised_to_latest_data(monkeypatch):
     from oeds.crawler import ecmwf_crawler
 
     crawler = object.__new__(ecmwf_crawler.EcmwfCrawler)
+    crawler.temporal_start = ecmwf_crawler.DATASETS["era5"]["start"]
     first = datetime(2023, 1, 1, tzinfo=UTC)
     latest = datetime(2023, 6, 1, tzinfo=UTC)
     monkeypatch.setattr(crawler, "get_first_data", lambda: first)
@@ -105,6 +106,38 @@ def test_backfill_is_not_raised_to_latest_data(monkeypatch):
     assert requested
     assert requested[0]["year"] == "2022"
     assert requested[0]["month"] == "12"
+
+
+def test_datasets_have_separate_tables():
+    from oeds.crawler import ecmwf_crawler
+
+    tables = [
+        table
+        for dataset in ecmwf_crawler.DATASETS.values()
+        for table in (dataset["table"], dataset["table_eu"])
+    ]
+    assert sorted(tables) == ["era5", "era5_eu", "era5_land", "era5_land_eu"]
+    assert ecmwf_crawler.EcmwfCrawler.dataset == "era5"
+    assert ecmwf_crawler.EcmwfLandCrawler.dataset == "era5-land"
+
+
+def test_temporary_files_of_the_datasets_do_not_clash():
+    from oeds.crawler.ecmwf_crawler import _request_stem
+
+    request = dict(year="2019", month="06", day=["01", "02"])
+    assert _request_stem(request, "era5") != _request_stem(request, "era5-land")
+    assert not _request_stem(request, "era5-land").startswith(
+        _request_stem(request, "era5") + "."
+    )
+
+
+def test_land_starts_a_day_early_to_complete_the_first_hour_of_2019():
+    from oeds.crawler import ecmwf_crawler
+
+    assert ecmwf_crawler.DATASETS["era5"]["start"] == datetime(2019, 1, 1, tzinfo=UTC)
+    assert ecmwf_crawler.DATASETS["era5-land"]["start"] == datetime(
+        2018, 12, 31, tzinfo=UTC
+    )
 
 
 def test_land_without_stored_hours_keeps_float_columns():
