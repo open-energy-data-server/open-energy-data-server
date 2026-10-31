@@ -53,6 +53,8 @@ FIRST_DAY = date(2017, 7, 10)
 # the API only serves the last five years, older data is in the TP archives
 API_HISTORY_YEARS = 5
 INDICATORS = ["Physical Flow", "Allocation", "Firm Technical"]
+# rows per request, limit=-1 truncates large responses
+PAGE_SIZE = 5000
 
 fr = date(2020, 5, 18)
 to = date.today()
@@ -84,6 +86,9 @@ def getDataFrame(name, params=["limit=10000"], useJson=False, allow_empty=False)
             if useJson:
                 url = f"{api_endpoint}{name}.json{params_str}"
                 response = requests.get(url, timeout=REQUEST_TIMEOUT)
+                if response.status_code == 404 and allow_empty:
+                    # the API answers 404 if there is no (more) data
+                    return pd.DataFrame()
                 response.raise_for_status()
                 data = pd.DataFrame(response.json()[name])
                 # replace empty string with None
@@ -112,6 +117,32 @@ def getDataFrame(name, params=["limit=10000"], useJson=False, allow_empty=False)
     if data.empty and not allow_empty:
         raise Exception("could not get any data for params:", params_str)
     return merge_lowercase_columns(data)
+
+
+def getPagedDataFrame(name, params, page_size=None):
+    """Fetches all rows page by page.
+
+    limit=-1 silently truncates large responses: a day of hourly physical flow
+    has ~13.7k rows, but only the first ~9.4k are returned.
+    """
+    page_size = page_size or PAGE_SIZE
+    pages = []
+    offset = 0
+    while True:
+        page = getDataFrame(
+            name,
+            [*params, f"limit={page_size}", f"offset={offset}"],
+            useJson=True,
+            allow_empty=True,
+        )
+        if not page.empty:
+            pages.append(page)
+        if len(page) < page_size:
+            break
+        offset += page_size
+    if not pages:
+        return pd.DataFrame()
+    return merge_lowercase_columns(pd.concat(pages, ignore_index=True))
 
 
 def merge_lowercase_columns(data: pd.DataFrame) -> pd.DataFrame:
@@ -347,16 +378,13 @@ class EntsogCrawler(ContinuousCrawler):
     def _fetch_operational(self, indicator, beg, end):
         """Fetches a date range, which is split if the API fails to deliver it."""
         params = [
-            "limit=-1",
             "indicator=" + urllib.parse.quote(indicator),
             "from=" + str(beg),
             "to=" + str(end),
             "periodType=hour",
         ]
         try:
-            return getDataFrame(
-                "operationaldata", params, useJson=True, allow_empty=True
-            )
+            return getPagedDataFrame("operationaldata", params)
         except Exception:
             if (end - beg).days <= 1:
                 log.exception(f"could not get {indicator} from {beg} to {end}")

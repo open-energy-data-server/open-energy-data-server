@@ -298,3 +298,52 @@ def test_archive_year_ignores_the_first_gas_day_of_the_next_file():
             ARCHIVE_TABLE, conn, index=False, if_exists="append"
         )
     assert crawler._archive_year_present(2017)
+
+
+def test_paged_data_frame_fetches_until_a_short_page(monkeypatch):
+    from oeds.crawler import entsog
+
+    requested = []
+
+    class Response:
+        def __init__(self, rows, status=200):
+            self.rows, self.status_code = rows, status
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"operationaldata": self.rows}
+
+    def get(url, timeout):
+        offset = int(url.split("offset=")[1])
+        requested.append(offset)
+        rows = [
+            {"pointKey": f"p{i}", "value": i} for i in range(offset, min(offset + 2, 5))
+        ]
+        return Response(rows)
+
+    monkeypatch.setattr(entsog.requests, "get", get)
+    df = entsog.getPagedDataFrame("operationaldata", ["indicator=x"], page_size=2)
+    assert requested == [0, 2, 4]
+    assert df["pointkey"].tolist() == ["p0", "p1", "p2", "p3", "p4"]
+
+
+def test_paged_data_frame_treats_404_as_the_end(monkeypatch):
+    from oeds.crawler import entsog
+
+    class Response:
+        def __init__(self, status, rows=()):
+            self.status_code, self.rows = status, list(rows)
+
+        def raise_for_status(self):
+            if self.status_code == 404:
+                raise AssertionError("404 must not be raised")
+
+        def json(self):
+            return {"operationaldata": self.rows}
+
+    pages = iter([Response(200, [{"value": 1}, {"value": 2}]), Response(404)])
+    monkeypatch.setattr(entsog.requests, "get", lambda url, timeout: next(pages))
+    df = entsog.getPagedDataFrame("operationaldata", ["indicator=x"], page_size=2)
+    assert df["value"].tolist() == [1, 2]
