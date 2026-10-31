@@ -72,7 +72,7 @@ class LadesaeulenregisterCrawler(DownloadOnceCrawler):
                 io.BytesIO(response.content),
                 skiprows=10,
                 delimiter=";",
-                encoding="iso-8859-1",
+                encoding="utf-8-sig",
                 index_col=0,
                 decimal=",",
                 low_memory=False,
