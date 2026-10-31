@@ -15,9 +15,9 @@ jao-py
 json5
 lxml
 netztransparenz
-numpy
+numpy>=2.3
 openpyxl
-open-mastr
+open-mastr @ git+https://github.com/OpenEnergyPlatform/open-MaStR.git@c192a8f008f8869081b09e99db53c534e3b408f5
 pandas
 psycopg[binary]
 tzdata # for additional timezones like Europe/Kiev in entsoe
