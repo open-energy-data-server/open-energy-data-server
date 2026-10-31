@@ -20,3 +20,4 @@ data/open-data-ha
 *.zip
 *.grib
 *.idx
+oeds/data/nuts_matrix.npy
