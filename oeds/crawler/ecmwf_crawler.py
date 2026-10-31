@@ -248,7 +248,15 @@ def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
     datasets = cfgrib.open_datasets(str(grib_path))
     if not datasets:
         raise FileNotFoundError(f"cfgrib found no datasets in {grib_path}")
+    merged = datasets_to_dataframe(datasets)
 
+    if extract_dir is not None:
+        shutil.rmtree(extract_dir, ignore_errors=True)
+    return merged
+
+
+def datasets_to_dataframe(datasets: list) -> pd.DataFrame:
+    """Merges the cfgrib datasets to one frame with the valid time as time."""
     merged: pd.DataFrame | None = None
     for ds in datasets:
         part = ds.to_dataframe().reset_index()
@@ -264,13 +272,14 @@ def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
         missing_keys = [k for k in keys if k not in part.columns]
         if missing_keys:
             raise KeyError(f"GRIB slice missing {missing_keys}: {list(part.columns)}")
+        # the cube of base time x step of accumulated variables holds valid times
+        # which were not requested (e.g. the hours before and after the request), and
+        # ERA5-Land has no values on the sea: these rows have no data at all
+        part = part.dropna(subset=[c for c in part.columns if c not in keys], how="all")
         if merged is None:
             merged = part
         else:
             merged = merged.merge(part, on=keys, how="outer")
-
-    if extract_dir is not None:
-        shutil.rmtree(extract_dir, ignore_errors=True)
 
     assert merged is not None
     return merged.dropna(subset=["latitude", "longitude", "time"]).reset_index(

@@ -140,6 +140,66 @@ def test_land_starts_a_day_early_to_complete_the_first_hour_of_2019():
     )
 
 
+def _cube(bases, steps, variables, sea=False):
+    """Dataset like cfgrib: variables over (time, step) or over time only."""
+    import numpy as np
+    import xarray as xr
+
+    latitude = [50.0, 50.1]
+    longitude = [6.0]
+    time = pd.to_datetime(bases)
+    if steps is None:
+        coords = {"time": time, "latitude": latitude, "longitude": longitude}
+        shape = (len(time), 2, 1)
+        dims = ("time", "latitude", "longitude")
+        valid = ("time", time.to_numpy())
+    else:
+        step = pd.to_timedelta(steps, unit="h")
+        coords = {
+            "time": time,
+            "step": step,
+            "latitude": latitude,
+            "longitude": longitude,
+        }
+        shape = (len(time), len(step), 2, 1)
+        dims = ("time", "step", "latitude", "longitude")
+        valid = (("time", "step"), time.to_numpy()[:, None] + step.to_numpy()[None, :])
+    data = {}
+    for name in variables:
+        values = np.ones(shape)
+        if sea:
+            values[..., 1, :] = np.nan
+        data[name] = (dims, values)
+    return xr.Dataset(data, coords={**coords, "valid_time": valid})
+
+
+def test_unrequested_valid_times_are_dropped():
+    from oeds.crawler.ecmwf_crawler import datasets_to_dataframe
+
+    instant = _cube(["2019-06-10 00:00", "2019-06-10 01:00"], None, ["t2m"])
+    accumulated = _cube(["2019-06-09 23:00"], [1, 2, 3], ["ssrd"])
+    # only the valid times of the request hold values
+    requested = accumulated["valid_time"].isin(
+        pd.to_datetime(["2019-06-10 00:00", "2019-06-10 01:00"]).to_numpy()
+    )
+    accumulated = accumulated.where(requested)
+
+    df = datasets_to_dataframe([instant, accumulated])
+
+    assert df[["t2m", "ssrd"]].notna().any(axis=1).all()
+    assert sorted(df["time"].unique()) == sorted(
+        pd.to_datetime(["2019-06-10 00:00", "2019-06-10 01:00"])
+    )
+
+
+def test_sea_cells_without_values_are_dropped():
+    from oeds.crawler.ecmwf_crawler import datasets_to_dataframe
+
+    land = _cube(["2019-06-10 00:00"], None, ["t2m"], sea=True)
+    df = datasets_to_dataframe([land])
+    assert df["latitude"].tolist() == [50.0]
+
+
 def test_land_without_stored_hours_keeps_float_columns():
     from oeds.crawler.ecmwf_crawler import ACCUMULATED_COLUMNS, process_era5_dataframe
 
