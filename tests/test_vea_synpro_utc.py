@@ -24,3 +24,15 @@ def test_vea_timestamps_are_aware_utc():
     stamps = IndustrialLoadProfileCrawler.create_timestamps(None)
     assert str(stamps.tz) == "UTC"
     assert stamps[0] == pd.Timestamp("2015-12-31 23:00", tz="UTC")
+
+
+def test_synpro_structure_exists_reads_its_own_schema():
+    from oeds.base_crawler import empty_config
+
+    config = empty_config()
+    config["db_uri"] = "sqlite://"
+    crawler = SynproLoadProfileCrawler("synpro", config=config)
+    assert not crawler.structure_exists()
+    with crawler.engine.begin() as conn:
+        pd.DataFrame({"P_el": [1.0]}).to_sql("electric_family", conn)
+    assert crawler.structure_exists()

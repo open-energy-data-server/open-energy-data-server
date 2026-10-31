@@ -16,7 +16,7 @@ from oeds.base_crawler import (
 )
 
 metadata_info = {
-    "schema_name": "synpro_free_load_profiles",
+    "schema_name": "synpro",
     "data_date": "2024-01-01",
     "data_source": "https://synpro-lastprofile.de",
     "license": "CDLA-permissive 2.0",
@@ -44,9 +44,7 @@ metadata_info = {
 class SynproLoadProfileCrawler(DownloadOnceCrawler):
     def structure_exists(self):
         try:
-            query = text(
-                "SELECT 1 FROM synpro_free_load_profiles.electric_family LIMIT 1"
-            )
+            query = text("SELECT 1 FROM electric_family LIMIT 1")
             with self.engine.connect() as conn:
                 return conn.execute(query).scalar() == 1
         except Exception:
@@ -168,6 +166,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
 
     config = load_config(DEFAULT_CONFIG_LOCATION)
-    synpro = SynproLoadProfileCrawler("synpro_free_load_profiles", config=config)
+    synpro = SynproLoadProfileCrawler("synpro", config=config)
     synpro.crawl_structural(recreate=False)
     synpro.set_metadata(metadata_info=metadata_info)
