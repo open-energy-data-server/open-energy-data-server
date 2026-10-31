@@ -6,12 +6,17 @@
 
 CDS dataset: ``reanalysis-era5-single-levels`` (~0.25°).
 
+The dataset is chosen with ``ecmwf_dataset`` in the config:
+
+- ``era5`` (default): ``reanalysis-era5-single-levels``, ~0.25°, land and sea, 100 m wind
+- ``era5-land``: ``reanalysis-era5-land``, ~0.1°, land only, 10 m wind
+
 Columns written to ``ecmwf`` / ``ecmwf_eu``
 ------------------------------------------
-- ``ghi``: surface solar radiation downwards (hourly deaccumulated J/m²)
-- ``wind_zonal``, ``wind_meridional``, ``wind_speed``: 100 m wind
-- ``temp_air``: 2 m temperature
-- ``precipitation``: total precipitation
+- ``ghi``: surface solar radiation downwards of the past hour (J/m²)
+- ``wind_zonal``, ``wind_meridional``, ``wind_speed``: wind (m/s)
+- ``temp_air``: 2 m temperature (K)
+- ``precipitation``: total precipitation of the past hour (m)
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from pathlib import Path
 
 import cdsapi
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from shapely.geometry import Point
 from sqlalchemy import create_engine, text
@@ -59,15 +65,33 @@ TEMP_DIR = Path(__file__).parent.parent / "ecmwf_grb_files"
 # https://web.archive.org/web/20240817225744/https://cds.climate.copernicus.eu/toolbox/doc/how-to/1_how_to_retrieve_data/1_how_to_retrieve_data.html
 coords = [75, -15, 30, 42.5]
 
-ERA5_DATASET = "reanalysis-era5-single-levels"
-
-weather_variables = [
-    "100m_u_component_of_wind",
-    "100m_v_component_of_wind",
-    "2m_temperature",
-    "total_precipitation",
-    "surface_solar_radiation_downwards",
-]
+# ERA5 single levels holds radiation and precipitation of the past hour, ERA5-Land
+# accumulates them since 00 UTC (the value at 00 UTC is the sum of the previous day)
+DATASETS = {
+    "era5": dict(
+        name="reanalysis-era5-single-levels",
+        accumulated=False,
+        variables=[
+            "100m_u_component_of_wind",
+            "100m_v_component_of_wind",
+            "2m_temperature",
+            "total_precipitation",
+            "surface_solar_radiation_downwards",
+        ],
+    ),
+    "era5-land": dict(
+        name="reanalysis-era5-land",
+        accumulated=True,
+        variables=[
+            "10m_u_component_of_wind",
+            "10m_v_component_of_wind",
+            "2m_temperature",
+            "total_precipitation",
+            "surface_solar_radiation_downwards",
+        ],
+    ),
+}
+ACCUMULATED_COLUMNS = ["ghi", "precipitation"]
 
 # 5 variables × 24 h → max 8 days/chunk under CDS ~1000-item limit
 DAY_CHUNK = 8
@@ -118,9 +142,11 @@ def _request_stem(request: dict) -> str:
     )
 
 
-def save_era5_request_to_file(request: dict, client: cdsapi.Client) -> Path:
+def save_era5_request_to_file(
+    request: dict, client: cdsapi.Client, dataset: str = "era5"
+) -> Path:
     target = TEMP_DIR / f"{_request_stem(request)}.grib"
-    client.retrieve(ERA5_DATASET, request, str(target))
+    client.retrieve(DATASETS[dataset]["name"], request, str(target))
     if target.exists():
         return target
     for alt in TEMP_DIR.glob(_request_stem(request) + ".*"):
@@ -140,7 +166,19 @@ def divide_month_in_chunks(li, n):
     return [li[i : i + n] for i in range(0, len(li), n)]
 
 
-def request_list_from_dates(dates: list[datetime]) -> list[dict]:
+def base_request(dataset: str) -> dict:
+    request = dict(
+        data_format="grib",
+        download_format="unarchived",
+        variable=DATASETS[dataset]["variables"],
+        area=coords,
+    )
+    if dataset == "era5":
+        request["product_type"] = "reanalysis"
+    return request
+
+
+def request_list_from_dates(dates: list[datetime], dataset: str = "era5") -> list[dict]:
     dates_dataframe = pd.DataFrame(dates, columns=["Date"])
     dates_dataframe["Date"] = pd.to_datetime(dates_dataframe["Date"])
     grouped_by_months = dates_dataframe.groupby(pd.Grouper(key="Date", freq="ME"))
@@ -155,29 +193,23 @@ def request_list_from_dates(dates: list[datetime]) -> list[dict]:
         for chunk in divide_month_in_chunks(days, DAY_CHUNK):
             requests_list.append(
                 dict(
-                    product_type="reanalysis",
-                    format="grib",
-                    variable=weather_variables,
+                    base_request(dataset),
                     year=f"{month['Date'].dt.year[month.index.start]}",
                     month=f"{month['Date'].dt.month[month.index.start]:02d}",
                     day=chunk,
                     time=[f"{i:02d}:00" for i in range(24)],
-                    area=coords,
                 )
             )
     return requests_list
 
 
-def single_day_request(last_date: datetime) -> dict:
+def single_day_request(last_date: datetime, dataset: str = "era5") -> dict:
     return dict(
-        product_type="reanalysis",
-        format="grib",
-        variable=weather_variables,
+        base_request(dataset),
         year=f"{last_date.year}",
         month=f"{last_date.month:02d}",
         day=f"{last_date.day:02d}",
         time=[f"{i:02d}:00" for i in range(last_date.hour, 24)],
-        area=coords,
     )
 
 
@@ -237,24 +269,48 @@ def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
     )
 
 
-def deaccumulate_radiation(
-    series: pd.Series, times: pd.Series, latitudes: pd.Series, longitudes: pd.Series
+def deaccumulate(
+    values: pd.Series,
+    times: pd.Series,
+    latitudes: pd.Series,
+    longitudes: pd.Series,
+    prior: pd.Series | None = None,
 ) -> pd.Series:
-    """Convert CDS accumulated J/m² to hourly increments (still J/m²)."""
-    out = (
-        series.groupby([latitudes, longitudes], sort=False)
-        .diff()
-        .clip(lower=0)
-        .fillna(0)
-    )
-    return out.where(times.dt.hour != 0, 0)
+    """Converts values accumulated since 00 UTC (ERA5-Land) to the sum of the past hour.
+
+    The value at 01 UTC is already hourly, every other hour is the difference to the
+    previous hour, including 00 UTC which closes the previous day. The first row of
+    each cell needs the accumulated value before it, prior (indexed by latitude and
+    longitude), otherwise it is NaN. A row whose previous row is missing, is not the
+    hour before or has no value is NaN too, as the difference would span several
+    hours. The data must be sorted by cell and time.
+    """
+    cells = [latitudes, longitudes]
+    grouped = values.groupby(cells, sort=False)
+    previous = grouped.shift(1)
+    gap = times - times.groupby(cells, sort=False).shift(1) != pd.Timedelta(hours=1)
+    previous = previous.where(~gap, np.nan)
+    first = grouped.cumcount() == 0
+    if prior is not None:
+        index = pd.MultiIndex.from_arrays([latitudes, longitudes])
+        previous = previous.where(
+            ~first, prior.reindex(index).to_numpy(dtype="float64")
+        )
+    hourly = (values - previous).where(times.dt.hour != 1, values)
+    return hourly.clip(lower=0)
 
 
-def process_era5_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def process_era5_dataframe(
+    df: pd.DataFrame, accumulated: bool = False, prior: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    """prior: for accumulated data, the values accumulated before the first hour of
+    each cell (index latitude/longitude, columns ACCUMULATED_COLUMNS)."""
     rename = {
         "valid_time": "time",
         "u100": "wind_zonal",
         "v100": "wind_meridional",
+        "u10": "wind_zonal",
+        "v10": "wind_meridional",
         "t2m": "temp_air",
         "ssrd": "ghi",
         "tp": "precipitation",
@@ -281,12 +337,18 @@ def process_era5_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["time"] = pd.to_datetime(df["time"], utc=True)
     df["wind_speed"] = (df["wind_zonal"] ** 2 + df["wind_meridional"] ** 2) ** 0.5
     df = df.round({"latitude": 2, "longitude": 2})
-    df = df.sort_values(by=["latitude", "longitude", "time"])
-    df["ghi"] = deaccumulate_radiation(
-        df["ghi"], df["time"], df["latitude"], df["longitude"]
-    )
+    df = df.sort_values(by=["latitude", "longitude", "time"]).reset_index(drop=True)
     if "precipitation" not in df.columns:
         df["precipitation"] = 0.0
+    if accumulated:
+        for col in ACCUMULATED_COLUMNS:
+            df[col] = deaccumulate(
+                df[col],
+                df["time"],
+                df["latitude"],
+                df["longitude"],
+                None if prior is None else prior[col],
+            )
 
     return df[
         [
@@ -304,10 +366,17 @@ def process_era5_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 class EcmwfCrawler(ContinuousCrawler):
-    OFFSET_FROM_NOW = timedelta(days=2)
+    # ERA5T and ERA5-Land are published about five days after real time
+    OFFSET_FROM_NOW = timedelta(days=6)
+    dataset = "era5"
 
     def __init__(self, schema_name: str, config: CrawlerConfig):
         super().__init__(schema_name, config)
+        self.dataset = config.get("ecmwf_dataset") or "era5"
+        if self.dataset not in DATASETS:
+            raise ValueError(
+                f"unknown ecmwf_dataset {self.dataset}, use {list(DATASETS)}"
+            )
         create_table_if_not_exists(self.engine)
         self.ecmwf_client = cdsapi.Client()
         TEMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -355,6 +424,36 @@ class EcmwfCrawler(ContinuousCrawler):
             log.error("No ecmwf first found")
             return TEMPORAL_START
 
+    def accumulated_before(self, first: pd.Timestamp) -> pd.DataFrame:
+        """Sums the stored hourly values of the accumulation window before first.
+
+        ERA5-Land accumulates since 00 UTC (window 01 UTC to 00 UTC of the next day), so
+        the value accumulated before first is the sum of the stored hours since 01 UTC.
+        """
+        window_start = (first - timedelta(hours=1)).floor("D") + timedelta(hours=1)
+        if first <= window_start:
+            # first is 01 UTC, its value is already hourly
+            return pd.DataFrame(columns=ACCUMULATED_COLUMNS, dtype="float64")
+        sums = ", ".join(f"sum({c}) as {c}" for c in ACCUMULATED_COLUMNS)
+        query = text(
+            f"SELECT latitude, longitude, {sums} FROM ecmwf "
+            "WHERE time >= :lo AND time < :hi GROUP BY latitude, longitude"
+        )
+        with self.engine.connect() as conn:
+            prior = pd.read_sql(
+                query,
+                conn,
+                params={
+                    "lo": window_start.to_pydatetime(),
+                    "hi": first.to_pydatetime(),
+                },
+            )
+        hours = int((first - window_start) / timedelta(hours=1))
+        log.info("accumulated before %s from %s stored hours", first, hours)
+        return prior.round({"latitude": 2, "longitude": 2}).set_index(
+            ["latitude", "longitude"]
+        )
+
     def create_hypertable_if_not_exists(self) -> None:
         self.create_single_hypertable_if_not_exists("ecmwf", "time")
         self.create_single_hypertable_if_not_exists("ecmwf_eu", "time")
@@ -383,16 +482,16 @@ class EcmwfCrawler(ContinuousCrawler):
             log.info(
                 "Creating request for single day because begin hour is %s", begin.hour
             )
-            request = single_day_request(begin)
+            request = single_day_request(begin, self.dataset)
             log.info("ERA5 request: %s", request)
-            path = save_era5_request_to_file(request, self.ecmwf_client)
+            path = save_era5_request_to_file(request, self.ecmwf_client, self.dataset)
             self.build_dataframe(request, path)
             begin = self.get_latest_data()
 
         dates = list(daterange(begin, end))
-        for request in request_list_from_dates(dates):
+        for request in request_list_from_dates(dates, self.dataset):
             log.info("ERA5 request: %s", request)
-            path = save_era5_request_to_file(request, self.ecmwf_client)
+            path = save_era5_request_to_file(request, self.ecmwf_client, self.dataset)
             self.build_dataframe(request, path)
 
     def build_dataframe(
@@ -404,7 +503,12 @@ class EcmwfCrawler(ContinuousCrawler):
         if file_path is None:
             file_path = TEMP_DIR / f"{_request_stem(request)}.grib"
 
-        weather_data = process_era5_dataframe(open_grib_as_dataframe(file_path))
+        raw = open_grib_as_dataframe(file_path)
+        accumulated = DATASETS[self.dataset]["accumulated"]
+        prior = None
+        if accumulated:
+            prior = self.accumulated_before(pd.to_datetime(raw["time"], utc=True).min())
+        weather_data = process_era5_dataframe(raw, accumulated, prior)
         weather_data = weather_data.set_index(["time", "latitude", "longitude"])
 
         grid_data = weather_data
@@ -422,7 +526,8 @@ class EcmwfCrawler(ContinuousCrawler):
         # coords columns only necessary for the join
         weather_data = weather_data.drop(columns="coords")
         weather_data = weather_data.rename(columns={"NUTS_ID": "nuts_id"})
-        weather_data = weather_data.dropna(axis=0)
+        # points outside of all NUTS areas
+        weather_data = weather_data.dropna(subset=["nuts_id"])
         # average all grid points inside each NUTS area
         weather_data = weather_data.groupby(["time", "nuts_id"]).mean(numeric_only=True)
         weather_data = weather_data.reset_index()
