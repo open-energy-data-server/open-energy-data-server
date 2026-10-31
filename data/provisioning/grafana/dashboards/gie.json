@@ -1,358 +1,410 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana-postgresql-datasource",
-          "uid": "P6EAA63344BCC9F38"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "target": {
-          "limit": 100,
-          "matchAny": false,
-          "tags": [],
-          "type": "dashboard"
-        },
-        "type": "dashboard"
-      }
-    ]
-  },
+  "uid": "oeds-gie",
+  "title": "OEDS GIE Gas Storage and LNG",
+  "tags": [
+    "oeds",
+    "gas",
+    "gie"
+  ],
+  "timezone": "browser",
   "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 63,
-  "links": [],
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Gas Infrastructure Europe: AGSI+ gas storage inventory and ALSI LNG terminal data, daily per country, company and site.",
+  "time": {
+    "from": "now-2y",
+    "to": "now"
+  },
   "panels": [
     {
+      "type": "row",
+      "title": "Data status",
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 8,
       "panels": [],
-      "title": "Overview",
-      "type": "row"
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
     },
     {
+      "type": "table",
+      "title": "Data status",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'gie.gie_agsi_country' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_agsi_country'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_agsi_country\nUNION ALL\nSELECT 'gie.gie_agsi_company' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_agsi_company'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_agsi_company\nUNION ALL\nSELECT 'gie.gie_agsi_location' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_agsi_location'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_agsi_location\nUNION ALL\nSELECT 'gie.gie_alsi_country' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_alsi_country'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_alsi_country\nUNION ALL\nSELECT 'gie.gie_alsi_company' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_alsi_company'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_alsi_company\nUNION ALL\nSELECT 'gie.gie_alsi_location' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_alsi_location'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_alsi_location"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 7
+      },
+      "id": 2
+    },
+    {
+      "type": "row",
+      "title": "EU gas storage (AGSI+)",
+      "collapsed": false,
+      "panels": [],
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "gauge",
+      "title": "EU storage fill level",
+      "description": "Gas in storage divided by working gas volume of all EU countries (parent = EU) on the latest gas day in the selected range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(gasinstorage) / NULLIF(sum(workinggasvolume), 0) * 100 AS \"fill level\"\nFROM gie.gie_agsi_country WHERE parent = 'EU' AND gasdaystart = (SELECT max(gasdaystart) FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart))"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 70
               }
             ]
-          }
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 13,
-        "x": 0,
-        "y": 1
-      },
-      "id": 3,
       "options": {
-        "basemap": {
-          "config": {},
-          "name": "Layer 0",
-          "type": "default"
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
         },
-        "controls": {
-          "mouseWheelZoom": true,
-          "showAttribution": true,
-          "showDebug": false,
-          "showMeasure": false,
-          "showScale": false,
-          "showZoom": true
-        },
-        "layers": [
-          {
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": {
-                  "field": "type",
-                  "fixed": "dark-green"
-                },
-                "opacity": 0.7,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
-                "size": {
-                  "fixed": 5,
-                  "max": 15,
-                  "min": 2
-                },
-                "symbol": {
-                  "field": "",
-                  "fixed": "img/icons/marker/circle.svg",
-                  "mode": "fixed"
-                },
-                "symbolAlign": {
-                  "horizontal": "center",
-                  "vertical": "center"
-                },
-                "textConfig": {
-                  "fontSize": 12,
-                  "offsetX": 0,
-                  "offsetY": 0,
-                  "textAlign": "center",
-                  "textBaseline": "middle"
-                }
-              }
-            },
-            "filterData": {
-              "id": "byRefId",
-              "options": "ALSI"
-            },
-            "location": {
-              "mode": "auto"
-            },
-            "name": "ALSI_Layer",
-            "tooltip": true,
-            "type": "markers"
-          },
-          {
-            "config": {
-              "showLegend": true,
-              "style": {
-                "color": {
-                  "fixed": "dark-green"
-                },
-                "opacity": 0.4,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
-                "size": {
-                  "fixed": 5,
-                  "max": 15,
-                  "min": 2
-                },
-                "symbol": {
-                  "fixed": "img/icons/marker/square.svg",
-                  "mode": "fixed"
-                },
-                "symbolAlign": {
-                  "horizontal": "center",
-                  "vertical": "center"
-                },
-                "textConfig": {
-                  "fontSize": 12,
-                  "offsetX": 0,
-                  "offsetY": 0,
-                  "textAlign": "center",
-                  "textBaseline": "middle"
-                }
-              }
-            },
-            "filterData": {
-              "id": "byRefId",
-              "options": "AGSI"
-            },
-            "location": {
-              "mode": "auto"
-            },
-            "name": "AGSI_Layer",
-            "tooltip": true,
-            "type": "markers"
-          }
-        ],
-        "tooltip": {
-          "mode": "details"
-        },
-        "view": {
-          "allLayers": true,
-          "id": "europe",
-          "lat": 46,
-          "lon": 14,
-          "zoom": 4
-        }
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "orientation": "auto"
       },
-      "pluginVersion": "10.4.4",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT distinct longitude, latitude, name, code, type FROM gie.gie_alsi_location",
-          "refId": "ALSI",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "longitude",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "latitude",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "name",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "code",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "type",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_location"
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT distinct longitude, latitude, name, code, type FROM gie.gie_agsi_location",
-          "refId": "AGSI",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Gas Storage Map",
-      "type": "geomap"
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 4,
+        "h": 6
+      },
+      "id": 4
     },
     {
+      "type": "stat",
+      "title": "EU gas in storage",
+      "description": "Total gas in storage in the EU on the latest gas day in range (TWh).",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(gasinstorage) AS \"gas in storage\" FROM gie.gie_agsi_country WHERE parent = 'EU' AND gasdaystart = (SELECT max(gasdaystart) FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart))"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
           },
-          "mappings": [],
+          "unit": "suffix: TWh",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 9,
+        "w": 4,
+        "h": 6
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "EU working gas volume",
+      "description": "Technical storage capacity (working gas volume) of the EU in TWh.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(workinggasvolume) AS \"working gas volume\" FROM gie.gie_agsi_country WHERE parent = 'EU' AND gasdaystart = (SELECT max(gasdaystart) FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: TWh",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 9,
+        "w": 4,
+        "h": 6
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "EU net withdrawal",
+      "description": "Withdrawal minus injection of all EU storages on the latest gas day (GWh/d). Negative values mean net injection (storage filling).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(withdrawal) - sum(injection) AS \"net withdrawal\" FROM gie.gie_agsi_country WHERE parent = 'EU' AND gasdaystart = (SELECT max(gasdaystart) FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -361,1425 +413,1434 @@
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "orange",
+                "value": 0
               }
             ]
           },
-          "unit": "GWh/d"
+          "unit": "suffix: GWh/d",
+          "decimals": 0
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 9
-      },
-      "id": 2,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
       },
-      "pluginVersion": "10.4.0",
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 4,
+        "h": 6
+      },
+      "id": 7
+    },
+    {
+      "type": "timeseries",
+      "title": "EU fill level compared with the previous year",
+      "description": "Fill level (gas in storage / working gas volume) of the EU countries per gas day, and the same curve shifted by one year to compare the filling season with last year. Older data includes the UK (pre-Brexit countries are tagged EU).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(sendout) AS sendout,\n  code\nFROM gie.gie_alsi_country\nWHERE\n  $__timeFilter(gasdaystart)\nGROUP BY 1, code\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, sum(gasinstorage) / NULLIF(sum(workinggasvolume), 0) * 100 AS \"fill level\"\nFROM gie.gie_agsi_country WHERE parent = 'EU' AND $__timeFilter(gasdaystart) GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
-          "table": "gie_alsi_country"
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT (gasdaystart + interval '1 year')::timestamptz AS time, sum(gasinstorage) / NULLIF(sum(workinggasvolume), 0) * 100 AS \"previous year\"\nFROM gie.gie_agsi_country WHERE parent = 'EU'\n  AND gasdaystart BETWEEN ($__timeFrom()::date - 366) AND ($__timeTo()::date - 364) GROUP BY 1 ORDER BY 1"
         }
       ],
-      "title": "sendout of ALSI LNG Terminals",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
       "fieldConfig": {
         "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 15,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
           "color": {
             "mode": "palette-classic"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "TWh"
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         },
         "overrides": [
           {
-            "__systemRef": "hideSeriesFrom",
             "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "gasinstorage DE"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
+              "id": "byName",
+              "options": "previous year"
             },
             "properties": [
               {
-                "id": "custom.hideFrom",
+                "id": "color",
                 "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
                 }
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 9
-      },
-      "id": 5,
       "options": {
         "legend": {
-          "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(gasinstorage) AS gasinstorage,\n  code\nFROM gie.gie_agsi_country\nWHERE\n  $__timeFilter(gasdaystart)\nGROUP BY 1, code\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "Average Gas in Storage AGSI",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "TWh"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
-      "id": 17,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": []
         },
         "tooltip": {
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(consumption) AS AnnualConsumption,\n  name\nFROM gie.gie_agsi_country\nWHERE\n  $__timeFilter(gasdaystart)\nGROUP BY 1, name\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Annual Gas Consumption",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
       "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 26
-      },
-      "id": 9,
-      "panels": [],
-      "title": "ALSI",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "GWh/d"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 27
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(dtrs) AS dtrs,\n  code\nFROM gie.gie_alsi_country\nWHERE\n  $__timeFilter(gasdaystart)\nGROUP BY 1, code\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "daily total send-out capacity in ALSI LNG terminals",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "GWh/d"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 0,
-        "y": 38
-      },
-      "id": 11,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(dtrs) AS dtrs,\n  name\nFROM gie.gie_alsi_country\nWHERE\n  $__timeFilter(gasdaystart) AND name = '$country' \nGROUP BY 1, name\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "daily total send-out capacity in ALSI LNG terminals $country",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "GWh/d"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 8,
-        "y": 38
-      },
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(dtrs) AS dtrs,\n  name\nFROM gie.gie_alsi_country\nWHERE\n  $__timeFilter(gasdaystart) AND name = '$country' \nGROUP BY 1, name\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "daily total send-out capacity in ALSI LNG terminals $country",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "GWh/d"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 7,
-        "x": 17,
-        "y": 38
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "hide": false,
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(dtrs) AS dtrs,\n  gie_alsi_location.name\nFROM gie.gie_alsi_location\nJOIN (SELECT distinct parent, name from gie.gie_alsi_company where $__timeFilter(gasdaystart)) companies ON companies.name = gie.gie_alsi_location.parent\nWHERE\n  $__timeFilter(gasdaystart) AND companies.parent = '$country' \nGROUP BY 1, gie_alsi_location.name  \nORDER BY 1",
-          "refId": "B",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "daily total send-out capacity in ALSI LNG terminals by location for $country",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 49
-      },
-      "id": 10,
-      "panels": [],
-      "title": "AGSI",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "GWh/d"
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "injection DE",
-                  "withdrawal DE"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 50
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(injection) AS injection,\n  avg(withdrawal) AS withdrawal,\n  code\nFROM gie.gie_agsi_country\nWHERE\n  $__timeFilter(gasdaystart)\nGROUP BY 1, code\nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "Injection and Withdrawal of Gas Storages",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "TWh"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 0,
-        "y": 61
-      },
-      "id": 12,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(gasinstorage) AS gasInStorage,\n  name\nFROM gie.gie_agsi_country\nWHERE\n  $__timeFilter(gasdaystart) AND name = '$country' \nGROUP BY 1, name  \nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "Gas in Storage in $country",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "TWh"
-        },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "gasinstorage EWE Gasspeicher"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 8,
-        "y": 61
-      },
-      "id": 15,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(gasinstorage) AS gasInStorage,\n  name\nFROM gie.gie_agsi_company \nWHERE\n  $__timeFilter(gasdaystart) AND parent = '$country' \nGROUP BY 1, name  \nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
-        }
-      ],
-      "title": "Gas in Storage by company in $country",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "TWh"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 7,
         "x": 16,
-        "y": 61
+        "y": 9,
+        "w": 8,
+        "h": 6
       },
-      "id": 16,
+      "id": 8
+    },
+    {
+      "type": "geomap",
+      "title": "Storage sites and LNG terminals",
+      "description": "Underground gas storage sites (circles: size = working gas volume in TWh, colour = fill level) and LNG terminals (squares: size = send-out capacity) from the latest days. Only sites with coordinates are shown (some historical entries have 0/0 and are skipped).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "AGSI",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT ON (code) name AS site, parent AS company,\n  longitude::float8 AS lon, latitude::float8 AS lat, type, workinggasvolume AS \"working gas volume (TWh)\", \"full\" AS \"fill level (%)\",\n  gasdaystart::text AS \"gas day\"\nFROM gie.gie_agsi_location\nWHERE gasdaystart >= current_date - 14 AND longitude::float8 <> 0 AND latitude::float8 <> 0 AND workinggasvolume > 0\nORDER BY code, gasdaystart DESC"
+        },
+        {
+          "refId": "ALSI",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT ON (code) name AS site, parent AS company,\n  longitude::float8 AS lon, latitude::float8 AS lat, dtrs AS \"send-out capacity (GWh/d)\", sendout AS \"send-out (GWh/d)\", gasdaystart::text AS \"gas day\"\nFROM gie.gie_alsi_location\nWHERE gasdaystart >= current_date - 14 AND longitude::float8 <> 0 AND latitude::float8 <> 0 AND dtrs > 0\nORDER BY code, gasdaystart DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
       "options": {
+        "view": {
+          "id": "coords",
+          "lat": 49,
+          "lon": 10,
+          "zoom": 4,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Gas storage",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "AGSI"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "fill level (%)",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.75,
+                "size": {
+                  "field": "working gas volume (TWh)",
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 22
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          },
+          {
+            "type": "markers",
+            "name": "LNG terminals",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "ALSI"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "",
+                  "fixed": "purple"
+                },
+                "opacity": 0.6,
+                "size": {
+                  "field": "send-out capacity (GWh/d)",
+                  "fixed": 5,
+                  "min": 4,
+                  "max": 18
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/square.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 11
+      },
+      "id": 9
+    },
+    {
+      "type": "barchart",
+      "title": "Fill level by country (latest day)",
+      "description": "Storage fill level (%) of every country with storage on the latest gas day in range, sorted by fill level.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT name AS country, \"full\" AS \"fill level\" FROM gie.gie_agsi_country\nWHERE gasdaystart = (SELECT max(gasdaystart) FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart)) AND workinggasvolume > 0 AND parent <> 'Additional Information' ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "axisSoftMax": 100
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
         "legend": {
-          "calcs": [],
+          "showLegend": false,
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 6,
+        "h": 11
+      },
+      "id": 10
+    },
+    {
+      "type": "barchart",
+      "title": "Storage capacity vs annual consumption (latest day)",
+      "description": "Working gas volume of the storages and annual gas consumption of the country (TWh), as reported by AGSI. The ratio shows how much of the national demand the storages can cover.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT code AS country, workinggasvolume AS \"working gas volume\", consumption AS \"annual consumption\"\nFROM gie.gie_agsi_country WHERE gasdaystart = (SELECT max(gasdaystart) FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart)) AND workinggasvolume > 0 AND consumption > 0 AND parent <> 'Additional Information'\nORDER BY consumption DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: TWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "country",
+        "orientation": "auto",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
         },
         "tooltip": {
           "mode": "multi",
           "sort": "none"
-        }
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
       },
-      "pluginVersion": "10.4.0",
+      "gridPos": {
+        "x": 18,
+        "y": 15,
+        "w": 6,
+        "h": 11
+      },
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas in storage by country",
+      "description": "Stored gas per EU/non-EU country (TWh), stacked. Countries without storage are omitted. 'Additional Information' duplicates are excluded.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(gasdaystart,$__interval),\n  avg(gasinstorage) AS GasInStorage,\n  name\nFROM gie.gie_agsi_location\nWHERE\n  $__timeFilter(gasdaystart) AND parent = '$agsi_company' \nGROUP BY 1, name  \nORDER BY 1",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [
-                  {
-                    "name": "gasinstorage",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "gie_alsi_country"
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, name AS metric, gasinstorage AS \"TWh\" FROM gie.gie_agsi_country\nWHERE $__timeFilter(gasdaystart) AND parent <> 'Additional Information' AND gasinstorage IS NOT NULL AND code <> 'GB' ORDER BY 1"
         }
       ],
-      "title": "Gas in Storage by location for $agsi_company",
-      "type": "timeseries"
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: TWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "timeseries",
+      "title": "EU injection and withdrawal",
+      "description": "Sum of daily injection (positive) and withdrawal (negative) of all EU storages in GWh/d. Injection dominates in summer, withdrawal in winter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, sum(injection) AS \"injection\", -sum(withdrawal) AS \"withdrawal\"\nFROM gie.gie_agsi_country WHERE parent = 'EU' AND $__timeFilter(gasdaystart) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 40,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: GWh/d"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "injection"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "withdrawal"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 9
+      },
+      "id": 13
+    },
+    {
+      "type": "row",
+      "title": "Storage in $country",
+      "collapsed": false,
+      "panels": [],
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas in storage and working gas volume in $country",
+      "description": "Stored gas against the technical working gas volume (TWh) and the fill level on the right axis.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, gasinstorage AS \"gas in storage\", workinggasvolume AS \"working gas volume\", \"full\" AS \"fill level\"\nFROM gie.gie_agsi_country WHERE code = '${country}' AND $__timeFilter(gasdaystart) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 15,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: TWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fill level"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "id": 15
+    },
+    {
+      "type": "timeseries",
+      "title": "Injection and withdrawal vs capacity in $country",
+      "description": "Daily injection and withdrawal (GWh/d) compared with the technical injection / withdrawal capacity (dashed). Withdrawal is plotted negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, injection AS \"injection\", injectioncapacity AS \"injection capacity\", -withdrawal AS \"withdrawal\", -withdrawalcapacity AS \"withdrawal capacity\"\nFROM gie.gie_agsi_country WHERE code = '${country}' AND $__timeFilter(gasdaystart) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 25,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: GWh/d"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*capacity"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 36,
+        "w": 12,
+        "h": 8
+      },
+      "id": 16
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas in storage by company in $country",
+      "description": "Stored gas (TWh) per storage operator, stacked.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, name AS metric, gasinstorage AS \"TWh\" FROM gie.gie_agsi_company\nWHERE parent = (SELECT name FROM gie.gie_agsi_country WHERE code = '${country}' LIMIT 1) AND $__timeFilter(gasdaystart) AND gasinstorage IS NOT NULL ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: TWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 12,
+        "h": 9
+      },
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "Fill level by site of $company",
+      "description": "Fill level (%) of every storage site operated by the selected company. Choose another company with the variable above.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, name AS metric, \"full\" AS \"fill level\" FROM gie.gie_agsi_location\nWHERE parent = '${company}' AND $__timeFilter(gasdaystart) AND \"full\" IS NOT NULL ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 44,
+        "w": 12,
+        "h": 9
+      },
+      "id": 18
+    },
+    {
+      "type": "table",
+      "title": "Storage sites in $country (latest day)",
+      "description": "Latest values per storage site of the selected country.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT l.name AS \"Site\", l.parent AS \"Company\", l.type AS \"Type\", l.workinggasvolume AS \"Working gas (TWh)\",\n  l.gasinstorage AS \"In storage (TWh)\", l.\"full\" AS \"Fill (%)\", l.injection AS \"Injection (GWh/d)\", l.withdrawal AS \"Withdrawal (GWh/d)\",\n  l.status AS \"Status\", l.gasdaystart::text AS \"Gas day\"\nFROM (SELECT DISTINCT ON (code) * FROM gie.gie_agsi_location WHERE gasdaystart >= current_date - 14\n      AND parent IN (SELECT name FROM gie.gie_agsi_company WHERE parent = (SELECT name FROM gie.gie_agsi_country WHERE code = '${country}' LIMIT 1) AND gasdaystart >= current_date - 14)\n      ORDER BY code, gasdaystart DESC) l\nWHERE l.workinggasvolume > 0 ORDER BY l.workinggasvolume DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Fill (%)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Working gas (TWh)"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "In storage (TWh)"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 9
+      },
+      "id": 19
+    },
+    {
+      "type": "row",
+      "title": "LNG terminals (ALSI)",
+      "collapsed": false,
+      "panels": [],
+      "id": 20,
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "LNG send-out by country",
+      "description": "Daily LNG send-out into the grid per country (GWh/d), stacked. Countries 'Additional Information' (alternative reporting) are excluded.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, name AS metric, sendout AS \"GWh/d\" FROM gie.gie_alsi_country\nWHERE $__timeFilter(gasdaystart) AND parent <> 'Additional Information' AND sendout IS NOT NULL ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: GWh/d"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 12,
+        "h": 9
+      },
+      "id": 21
+    },
+    {
+      "type": "timeseries",
+      "title": "Terminal utilisation by country",
+      "description": "Send-out divided by the declared total send-out capacity (DTRS) per country. Values near 100 % mean the regasification capacity is the bottleneck.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, name AS metric, sendout / NULLIF(dtrs, 0) * 100 AS \"utilisation\" FROM gie.gie_alsi_country\nWHERE $__timeFilter(gasdaystart) AND parent <> 'Additional Information' AND sendout IS NOT NULL ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 63,
+        "w": 12,
+        "h": 9
+      },
+      "id": 22
+    },
+    {
+      "type": "timeseries",
+      "title": "LNG inventory in EU terminals",
+      "description": "Total LNG in the tanks (GWh, left) of all reporting countries and the share of the tank capacity (DTMI) that is filled (right).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, sum(inventory_gwh) AS \"inventory\", sum(inventory_gwh) / NULLIF(sum(dtmi_gwh), 0) * 100 AS \"tank fill level\"\nFROM gie.gie_alsi_country WHERE $__timeFilter(gasdaystart) AND parent <> 'Additional Information' AND inventory_gwh IS NOT NULL GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 20,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: GWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "tank fill level"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 12,
+        "h": 9
+      },
+      "id": 23
+    },
+    {
+      "type": "timeseries",
+      "title": "LNG send-out by terminal in $lng_country",
+      "description": "Daily send-out per terminal (GWh/d) of the selected country, stacked.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT gasdaystart::timestamptz AS time, name AS metric, sendout AS \"GWh/d\" FROM gie.gie_alsi_location\nWHERE $__timeFilter(gasdaystart) AND sendout IS NOT NULL\n  AND parent IN (SELECT name FROM gie.gie_alsi_company WHERE parent = (SELECT name FROM gie.gie_alsi_country WHERE code = '${lng_country}' LIMIT 1) AND gasdaystart >= current_date - 30) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: GWh/d"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 72,
+        "w": 12,
+        "h": 9
+      },
+      "id": 24
     }
   ],
-  "refresh": "",
-  "schemaVersion": 39,
-  "tags": [],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ],
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "Austria",
-          "value": "Austria"
-        },
-        "datasource": {
-          "type": "grafana-postgresql-datasource",
-          "uid": "P6EAA63344BCC9F38"
-        },
-        "definition": "SELECT DISTINCT name FROM gie.gie_agsi_country",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Country",
-        "multi": false,
-        "name": "country",
-        "options": [],
-        "query": "SELECT DISTINCT name FROM gie.gie_agsi_country",
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
         "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
       },
       {
-        "current": {
-          "selected": false,
-          "text": "GSA",
-          "value": "GSA"
-        },
+        "type": "query",
+        "name": "country",
+        "label": "Storage country (AGSI)",
         "datasource": {
           "type": "grafana-postgresql-datasource",
-          "uid": "P6EAA63344BCC9F38"
+          "uid": "${ds}"
         },
-        "definition": "SELECT DISTINCT name FROM gie.gie_agsi_company WHERE parent = '${country}'",
-        "description": "",
-        "hide": 0,
-        "includeAll": false,
-        "label": "Company (AGSI)",
-        "multi": false,
-        "name": "agsi_company",
-        "options": [],
-        "query": "SELECT DISTINCT name FROM gie.gie_agsi_company WHERE parent = '${country}'",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
+        "query": "SELECT DISTINCT name AS __text, code AS __value FROM gie.gie_agsi_country WHERE parent <> 'Additional Information' AND gasdaystart >= current_date - 30 AND workinggasvolume IS NOT NULL ORDER BY 1",
+        "definition": "SELECT DISTINCT name AS __text, code AS __value FROM gie.gie_agsi_country WHERE parent <> 'Additional Information' AND gasdaystart >= current_date - 30 AND workinggasvolume IS NOT NULL ORDER BY 1",
+        "refresh": 2,
         "sort": 1,
-        "type": "query"
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Germany",
+          "value": "DE"
+        },
+        "options": []
+      },
+      {
+        "type": "query",
+        "name": "company",
+        "label": "Storage company",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT DISTINCT name AS __text, name AS __value FROM gie.gie_agsi_company WHERE parent = (SELECT name FROM gie.gie_agsi_country WHERE code = '${country}' LIMIT 1) AND gasdaystart >= current_date - 30 ORDER BY 1",
+        "definition": "SELECT DISTINCT name AS __text, name AS __value FROM gie.gie_agsi_company WHERE parent = (SELECT name FROM gie.gie_agsi_country WHERE code = '${country}' LIMIT 1) AND gasdaystart >= current_date - 30 ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Uniper Energy Storage",
+          "value": "Uniper Energy Storage"
+        },
+        "options": []
+      },
+      {
+        "type": "query",
+        "name": "lng_country",
+        "label": "LNG country (ALSI)",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT DISTINCT name AS __text, code AS __value FROM gie.gie_alsi_country WHERE parent <> 'Additional Information' AND gasdaystart >= current_date - 30 AND sendout IS NOT NULL ORDER BY 1",
+        "definition": "SELECT DISTINCT name AS __text, code AS __value FROM gie.gie_alsi_country WHERE parent <> 'Additional Information' AND gasdaystart >= current_date - 30 AND sendout IS NOT NULL ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "France",
+          "value": "FR"
+        },
+        "options": []
       }
     ]
   },
-  "time": {
-    "from": "now-13y",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "GIE-Dashboard",
-  "uid": "cdgxtldy95m2oa",
-  "version": 1,
-  "weekStart": ""
+  "annotations": {
+    "list": []
+  }
 }

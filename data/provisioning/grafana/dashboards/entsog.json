@@ -1,897 +1,414 @@
 {
-  "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "target": {
-          "limit": 100,
-          "matchAny": false,
-          "tags": [],
-          "type": "dashboard"
-        },
-        "type": "dashboard"
-      }
-    ]
-  },
-  "description": "Dashboard visualizing the Data from the ENTSOG",
+  "uid": "oeds-entsog",
+  "title": "OEDS ENTSOG Gas Transmission",
+  "tags": [
+    "oeds",
+    "gas",
+    "entsog"
+  ],
+  "timezone": "browser",
   "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 62,
-  "links": [],
-  "liveNow": false,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "ENTSOG transparency platform: hourly physical flows, allocations and firm technical capacities at European gas interconnection points.",
+  "time": {
+    "from": "2026-01-21T00:00:00.000Z",
+    "to": "2026-02-21T23:59:59.000Z"
+  },
   "panels": [
     {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
-      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'entsog.physical_flow' AS \"Table\", min(periodfrom) AS \"First\", max(periodfrom) AS \"Latest\", round((extract(epoch FROM now() - max(periodfrom))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsog.physical_flow'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsog.physical_flow\nUNION ALL\nSELECT 'entsog.allocation' AS \"Table\", min(periodfrom) AS \"First\", max(periodfrom) AS \"Latest\", round((extract(epoch FROM now() - max(periodfrom))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsog.allocation'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsog.allocation\nUNION ALL\nSELECT 'entsog.firm_technical' AS \"Table\", min(periodfrom) AS \"First\", max(periodfrom) AS \"Latest\", round((extract(epoch FROM now() - max(periodfrom))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsog.firm_technical'::regclass) AS \"Rows (approx.)\", 336 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 336 THEN 'OK' WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 1008 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsog.firm_technical\nUNION ALL\nSELECT 'entsog.physical_flow_archive_daily' AS \"Table\", min(gasday)::timestamptz AS \"First\", max(gasday)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasday)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsog.physical_flow_archive_daily'::regclass) AS \"Rows (approx.)\", NULL::numeric AS \"Expected max age (h)\", 'static' AS \"Status\" FROM entsog.physical_flow_archive_daily"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
             }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "celsius"
+          }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "flow"
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
             },
             "properties": [
               {
                 "id": "unit",
-                "value": "kwatt"
+                "value": "h"
               },
               {
-                "id": "max"
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 9,
-        "w": 24,
-        "x": 0,
-        "y": 0
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
       },
-      "id": 21,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 24,
+        "h": 6
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Reading this dashboard",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "**Units**: ENTSOG reports `kWh/h`, i.e. a power in kW. Panels show kW / MW / GW. Hourly values; `periodfrom` is the start of the hour (UTC).\n\n**Data quirk**: about 94 % of the rows in `physical_flow` and `allocation` are *not available* placeholders (`value` is NULL, `isna` = true). Real values exist only on single crawl days (about 2 days per month since Dec 2023, 1 day for allocations), so time series show isolated snapshots rather than continuous curves. All aggregations below ignore NULL values and average over the hours that have data. See the panel *Data coverage* at the bottom.\n\n**Map**: ENTSOG only publishes schematic transparency-map coordinates (`tpmapx`/`tpmapy`). They are converted to approximate longitude/latitude with a piecewise fit, so markers sit within about 0.5 degree of the true position.\n\nThe default range is 2026-01-21 to 2026-02-21 so that the flow-vs-temperature panel overlaps with ECMWF weather."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 6
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Europe: where does the gas come from and go to",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Physical flow by type of point (Europe)",
+      "description": "Sum of hourly physical flows over all reporting points, grouped by role in the gas system: supply (pipeline imports, LNG, storage withdrawal, production) is entry, demand (distribution and final consumers, storage injection, exports) is exit. Intra-EU interconnection points are excluded (they only move gas between systems). Points that are reported by both neighbouring TSOs can be counted twice. Only hours with real values are plotted (see data quirk).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(t, $__interval), cls AS metric, avg(v) AS \"flow\"\nFROM (SELECT periodfrom AS t, CASE\n  WHEN pointtype LIKE 'LNG%' AND directionkey = 'entry' THEN 'LNG regasification'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'entry' THEN 'Storage withdrawal'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'exit' THEN 'Storage injection'\n  WHEN pointtype LIKE 'Aggregated production%' AND directionkey = 'entry' THEN 'Domestic production'\n  WHEN pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%' THEN 'Distribution / final consumers'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'entry' THEN 'Pipeline imports (non-EU)'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'exit' THEN 'Pipeline exports (non-EU)'\nEND AS cls, sum(value) AS v\n  FROM entsog.physical_flow\n  WHERE $__timeFilter(periodfrom) AND value IS NOT NULL\n  GROUP BY 1, 2) h WHERE cls IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
         },
         "tooltip": {
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 14,
+        "h": 10
+      },
+      "id": 5
+    },
+    {
+      "type": "table",
+      "title": "Gas balance by country",
+      "description": "Average physical flow per country (country of the reporting TSO) over the selected range, in GW, averaged over the hours that have data. Sorted by gas delivered to distribution and final consumers.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
       },
       "targets": [
         {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [
-            {
-              "params": [
-                "$__interval",
-                "none"
-              ],
-              "type": "time"
-            }
-          ],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(periodfrom,$__interval),\n  sum(value/$__interval_ms*1000*60*60) AS \"flow\"\nFROM entsog.physical_flow\nWHERE\n  $__timeFilter(periodfrom) AND\n  operatorkey LIKE 'DE%' AND\n  directionkey = 'entry'\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value/($__interval_ms/1000/60/60)"
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "sum"
-                ],
-                "type": "aggregate"
-              },
-              {
-                "params": [
-                  "flow"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "physical_flow",
-          "timeColumn": "periodfrom",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "operatorkey",
-                "LIKE",
-                "'DE%'"
-              ],
-              "type": "expression"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "directionkey",
-                "=",
-                "'entry'"
-              ],
-              "type": "expression"
-            }
-          ]
-        },
-        {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
           "format": "table",
-          "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(\"time\",$__interval),\n  avg(temp_air-272.15) AS \"temp_air\"\nFROM weather.ecmwf_eu\nWHERE\n  $__timeFilter(\"time\") AND\n  nuts_id = 'DE'\nGROUP BY 1\nORDER BY 1",
-          "refId": "B",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
+          "rawSql": "SELECT country AS \"Country\",\n  round((avg(v) FILTER (WHERE cls = 'Pipeline imports (non-EU)') / 1e6)::numeric, 2) AS \"Pipeline imports non-EU\",\n  round((avg(v) FILTER (WHERE cls = 'LNG regasification') / 1e6)::numeric, 2) AS \"LNG regasification\",\n  round((avg(v) FILTER (WHERE cls = 'Domestic production') / 1e6)::numeric, 2) AS \"Production\",\n  round((avg(v) FILTER (WHERE cls = 'Storage withdrawal') / 1e6)::numeric, 2) AS \"Storage withdrawal\",\n  round((avg(v) FILTER (WHERE cls = 'Storage injection') / 1e6)::numeric, 2) AS \"Storage injection\",\n  round((avg(v) FILTER (WHERE cls = 'Distribution / final consumers') / 1e6)::numeric, 2) AS \"Distribution / consumers\",\n  round((avg(v) FILTER (WHERE cls = 'Pipeline exports (non-EU)') / 1e6)::numeric, 2) AS \"Pipeline exports non-EU\"\nFROM (SELECT left(operatorkey, 2) AS country, periodfrom, CASE\n  WHEN pointtype LIKE 'LNG%' AND directionkey = 'entry' THEN 'LNG regasification'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'entry' THEN 'Storage withdrawal'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'exit' THEN 'Storage injection'\n  WHEN pointtype LIKE 'Aggregated production%' AND directionkey = 'entry' THEN 'Domestic production'\n  WHEN pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%' THEN 'Distribution / final consumers'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'entry' THEN 'Pipeline imports (non-EU)'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'exit' THEN 'Pipeline exports (non-EU)'\nEND AS cls, sum(value) AS v\n      FROM entsog.physical_flow WHERE $__timeFilter(periodfrom) AND value IS NOT NULL\n      GROUP BY 1, 2, 3) h\nWHERE cls IS NOT NULL GROUP BY 1 ORDER BY 7 DESC NULLS LAST"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
           }
-        }
-      ],
-      "title": "Stromverbrauch & Temp",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 9
-      },
-      "id": 10,
-      "panels": [],
-      "title": "ENTSO-G",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pipeline imports non-EU"
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+            "properties": [
               {
-                "color": "green",
-                "value": null
+                "id": "unit",
+                "value": "none"
               },
               {
-                "color": "red",
-                "value": 80
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
               }
             ]
           },
-          "unit": "megwatt"
-        },
-        "overrides": []
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "LNG regasification"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Country"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 10
+        "x": 14,
+        "y": 14,
+        "w": 10,
+        "h": 10
       },
-      "id": 15,
-      "interval": "1d",
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+      "id": 6
+    },
+    {
+      "type": "geomap",
+      "title": "Map of entry and exit points",
+      "description": "Average physical flow per connection point over the selected range (marker size = GW). Green: entry (gas enters the TSO network: imports, LNG, storage withdrawal, production), orange: exit. Positions are approximated from the ENTSOG schematic map coordinates.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
       },
       "targets": [
         {
+          "refId": "entry",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
-          "format": "time_series",
-          "group": [
-            {
-              "params": [
-                "$__interval",
-                "none"
-              ],
-              "type": "time"
-            }
-          ],
-          "metricColumn": "operatorlabel",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(periodfrom,$__interval),\n  operatorlabel AS metric,\n  sum(index) AS \"index\"\nFROM entsog.firm_technical\nWHERE\n  $__timeFilter(periodfrom)\nGROUP BY 1,2\nORDER BY 1,2",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "index"
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "sum"
-                ],
-                "type": "aggregate"
-              },
-              {
-                "params": [
-                  "index"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
+          "rawSql": "WITH f AS (\n  SELECT pointkey, avg(v) AS v FROM (\n    SELECT pointkey, periodfrom, sum(value) AS v FROM entsog.physical_flow\n    WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND directionkey = 'entry' GROUP BY 1, 2) h GROUP BY 1),\n cp AS (SELECT DISTINCT ON (pointkey) pointkey, pointlabel, pointtype, tpmapx, tpmapy\n        FROM entsog.connectionpoints WHERE tpmapx IS NOT NULL ORDER BY pointkey)\nSELECT cp.pointlabel AS point, cp.pointtype AS type, round((f.v / 1e6)::numeric, 3)::float8 AS \"GW\",\n  CASE WHEN cp.tpmapy < -76.39 THEN 36.0 + (cp.tpmapy - (-76.39)) * 0.52094 WHEN cp.tpmapy < -66.6 THEN 36.0 + (cp.tpmapy - (-76.39)) * 0.52094 WHEN cp.tpmapy < -51.23 THEN 41.1 + (cp.tpmapy - (-66.6)) * 0.26675 WHEN cp.tpmapy < -40.65 THEN 45.2 + (cp.tpmapy - (-51.23)) * 0.19849 WHEN cp.tpmapy < -34.34 THEN 47.3 + (cp.tpmapy - (-40.65)) * 0.14263 WHEN cp.tpmapy < -25.28 THEN 48.2 + (cp.tpmapy - (-34.34)) * 0.15673 WHEN cp.tpmapy < -14.86 THEN 49.62 + (cp.tpmapy - (-25.28)) * 0.11516 WHEN cp.tpmapy < -11.5 THEN 50.82 + (cp.tpmapy - (-14.86)) * 0.15774 WHEN cp.tpmapy < 10.0 THEN 51.35 + (cp.tpmapy - (-11.5)) * 0.11860 WHEN cp.tpmapy < 11.65 THEN 53.9 + (cp.tpmapy - (10.0)) * 0.12121 ELSE 54.1 + (cp.tpmapy - 11.65) * 0.12 END::float8 AS lat, (cp.tpmapx / 5.26 + 15.8)::float8 AS lon\nFROM f JOIN cp USING (pointkey) WHERE f.v > 0"
+        },
+        {
+          "refId": "exit",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
-          "table": "firm_technical",
-          "timeColumn": "periodfrom",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH f AS (\n  SELECT pointkey, avg(v) AS v FROM (\n    SELECT pointkey, periodfrom, sum(value) AS v FROM entsog.physical_flow\n    WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND directionkey = 'exit' GROUP BY 1, 2) h GROUP BY 1),\n cp AS (SELECT DISTINCT ON (pointkey) pointkey, pointlabel, pointtype, tpmapx, tpmapy\n        FROM entsog.connectionpoints WHERE tpmapx IS NOT NULL ORDER BY pointkey)\nSELECT cp.pointlabel AS point, cp.pointtype AS type, round((f.v / 1e6)::numeric, 3)::float8 AS \"GW\",\n  CASE WHEN cp.tpmapy < -76.39 THEN 36.0 + (cp.tpmapy - (-76.39)) * 0.52094 WHEN cp.tpmapy < -66.6 THEN 36.0 + (cp.tpmapy - (-76.39)) * 0.52094 WHEN cp.tpmapy < -51.23 THEN 41.1 + (cp.tpmapy - (-66.6)) * 0.26675 WHEN cp.tpmapy < -40.65 THEN 45.2 + (cp.tpmapy - (-51.23)) * 0.19849 WHEN cp.tpmapy < -34.34 THEN 47.3 + (cp.tpmapy - (-40.65)) * 0.14263 WHEN cp.tpmapy < -25.28 THEN 48.2 + (cp.tpmapy - (-34.34)) * 0.15673 WHEN cp.tpmapy < -14.86 THEN 49.62 + (cp.tpmapy - (-25.28)) * 0.11516 WHEN cp.tpmapy < -11.5 THEN 50.82 + (cp.tpmapy - (-14.86)) * 0.15774 WHEN cp.tpmapy < 10.0 THEN 51.35 + (cp.tpmapy - (-11.5)) * 0.11860 WHEN cp.tpmapy < 11.65 THEN 53.9 + (cp.tpmapy - (10.0)) * 0.12121 ELSE 54.1 + (cp.tpmapy - 11.65) * 0.12 END::float8 AS lat, (cp.tpmapx / 5.26 + 15.8)::float8 AS lon\nFROM f JOIN cp USING (pointkey) WHERE f.v > 0"
         }
       ],
-      "timeFrom": "21d",
-      "title": "Firm Technical Capacity ENTSOG (average over ${__interval})",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "kwatt"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 10
-      },
-      "id": 17,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [
-            {
-              "params": [
-                "$__interval",
-                "none"
-              ],
-              "type": "time"
-            }
-          ],
-          "hide": false,
-          "metricColumn": "concat('phys_',directionkey)",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(periodfrom,$__interval),\n  concat('phys_',directionkey) AS metric,\n  sum(value) AS \"Physical\"\nFROM entsog.physical_flow\nWHERE\n  $__timeFilter(periodfrom) AND\n  pointlabel = '$pointkeys'\nGROUP BY 1,2\nORDER BY 1,2",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "sum"
-                ],
-                "type": "aggregate"
-              },
-              {
-                "params": [
-                  "Physical"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "physical_flow",
-          "timeColumn": "periodfrom",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "pointlabel",
-                "=",
-                "'$pointkeys'"
-              ],
-              "type": "expression"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [
-            {
-              "params": [
-                "$__interval",
-                "none"
-              ],
-              "type": "time"
-            }
-          ],
-          "hide": false,
-          "metricColumn": "concat('alloc_',directionkey)",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(periodfrom,$__interval),\n  concat('alloc_',directionkey) AS metric,\n  avg(value) AS \"Allocation_$pointkeys\"\nFROM entsog.allocation\nWHERE\n  $__timeFilter(periodfrom) AND\n  pointlabel = '$pointkeys'\nGROUP BY 1,2\nORDER BY 1,2",
-          "refId": "B",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "avg"
-                ],
-                "type": "aggregate"
-              },
-              {
-                "params": [
-                  "Allocation_$pointkeys"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "allocation",
-          "timeColumn": "periodfrom",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "pointlabel",
-                "=",
-                "'$pointkeys'"
-              ],
-              "type": "expression"
-            }
-          ]
-        }
-      ],
-      "title": "Flow for $pointkeys",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "kwatt"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
-      "id": 12,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  periodfrom AS \"time\",\n  value AS \"Physical\"\nFROM entsog.physical_flow\nWHERE\n  $__timeFilter(periodfrom) AND\n  operatorkey = '$operator'\nORDER BY 1",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "Physical"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "physical_flow",
-          "timeColumn": "periodfrom",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "operatorkey",
-                "=",
-                "'$operator'"
-              ],
-              "type": "expression"
-            }
-          ]
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [],
-          "hide": false,
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  periodfrom AS \"time\",\n  value AS \"Allocation\"\nFROM entsog.allocation\nWHERE\n  $__timeFilter(periodfrom) AND\n  operatorkey = '$operator'\nORDER BY 1",
-          "refId": "B",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "Allocation"
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "allocation",
-          "timeColumn": "periodfrom",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "operatorkey",
-                "=",
-                "'$operator'"
-              ],
-              "type": "expression"
-            }
-          ]
-        }
-      ],
-      "title": "Physical Flow for $operator",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
+            "mode": "continuous-GrYlRd"
           },
           "custom": {
             "hideFrom": {
@@ -900,70 +417,80 @@
               "viz": false
             }
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 18
-      },
-      "id": 19,
       "options": {
-        "basemap": {
-          "config": {
-            "attribution": "Entsog",
-            "url": "https://map.nowum.fh-aachen.de/assets/images/map_layers/countries_zones/{z}/{x}/{-y}.png"
-          },
-          "name": "Layer 0",
-          "type": "xyz"
+        "view": {
+          "id": "coords",
+          "lat": 49,
+          "lon": 14,
+          "zoom": 4,
+          "allLayers": true
         },
         "controls": {
+          "showZoom": true,
           "mouseWheelZoom": true,
-          "showAttribution": true,
-          "showDebug": false,
-          "showMeasure": false,
-          "showScale": false,
-          "showZoom": true
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
         },
         "layers": [
           {
+            "type": "markers",
+            "name": "Entry",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "entry"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
             "config": {
               "showLegend": true,
               "style": {
                 "color": {
-                  "fixed": "dark-green"
+                  "field": "",
+                  "fixed": "green"
                 },
-                "opacity": 0.4,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
+                "opacity": 0.55,
                 "size": {
-                  "fixed": 2,
-                  "max": 15,
-                  "min": 2
+                  "field": "GW",
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 20
                 },
                 "symbol": {
-                  "fixed": "img/icons/marker/circle.svg",
-                  "mode": "fixed"
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
                 },
                 "textConfig": {
                   "fontSize": 12,
@@ -973,175 +500,792 @@
                   "textBaseline": "middle"
                 }
               }
+            }
+          },
+          {
+            "type": "markers",
+            "name": "Exit",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "exit"
             },
             "location": {
-              "latitude": "pointtpmapy",
-              "longitude": "pointtpmapx",
-              "mode": "coords"
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
             },
-            "name": "Layer 1",
-            "tooltip": true,
-            "type": "markers"
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "",
+                  "fixed": "orange"
+                },
+                "opacity": 0.55,
+                "size": {
+                  "field": "GW",
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 20
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
           }
         ],
         "tooltip": {
           "mode": "details"
-        },
-        "view": {
-          "allLayers": true,
-          "id": "coords",
-          "lat": -16,
-          "lon": 21,
-          "zoom": 2
         }
       },
-      "pluginVersion": "10.4.4",
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 14,
+        "h": 12
+      },
+      "id": 7
+    },
+    {
+      "type": "barchart",
+      "title": "Largest points by average flow",
+      "description": "Top 15 connection points (point, direction, reporting TSO country) by average physical flow over the selected range. Virtual trading points and doubly reported interconnection points appear with the same value for each reporter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT pointlabel || ' (' || directionkey || ', ' || left(operatorkey, 2) || ')' AS point, avg(v) AS flow\nFROM (SELECT pointlabel, directionkey, operatorkey, periodfrom, sum(value) AS v FROM entsog.physical_flow\n      WHERE $__timeFilter(periodfrom) AND value IS NOT NULL GROUP BY 1, 2, 3, 4) h\nGROUP BY pointlabel, directionkey, operatorkey ORDER BY 2 DESC LIMIT 15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatt",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 24,
+        "w": 10,
+        "h": 12
+      },
+      "id": 8
+    },
+    {
+      "type": "row",
+      "title": "Country: $country",
+      "collapsed": false,
+      "panels": [],
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Physical flow by type of point in $country",
+      "description": "Same classification as the Europe panel, restricted to the TSOs of the selected country. Supply is entry, demand is exit.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
           "editorMode": "code",
           "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
           "rawQuery": true,
-          "rawSql": "SELECT\n  0 as \"time\",\n  pointtpmapx,\n  pointtpmapy\nFROM entsog.interconnections\nORDER BY 1",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "pointtpmapx"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "pointtpmapy"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "interconnections",
-          "timeColumn": "index",
-          "timeColumnType": "int8",
-          "where": []
+          "rawSql": "SELECT $__timeGroupAlias(t, $__interval), cls AS metric, avg(v) AS \"flow\"\nFROM (SELECT periodfrom AS t, CASE\n  WHEN pointtype LIKE 'LNG%' AND directionkey = 'entry' THEN 'LNG regasification'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'entry' THEN 'Storage withdrawal'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'exit' THEN 'Storage injection'\n  WHEN pointtype LIKE 'Aggregated production%' AND directionkey = 'entry' THEN 'Domestic production'\n  WHEN pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%' THEN 'Distribution / final consumers'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'entry' THEN 'Pipeline imports (non-EU)'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'exit' THEN 'Pipeline exports (non-EU)'\nEND AS cls, sum(value) AS v FROM entsog.physical_flow\n      WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND operatorkey LIKE '${country}-%' GROUP BY 1, 2) h\nWHERE cls IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2"
         }
       ],
-      "title": "ENTSOG Map",
-      "type": "geomap"
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 12,
+        "h": 9
+      },
+      "id": 10
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas to consumers vs air temperature in $country",
+      "description": "Gas delivered to distribution networks and final consumers (exit, left axis, kW) against the mean 2 m air temperature of the country (ECMWF reanalysis, NUTS level 0, right axis). Heating demand rises as temperature falls. The temperature series stops where ECMWF data stops (see ECMWF dashboard); gas only shows hours with real values.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(t, $__interval), avg(v) AS \"gas to consumers\"\nFROM (SELECT periodfrom AS t, sum(value) AS v FROM entsog.physical_flow\n      WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND operatorkey LIKE '${country}-%' AND directionkey = 'exit'\n        AND (pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%') GROUP BY 1) h\nGROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\", $__interval), avg(temp_air - 273.15) AS \"air temperature\"\nFROM ecmwf.ecmwf_eu\nWHERE $__timeFilter(\"time\") AND nuts_id = CASE '${country}' WHEN 'GR' THEN 'EL' ELSE '${country}' END\nGROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "air temperature"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 37,
+        "w": 12,
+        "h": 9
+      },
+      "id": 11
+    },
+    {
+      "type": "table",
+      "title": "Points of $country",
+      "description": "All connection points of the selected country with their role, direction and flow statistics over the selected range (GW). Hours = number of hours with real values.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT pointlabel AS \"Point\", COALESCE(max(pointtype), '-') AS \"Type\", directionkey AS \"Direction\",\n  round((avg(v) / 1e6)::numeric, 3) AS \"Avg GW\", round((max(v) / 1e6)::numeric, 3) AS \"Max GW\", count(*) AS \"Hours with data\"\nFROM (SELECT pointlabel, pointtype, directionkey, periodfrom, sum(value) AS v FROM entsog.physical_flow\n      WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND operatorkey LIKE '${country}-%' GROUP BY 1, 2, 3, 4) h\nGROUP BY pointlabel, directionkey ORDER BY avg(v) DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Avg GW",
+            "desc": true
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 46,
+        "w": 24,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "row",
+      "title": "Point: $point",
+      "collapsed": false,
+      "panels": [],
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Physical flow and allocation at $point",
+      "description": "Measured physical flow and allocated quantity at the selected point, per direction. Allocation is only available on one crawl day per month, physical flow on a few days.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(periodfrom, $__interval), 'physical ' || directionkey AS metric, avg(value) AS \"v\"\nFROM entsog.physical_flow WHERE $__timeFilter(periodfrom) AND pointkey = '${point}' AND value IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1, 2"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(periodfrom, $__interval), 'allocation ' || directionkey AS metric, avg(value) AS \"v\"\nFROM entsog.allocation WHERE $__timeFilter(periodfrom) AND pointkey = '${point}' AND value IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1, 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 9
+      },
+      "id": 14
+    },
+    {
+      "type": "timeseries",
+      "title": "Firm technical capacity vs physical flow at $point",
+      "description": "Firm technical capacity (step line, valid between periodfrom and periodto) against the measured physical flow of the same direction. A flow close to the capacity means a congested point. The capacity table only contains intervals that changed, so a point without rows has no published capacity.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT t AS time, 'capacity ' || directionkey AS metric, value AS \"v\" FROM (\n  SELECT greatest(periodfrom, $__timeFrom()) AS t, directionkey, value FROM entsog.firm_technical\n  WHERE pointkey = '${point}' AND periodfrom <= $__timeTo() AND periodto >= $__timeFrom() AND value IS NOT NULL\n  UNION ALL\n  SELECT least(periodto, $__timeTo()), directionkey, value FROM entsog.firm_technical\n  WHERE pointkey = '${point}' AND periodfrom <= $__timeTo() AND periodto >= $__timeFrom() AND value IS NOT NULL) c\nORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(periodfrom, $__interval), 'flow ' || directionkey AS metric, avg(value) AS \"v\"\nFROM entsog.physical_flow WHERE $__timeFilter(periodfrom) AND pointkey = '${point}' AND value IS NOT NULL\nGROUP BY 1, 2 ORDER BY 1, 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 12,
+        "h": 9
+      },
+      "id": 15
+    },
+    {
+      "type": "row",
+      "title": "Data quality and history",
+      "collapsed": false,
+      "panels": [],
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 65,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Data coverage: days with real physical-flow values per month",
+      "description": "Per month: number of calendar days that contain at least one real value, and number of real vs placeholder (NA) rows in physical_flow over the last 3 years. Until Oct 2023 only a handful of points had values; since Dec 2023 only about two days per month carry values for all ~300 points. A complete crawler would show ~30 days and the same row count every month.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('month', periodfrom) AS time, count(DISTINCT date_trunc('day', periodfrom)) FILTER (WHERE value IS NOT NULL) AS \"days with values\"\nFROM entsog.physical_flow WHERE periodfrom >= now() - interval '3 years' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date_trunc('month', periodfrom) AS time, count(*) FILTER (WHERE value IS NOT NULL) AS \"rows with value\", count(*) FILTER (WHERE value IS NULL) AS \"NA placeholder rows\"\nFROM entsog.physical_flow WHERE periodfrom >= now() - interval '3 years' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 80,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "days with values"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "always"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "timeFrom": "3y",
+      "gridPos": {
+        "x": 0,
+        "y": 66,
+        "w": 12,
+        "h": 9
+      },
+      "id": 17
+    },
+    {
+      "type": "barchart",
+      "title": "Historical physical flow 2016-2020 in $country (TP archive)",
+      "description": "Monthly mean of the daily sums of all entry and all exit flows of the country's TSOs from the ENTSOG transparency-platform archive (daily values, kWh/d converted to GW). The archive ends in Dec 2020; the hourly API data starts in Nov 2021. Countries are assigned via the TSO EIC code in `operators`.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', gasday), 'YYYY-MM') AS month,\n  avg(v) FILTER (WHERE directionkey = 'entry') / 24 / 1e6 AS \"entry\",\n  avg(v) FILTER (WHERE directionkey = 'exit') / 24 / 1e6 AS \"exit\"\nFROM (SELECT gasday, directionkey, sum(value) AS v FROM entsog.physical_flow_archive_daily\n      WHERE operatorkey IN (SELECT tsoeiccode FROM entsog.operators WHERE operatorcountrykey = '${country}' AND tsoeiccode IS NOT NULL)\n      GROUP BY 1, 2) h GROUP BY date_trunc('month', gasday) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "month",
+        "orientation": "auto",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 66,
+        "w": 12,
+        "h": 9
+      },
+      "id": 18
     }
   ],
-  "refresh": "",
-  "schemaVersion": 39,
-  "tags": [
-    "open-data"
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
   ],
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": false,
-          "text": "DE THE BZ",
-          "value": "DE THE BZ"
-        },
-        "datasource": {
-          "type": "grafana-postgresql-datasource",
-          "uid": "P6EAA63344BCC9F38"
-        },
-        "definition": "select bzLabel from entsog.balancingzones",
-        "description": "Choice of a Balancingzone",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "balancingzones",
-        "options": [],
-        "query": "select bzLabel from entsog.balancingzones",
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
         "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
       },
       {
-        "current": {
-          "selected": false,
-          "text": "DE-TSO-0019",
-          "value": "DE-TSO-0019"
-        },
+        "type": "query",
+        "name": "country",
+        "label": "Country",
         "datasource": {
           "type": "grafana-postgresql-datasource",
-          "uid": "P6EAA63344BCC9F38"
+          "uid": "${ds}"
         },
-        "definition": "select distinct tooperatorkey from entsog.interconnections",
-        "description": "Selected ENTSOG Operators",
-        "hide": 0,
+        "query": "SELECT DISTINCT operatorcountrylabel AS __text, operatorcountrykey AS __value FROM entsog.operators WHERE operatorcountrykey <> '--' ORDER BY 1",
+        "definition": "SELECT DISTINCT operatorcountrylabel AS __text, operatorcountrykey AS __value FROM entsog.operators WHERE operatorcountrykey <> '--' ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
         "includeAll": false,
         "multi": false,
-        "name": "operator",
-        "options": [],
-        "query": "select distinct tooperatorkey from entsog.interconnections",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "current": {
+          "text": "Germany",
+          "value": "DE"
+        },
+        "options": []
       },
       {
-        "current": {
-          "selected": false,
-          "text": "Wallbach",
-          "value": "Wallbach"
-        },
+        "type": "query",
+        "name": "point",
+        "label": "Point of country",
         "datasource": {
           "type": "grafana-postgresql-datasource",
-          "uid": "P6EAA63344BCC9F38"
+          "uid": "${ds}"
         },
-        "definition": "select pointlabel from entsog.operatorpointdirections where operatorkey='$operator'",
-        "hide": 0,
+        "query": "SELECT DISTINCT pointlabel AS __text, pointkey AS __value FROM entsog.operatorpointdirections WHERE operatorkey LIKE '${country}-%' AND hasdata ORDER BY 1",
+        "definition": "SELECT DISTINCT pointlabel AS __text, pointkey AS __value FROM entsog.operatorpointdirections WHERE operatorkey LIKE '${country}-%' AND hasdata ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
         "includeAll": false,
         "multi": false,
-        "name": "pointkeys",
-        "options": [],
-        "query": "select pointlabel from entsog.operatorpointdirections where operatorkey='$operator'",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "current": {
+          "text": "VIP THE-ZTP",
+          "value": "ITP-00614"
+        },
+        "options": []
       }
     ]
   },
-  "time": {
-    "from": "now-90d",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "ENTSOG-Monitor",
-  "uid": "Y0TVXj37z",
-  "version": 4,
-  "weekStart": ""
+  "annotations": {
+    "list": []
+  }
 }

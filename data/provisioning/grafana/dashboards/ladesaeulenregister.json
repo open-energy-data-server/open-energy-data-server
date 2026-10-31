@@ -1,35 +1,1046 @@
 {
   "annotations": {
-    "list": [
-      {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
-      }
-    ]
+    "list": []
   },
+  "description": "Ladesäulenregister der Bundesnetzagentur: öffentlich zugängliche Ladeeinrichtungen in Deutschland. Inbetriebnahmedatum ist als Text (TT.MM.JJJJ) gespeichert.",
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "links": [],
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
   "panels": [
     {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Ladeeinrichtungen",
+      "description": "Anzahl Ladeeinrichtungen (Ladesaeulen/-stationen) laut aktuellem Filter.",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art')",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
+          "unit": "short",
           "color": {
             "mode": "thresholds"
           },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Ladepunkte",
+      "description": "Summe der Ladepunkte (Anschluesse, an denen ein Fahrzeug laden kann).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"Anzahl Ladepunkte\") as n from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Installierte Leistung",
+      "description": "Summe der Nennleistung aller Ladeeinrichtungen (Spalte 'Nennleistung Ladeeinrichtung [kW]').",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"Nennleistung Ladeeinrichtung [kW]\")/1e6 as gw from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GW",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Anteil Schnelllader",
+      "description": "Anteil der Ladepunkte an Schnellladeeinrichtungen (DC).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 100.0*sum(\"Anzahl Ladepunkte\") filter (where \"Art der Ladeeinrichtung\"='Schnellladeeinrichtung')/nullif(sum(\"Anzahl Ladepunkte\"),0) as p from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Betreiber",
+      "description": "Anzahl unterschiedlicher Betreiber.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"Betreiber\") as n from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Neueste Inbetriebnahme",
+      "description": "Spätestes Inbetriebnahmedatum im Register, zeigt den Datenstand der CSV (die Spalte ist im Rohformat dd.mm.yyyy-Text).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(max(to_date(\"Inbetriebnahmedatum\",'DD.MM.YYYY')),'YYYY-MM-DD') as d from ladesaeulenregister.ladesaeulenregister",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Zubau",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Neue Ladepunkte pro Jahr",
+      "description": "Inbetriebnahmen pro Jahr, Summe der Ladepunkte nach Art der Ladeeinrichtung. Zeitraum ueber die Zeitauswahl oben.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', to_date(\"Inbetriebnahmedatum\",'DD.MM.YYYY')::timestamp) as time, \"Art der Ladeeinrichtung\" as metric, sum(\"Anzahl Ladepunkte\") as v\nfrom ladesaeulenregister.ladesaeulenregister where to_date(\"Inbetriebnahmedatum\",'DD.MM.YYYY') between $__timeFrom() and $__timeTo() and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') group by 1,2 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Normalladeeinrichtung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Schnellladeeinrichtung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF780A"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Installierte Ladeleistung (kumuliert)",
+      "description": "Kumulierte Nennleistung der in Betrieb genommenen Ladeeinrichtungen im aktuellen Register (später stillgelegte Einrichtungen fehlen, daher ist der Verlauf eine Untergrenze).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select time, metric, sum(kw) over (partition by metric order by time)/1000 as v from (\nselect date_trunc('month', to_date(\"Inbetriebnahmedatum\",'DD.MM.YYYY')::timestamp) as time, \"Art der Ladeeinrichtung\" as metric, sum(\"Nennleistung Ladeeinrichtung [kW]\") as kw\nfrom ladesaeulenregister.ladesaeulenregister where to_date(\"Inbetriebnahmedatum\",'DD.MM.YYYY') is not null and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') group by 1,2) x\nwhere $__timeFilter(time) order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MW",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 40,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Normalladeeinrichtung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Schnellladeeinrichtung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF780A"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "type": "row",
+      "title": "Leistung und Technik",
+      "collapsed": false,
+      "id": 11,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Ladeeinrichtungen nach Leistungsklasse",
+      "description": "Anzahl Ladeeinrichtungen nach Nennleistung. 11 und 22 kW sind klassische AC-Ladepunkte, ab 50 kW beginnt DC-Schnellladen, ab 150 kW HPC.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case b when 1 then '1) bis 3,7 kW' when 2 then '2) bis 11 kW' when 3 then '3) bis 22 kW' when 4 then '4) bis 50 kW'\nwhen 5 then '5) bis 150 kW' when 6 then '6) bis 300 kW' else '7) über 300 kW' end as leistungsklasse, count(*) as \"Ladeeinrichtungen\"\nfrom (select width_bucket(\"Nennleistung Ladeeinrichtung [kW]\", array[0,3.7,11.1,22.1,50.1,150,300]) b from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art')) x group by b order by b",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "leistungsklasse",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Steckertypen",
+      "description": "Anzahl der Steckverbindungen je Typ (bis zu 6 Steckertypen pro Ladeeinrichtung).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select trim(t) as steckertyp, count(*) as anzahl from ladesaeulenregister.ladesaeulenregister cross join lateral\nunnest(string_to_array(concat_ws(';',\"Steckertypen1\",\"Steckertypen2\",\"Steckertypen3\",\"Steckertypen4\",\"Steckertypen5\",\"Steckertypen6\"),';')) t where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') and trim(t) <> '' group by 1 order by 2 desc limit 10",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "steckertyp",
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Bezahlsysteme",
+      "description": "Anzahl der Ladeeinrichtungen, die das jeweilige Bezahlsystem anbieten (Mehrfachnennung möglich).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select trim(t) as bezahlsystem, count(*) as anzahl from ladesaeulenregister.ladesaeulenregister cross join lateral\nunnest(string_to_array(\"Bezahlsysteme\",';')) t where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') and trim(t) <> '' group by 1 order by 2 desc limit 12",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "bezahlsystem",
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      }
+    },
+    {
+      "type": "row",
+      "title": "Regionen",
+      "collapsed": false,
+      "id": 15,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Ladepunkte je Bundesland",
+      "description": "Ladepunkte nach Bundesland und Art der Ladeeinrichtung (Bundesland-Filter ausgenommen).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Bundesland\" as bundesland, \"Art der Ladeeinrichtung\" as art, sum(\"Anzahl Ladepunkte\") as ladepunkte from ladesaeulenregister.ladesaeulenregister\nwhere ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') group by 1,2 order by sum(sum(\"Anzahl Ladepunkte\")) over (partition by \"Bundesland\") desc, 2",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Normalladeeinrichtung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Schnellladeeinrichtung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF780A"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 15 Landkreise und Staedte",
+      "description": "Ladepunkte je Kreis/kreisfreie Stadt im aktuellen Filter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Kreis/kreisfreie Stadt\" as kreis, sum(\"Anzahl Ladepunkte\") as ladepunkte from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') group by 1 order by 2 desc limit 15",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Ladepunkte-Dichte (Raster 0,1 Grad)",
+      "description": "Alle Ladeeinrichtungen im Filter, zu Rasterzellen von 0,1 Grad (ca. 7 x 11 km) zusammengefasst. Groesse = Ladepunkte, Farbe = mittlere Nennleistung je Einrichtung in kW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select round(\"Breitengrad\"::numeric,1)::float as lat, round(\"Längengrad\"::numeric,1)::float as lon, sum(\"Anzahl Ladepunkte\") as ladepunkte,\navg(\"Nennleistung Ladeeinrichtung [kW]\") as mittlere_leistung_kw from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') and \"Breitengrad\" is not null group by 1,2",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kW",
           "custom": {
             "hideFrom": {
               "legend": false,
@@ -37,77 +1048,80 @@
               "viz": false
             }
           },
-          "mappings": [],
+          "color": {
+            "mode": "continuous-YlRd"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
+                "value": null
               }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
       "options": {
-        "basemap": {
-          "config": {},
-          "name": "Layer 0",
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
           "noRepeat": false,
-          "type": "default"
+          "shared": false
         },
         "controls": {
+          "showZoom": true,
           "mouseWheelZoom": true,
           "showAttribution": true,
-          "showDebug": false,
+          "showScale": true,
           "showMeasure": false,
-          "showScale": false,
-          "showZoom": true
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
         },
         "layers": [
           {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
             "config": {
               "showLegend": true,
               "style": {
-                "color": {
-                  "fixed": "dark-green"
-                },
-                "opacity": 0.4,
-                "rotation": {
-                  "fixed": 0,
-                  "max": 360,
-                  "min": -360,
-                  "mode": "mod"
-                },
-                "size": {
-                  "fixed": 5,
-                  "max": 15,
-                  "min": 2
-                },
+                "opacity": 0.6,
                 "symbol": {
                   "fixed": "img/icons/marker/circle.svg",
                   "mode": "fixed"
                 },
-                "symbolAlign": {
-                  "horizontal": "center",
-                  "vertical": "center"
+                "size": {
+                  "fixed": 5,
+                  "min": 2,
+                  "max": 18,
+                  "field": "ladepunkte"
                 },
-                "text": {
-                  "field": "Anzeigename (Karte)",
-                  "fixed": "",
-                  "mode": "field"
+                "color": {
+                  "fixed": "blue",
+                  "field": "mittlere_leistung_kw"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
                 },
                 "textConfig": {
                   "fontSize": 12,
@@ -117,105 +1131,471 @@
                   "textBaseline": "middle"
                 }
               }
-            },
-            "filterData": {
-              "id": "byRefId",
-              "options": "A"
-            },
-            "location": {
-              "mode": "auto"
-            },
-            "name": "Layer 1",
-            "tooltip": true,
-            "type": "markers"
+            }
           }
         ],
         "tooltip": {
           "mode": "details"
-        },
-        "view": {
-          "allLayers": true,
-          "id": "zero",
-          "lat": 0,
-          "lon": 0,
-          "noRepeat": false,
-          "zoom": 1
         }
       },
-      "pluginVersion": "12.4.0",
+      "id": 18,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Schnelllader ab Leistungsgrenze",
+      "description": "Einzelne Ladeeinrichtungen mit mindestens der oben gewählten Nennleistung (HPC-Standorte). Groesse = Ladepunkte, Farbe = Nennleistung in kW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
       "targets": [
         {
-          "dataset": "opendata",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
-          "editorMode": "builder",
+          "editorMode": "code",
           "format": "table",
-          "rawSql": "SELECT \"Breitengrad\" AS \"latitude\", \"Längengrad\" AS \"longitude\", \"Anzeigename (Karte)\" FROM ladesaeulenregister.ladesaeulenregister LIMIT 100 ",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "alias": "\"latitude\"",
-                "parameters": [
-                  {
-                    "name": "\"Breitengrad\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"longitude\"",
-                "parameters": [
-                  {
-                    "name": "\"Längengrad\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "parameters": [
-                  {
-                    "name": "\"Anzeigename (Karte)\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 100
-          },
-          "table": "ladesaeulenregister.ladesaeulenregister"
+          "rawQuery": true,
+          "rawSql": "select \"Breitengrad\" as lat, \"Längengrad\" as lon, \"Nennleistung Ladeeinrichtung [kW]\" as leistung_kw, \"Anzahl Ladepunkte\" as ladepunkte, \"Betreiber\" as betreiber\nfrom ladesaeulenregister.ladesaeulenregister where \"Nennleistung Ladeeinrichtung [kW]\" >= $min_kw and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') and \"Breitengrad\" is not null limit 30000",
+          "refId": "A"
         }
       ],
-      "title": "New panel",
-      "type": "geomap"
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kW",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-YlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.6,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 10,
+                  "field": "ladepunkte"
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "leistung_kw"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      }
+    },
+    {
+      "type": "row",
+      "title": "Betreiber",
+      "collapsed": false,
+      "id": 20,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Top 15 Betreiber nach Ladepunkten",
+      "description": "Betreiber mit den meisten Ladepunkten im aktuellen Filter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Betreiber\" as betreiber, sum(\"Anzahl Ladepunkte\") as ladepunkte from ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') group by 1 order by 2 desc limit 15",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 21,
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 0,
+        "y": 48
+      }
+    },
+    {
+      "type": "table",
+      "title": "Betreiber im Detail",
+      "description": "Betreiber mit mindestens 50 Ladepunkten: Einrichtungen, Ladepunkte, Schnelllader-Anteil und mittlere Nennleistung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Betreiber\" as betreiber, count(*) as einrichtungen, sum(\"Anzahl Ladepunkte\") as ladepunkte,\n100.0*sum(\"Anzahl Ladepunkte\") filter (where \"Art der Ladeeinrichtung\"='Schnellladeeinrichtung')/sum(\"Anzahl Ladepunkte\") as schnelllader_anteil, avg(\"Nennleistung Ladeeinrichtung [kW]\") as leistung_kw_mittel\nfrom ladesaeulenregister.ladesaeulenregister where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and ('$art'='Alle' or \"Art der Ladeeinrichtung\"='$art') group by 1 having sum(\"Anzahl Ladepunkte\") >= 50 order by 3 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "schnelllader_anteil"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "leistung_kw_mittel"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kW"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 22,
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 10,
+        "y": 48
+      }
     }
   ],
-  "preload": false,
+  "refresh": "",
   "schemaVersion": 42,
-  "tags": [],
+  "tags": [
+    "oeds",
+    "e-mobility",
+    "germany"
+  ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "query",
+        "name": "bundesland",
+        "label": "Bundesland",
+        "description": "",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select b from (select 'Alle' as b, 0 as o union all select distinct \"Bundesland\", 1 from ladesaeulenregister.ladesaeulenregister) x order by o, b",
+        "query": {
+          "rawSql": "select b from (select 'Alle' as b, 0 as o union all select distinct \"Bundesland\", 1 from ladesaeulenregister.ladesaeulenregister) x order by o, b",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Alle",
+          "value": "Alle"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      },
+      {
+        "type": "custom",
+        "name": "art",
+        "label": "Art",
+        "description": "",
+        "query": "Alle : Alle,Normallader : Normalladeeinrichtung,Schnelllader (DC) : Schnellladeeinrichtung",
+        "current": {
+          "text": "Alle",
+          "value": "Alle"
+        },
+        "options": [
+          {
+            "text": "Alle",
+            "value": "Alle",
+            "selected": true
+          },
+          {
+            "text": "Normallader",
+            "value": "Normalladeeinrichtung",
+            "selected": false
+          },
+          {
+            "text": "Schnelllader (DC)",
+            "value": "Schnellladeeinrichtung",
+            "selected": false
+          }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "min_kw",
+        "label": "Karte: Leistung ab",
+        "description": "Mindest-Nennleistung der Ladeeinrichtungen in der Schnelllader-Karte.",
+        "query": "50 kW : 50,150 kW : 150,300 kW : 300",
+        "current": {
+          "text": "300 kW",
+          "value": "300"
+        },
+        "options": [
+          {
+            "text": "50 kW",
+            "value": "50",
+            "selected": false
+          },
+          {
+            "text": "150 kW",
+            "value": "150",
+            "selected": false
+          },
+          {
+            "text": "300 kW",
+            "value": "300",
+            "selected": true
+          }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-10y",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "New dashboard",
-  "version": 0,
+  "title": "OEDS Ladesäulenregister",
+  "uid": "oeds-ladesaeulenregister",
+  "version": 1,
   "weekStart": ""
 }

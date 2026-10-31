@@ -1,1207 +1,2298 @@
 {
-  "annotations": {
+  "uid": "oeds-smard",
+  "title": "OEDS SMARD",
+  "tags": [
+    "oeds",
+    "electricity"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 41,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
     "list": [
       {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
+        "type": "datasource",
+        "name": "ds",
+        "label": "data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
         },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
+        "hide": 0
       }
     ]
   },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 2,
-  "links": [],
   "panels": [
     {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "id": 1
+    },
+    {
+      "type": "table",
+      "title": "Data status",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisGridShow": false,
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 36,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "megwatt"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 2,
-      "interval": "15m",
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "pluginVersion": "12.4.0",
       "targets": [
         {
-          "dataset": "opendata",
+          "refId": "A",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "country",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n$__timeGroupAlias(datum_von,$__interval),\nAVG(\"biomasse_[mwh]_berechnete_auflösungen\") AS \"biomasse\",\nAVG(\"wasserkraft_[mwh]_berechnete_auflösungen\") AS \"wasserkraft\",\nAVG(\"wind_offshore_[mwh]_berechnete_auflösungen\") AS \"wind_offshore\",\nAVG(\"wind_onshore_[mwh]_berechnete_auflösungen\") AS \"wind_onshore\",\nAVG(\"photovoltaik_[mwh]_berechnete_auflösungen\") AS \"photovoltaik\",\nAVG(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\") AS \"sonstige_erneuerbare\",\nAVG(\"kernenergie_[mwh]_berechnete_auflösungen\") AS \"kernenergie\",\nAVG(\"braunkohle_[mwh]_berechnete_auflösungen\") AS \"braunkohle\",\nAVG(\"steinkohle_[mwh]_berechnete_auflösungen\") AS \"steinkohle\",\nAVG(\"erdgas_[mwh]_berechnete_auflösungen\") AS \"erdgas\",\nAVG(\"pumpspeicher_[mwh]_berechnete_auflösungen\") AS \"pumpspeicher\",\nAVG(\"sonstige_konventionelle_[mwh]_berechnete_auflösungen\") AS \"sonstige_konventionelle\"\nFROM smard.generation \nWHERE $__timeFilter(datum_von)\nGROUP BY 1",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "biomass"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "fossil_hard_coal"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "geothermal"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "nuclear"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "\"fossil_brown_coal/lignite\""
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "\"fossil_coal-derived_gas\""
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "\"hydro_run-of-river_and_poundage\""
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "waste"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "solar"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "wind_offshore"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "wind_onshore"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "other_renewable"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "hydro_water_reservoir"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "fossil_gas"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "alias": "\"biomasse\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"biomasse_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"wasserkraft_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"wind_offshore_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"wind_onshore_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"photovoltaik_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"kernenergie_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"braunkohle_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"steinkohle_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"erdgas_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"pumpspeicher_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"sonstige_konventionelle_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "name": "$__timeGroupAlias",
-                "parameters": [
-                  {
-                    "name": "datum_von",
-                    "type": "functionParameter"
-                  },
-                  {
-                    "name": "$__interval",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "name": "datum_von",
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "b8b98a99-89ab-4cde-b012-319c9928ff0c",
-                  "properties": {
-                    "field": "datum_von",
-                    "fieldSrc": "field",
-                    "operator": "macros",
-                    "value": [
-                      "timeFilter"
-                    ],
-                    "valueError": [
-                      null
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "datetime"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "abbb9b9a-0123-4456-b89a-b19c99218e47",
-              "type": "group"
-            },
-            "whereString": "$__timeFilter(datum_von)"
-          },
-          "table": "smard.generation",
-          "timeColumn": "index",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "country",
-                "=",
-                "'$country'"
-              ],
-              "type": "expression"
-            }
-          ]
+          "rawSql": "select 'generation' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"generation\"'::regclass) as \"rows (approx)\" from \"smard\".\"generation\"\nunion all\nselect 'consumption' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"consumption\"'::regclass) as \"rows (approx)\" from \"smard\".\"consumption\"\nunion all\nselect 'market' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"market\"'::regclass) as \"rows (approx)\" from \"smard\".\"market\"\nunion all\nselect 'power_flow' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"power_flow\"'::regclass) as \"rows (approx)\" from \"smard\".\"power_flow\"\nunion all\nselect 'allocation' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"allocation\"'::regclass) as \"rows (approx)\" from \"smard\".\"allocation\"\nunion all\nselect 'forecast_day_ahead' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"forecast_day_ahead\"'::regclass) as \"rows (approx)\" from \"smard\".\"forecast_day_ahead\"\nunion all\nselect 'frequency_reserve' as \"table\", min(\"datum_von\") as first, max(\"datum_von\") as latest, extract(epoch from now() - max(\"datum_von\")) as age, approximate_row_count('\"smard\".\"frequency_reserve\"'::regclass) as \"rows (approx)\" from \"smard\".\"frequency_reserve\"\norder by 1"
         }
       ],
-      "title": "Stromerzeugung SMARD (average over ${__interval})",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "megwatt"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 11
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.4.0",
-      "targets": [
-        {
-          "dataset": "opendata",
-          "editorMode": "builder",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT $__timeGroup(datum_von,$__interval), AVG(\"niederlande_(export)_[mwh]_berechnete_auflösungen\") AS \"niederlande_export\", AVG(\"niederlande_(import)_[mwh]_berechnete_auflösungen\") AS \"niederlande_import\", AVG(\"schweiz_(export)_[mwh]_berechnete_auflösungen\") AS \"schweiz_export\", AVG(\"schweiz_(import)_[mwh]_berechnete_auflösungen\") AS \"schweiz_import\", AVG(\"tschechien_(import)_[mwh]_berechnete_auflösungen\") AS \"tschechien_import\", AVG(\"luxemburg_(export)_[mwh]_berechnete_auflösungen\") AS \"lu_export\", AVG(\"luxemburg_(import)_[mwh]_berechnete_auflösungen\") AS \"lu_import\", AVG(\"österreich_(export)_[mwh]_berechnete_auflösungen\") AS \"österreich_export\", AVG(\"österreich_(import)_[mwh]_berechnete_auflösungen\") AS \"österreich_import\", AVG(\"frankreich_(export)_[mwh]_berechnete_auflösungen\") AS \"frankreich_export\", AVG(\"frankreich_(import)_[mwh]_berechnete_auflösungen\") AS \"frankreich_import\" FROM smard.allocation WHERE $__timeFilter(datum_von) GROUP BY $__timeGroup(datum_von, $__interval) ",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "name": "$__timeGroup",
-                "parameters": [
-                  {
-                    "name": "datum_von",
-                    "type": "functionParameter"
-                  },
-                  {
-                    "name": "$__interval",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"niederlande_export\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"niederlande_(export)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"niederlande_import\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"niederlande_(import)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"schweiz_export\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"schweiz_(export)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"schweiz_import\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"schweiz_(import)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"tschechien_import\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"tschechien_(import)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"lu_export\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"luxemburg_(export)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"lu_import\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"luxemburg_(import)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"österreich_export\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"österreich_(export)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"österreich_import\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"österreich_(import)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"frankreich_export\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"frankreich_(export)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"frankreich_import\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"frankreich_(import)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "name": "$__timeGroup(datum_von, $__interval)",
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": null,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "aa899a89-0123-4456-b89a-b19c9932e919",
-                  "properties": {
-                    "field": "datum_von",
-                    "fieldSrc": "field",
-                    "operator": "macros",
-                    "value": [
-                      "timeFilter"
-                    ],
-                    "valueError": [
-                      null
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "datetime"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "abbb9b9a-0123-4456-b89a-b19c99218e47",
-              "type": "group"
-            },
-            "whereString": "$__timeFilter(datum_von)"
-          },
-          "table": "smard.allocation"
-        }
-      ],
-      "title": "Import & Export",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisGridShow": false,
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 36,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "normal"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "megwatt"
-        },
+        "defaults": {},
         "overrides": [
           {
-            "__systemRef": "hideSeriesFrom",
             "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "storage"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
+              "id": "byName",
+              "options": "age"
             },
             "properties": [
               {
-                "id": "custom.hideFrom",
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.cellOptions",
                 "value": {
-                  "legend": false,
-                  "tooltip": true,
-                  "viz": true
+                  "type": "color-background"
                 }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 172800
+                    },
+                    {
+                      "color": "red",
+                      "value": 604800
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rows (approx)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 19
-      },
-      "id": 3,
-      "interval": "15m",
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "desc"
-        }
+        "showHeader": true,
+        "cellHeight": "sm"
       },
-      "pluginVersion": "12.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "country",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(\"index\",$__interval),\n  avg(biomass) as biomass,\n  avg(fossil_hard_coal) as fossil_hard_coal,\n  avg(geothermal) as geothermal,\n  avg(nuclear) as nuclear,\n  avg(\"fossil_brown_coal/lignite\") as \"fossil_brown_coal/lignite\",\n  avg(\"fossil_coal-derived_gas\") as \"fossil_coal-derived_gas\",\n  avg(\"hydro_run-of-river_and_poundage\") as \"hydro_run-of-river_and_poundage\",\n  avg(waste) as waste,\n  avg(hydro_pumped_storage) as storage,\n  avg(solar) as solar,\n  avg(wind_offshore) as wind_offshore,\n  avg(wind_onshore) as wind_onshore,\n  avg(other_renewable) as other_renewable,\n  avg(hydro_water_reservoir) as hydro_water_reservoir,\n  avg(fossil_gas) as fossil_gas\nFROM entsoe.query_generation\nWHERE\n  $__timeFilter(index) AND\n  country = 'DE_LU'\ngroup by 1\nORDER BY 1,2\n",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "biomass"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "fossil_hard_coal"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "geothermal"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "nuclear"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "\"fossil_brown_coal/lignite\""
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "\"fossil_coal-derived_gas\""
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "\"hydro_run-of-river_and_poundage\""
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "waste"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "solar"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "wind_offshore"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "wind_onshore"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "other_renewable"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "hydro_water_reservoir"
-                ],
-                "type": "column"
-              }
-            ],
-            [
-              {
-                "params": [
-                  "fossil_gas"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "query_generation",
-          "timeColumn": "index",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            },
-            {
-              "datatype": "text",
-              "name": "",
-              "params": [
-                "country",
-                "=",
-                "'$country'"
-              ],
-              "type": "expression"
-            }
-          ]
-        }
-      ],
-      "title": "Stromerzeugung ENTSO-E DE_LU (average over ${__interval})",
-      "type": "timeseries"
+      "description": "First and latest timestamp per table, age of the latest value (green < 48 h, orange < 168 h, red older) and approximate row count (TimescaleDB approximate_row_count).",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 8
+      },
+      "id": 2
     },
     {
+      "type": "text",
+      "title": "",
+      "options": {
+        "mode": "markdown",
+        "content": "**SMARD** (Bundesnetzagentur electricity market data, crawler `smard`, schema `smard`). Germany, **hourly** values, instants in UTC.\nColumn unit `MWh` per hour equals the average power in MW, so charts show MW. Prices are EUR/MWh.\n\nData quirks:\n* `generation.kernenergie` is empty after the German nuclear phase-out (last value Jan 2024).\n* `frequency_reserve` volumes (`volumen_(+/-)`) and net revenues are empty since 2023, only the price column is filled. Its meaning is not documented by the crawler (module ids 15004382-90).\n* `power_flow`/`allocation`: exports positive, imports negative; `nettoexport` is the sum. Flow data lags generation by 1-2 days.\n* `market` contains the DE/AT/LU price only until Sep 2018 (column `de/at/lu`).\n* Forecast table (`forecast_day_ahead`) contains the day-ahead forecast and reaches into the future."
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 8
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "Average load",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(\"netzlast_[mwh]_berechnete_auflösungen\") as v from smard.consumption where $__timeFilter(datum_von)"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
+          "unit": "megwatt",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean grid load (Netzlast) in the time range.",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Peak load",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select max(\"netzlast_[mwh]_berechnete_auflösungen\") as v from smard.consumption where $__timeFilter(datum_von)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
           },
-          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Highest hourly grid load in the range.",
+      "gridPos": {
+        "x": 4,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Average DE-LU price",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(\"deutschland/luxemburg_[€/mwh]_berechnete_auflösungen\") as v from smard.market where $__timeFilter(datum_von)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "decimals": 1,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 100
               },
               {
                 "color": "red",
-                "value": 80
+                "value": 200
               }
             ]
           },
-          "unit": "megwatt"
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean day-ahead price DE-LU in EUR/MWh.",
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Renewable share of generation",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 100*sum(coalesce(\"biomasse_[mwh]_berechnete_auflösungen\",0)+coalesce(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wasserkraft_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_offshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_onshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"photovoltaik_[mwh]_berechnete_auflösungen\",0))/nullif(sum(coalesce(\"biomasse_[mwh]_berechnete_auflösungen\",0)+coalesce(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wasserkraft_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_offshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_onshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"photovoltaik_[mwh]_berechnete_auflösungen\",0)+coalesce(\"kernenergie_[mwh]_berechnete_auflösungen\",0)+coalesce(\"braunkohle_[mwh]_berechnete_auflösungen\",0)+coalesce(\"steinkohle_[mwh]_berechnete_auflösungen\",0)+coalesce(\"erdgas_[mwh]_berechnete_auflösungen\",0)+coalesce(\"sonstige_konventionelle_[mwh]_berechnete_auflösungen\",0)),0) as v from smard.generation where $__timeFilter(datum_von)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Renewables (biomass, hydro, wind, solar, other) in relation to renewables + conventional generation (pumped storage excluded).",
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Wind + solar generation",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"wind_onshore_[mwh]_berechnete_auflösungen\"+\"wind_offshore_[mwh]_berechnete_auflösungen\"+\"photovoltaik_[mwh]_berechnete_auflösungen\")/1000 as v from smard.generation where $__timeFilter(datum_von)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Energy from wind (onshore, offshore) and solar in the range.",
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "Net export",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"nettoexport_[mwh]_berechnete_auflösungen\")/1000 as v from smard.power_flow where $__timeFilter(datum_von)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Physical net export (positive) or import (negative) in the range.",
+      "gridPos": {
+        "x": 20,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "Generation and load",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "Electricity generation by source",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"kernenergie_[mwh]_berechnete_auflösungen\") as \"nuclear\", avg(\"braunkohle_[mwh]_berechnete_auflösungen\") as \"lignite\", avg(\"steinkohle_[mwh]_berechnete_auflösungen\") as \"hard coal\", avg(\"erdgas_[mwh]_berechnete_auflösungen\") as \"gas\", avg(\"sonstige_konventionelle_[mwh]_berechnete_auflösungen\") as \"other conventional\", avg(\"pumpspeicher_[mwh]_berechnete_auflösungen\") as \"pumped storage\", avg(\"biomasse_[mwh]_berechnete_auflösungen\") as \"biomass\", avg(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\") as \"other renewable\", avg(\"wasserkraft_[mwh]_berechnete_auflösungen\") as \"hydro\", avg(\"wind_offshore_[mwh]_berechnete_auflösungen\") as \"wind offshore\", avg(\"wind_onshore_[mwh]_berechnete_auflösungen\") as \"wind onshore\", avg(\"photovoltaik_[mwh]_berechnete_auflösungen\") as \"solar\" from smard.generation where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "price"
+              "options": "nuclear"
             },
             "properties": [
               {
-                "id": "unit",
-                "value": "€/MWh"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lignite"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F6B3F"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hard coal"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other conventional"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4C4C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pumped storage"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8AB8FF"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "biomass"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#56A64B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other renewable"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#96D98D"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hydro"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F78C1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind offshore"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3274D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind onshore"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 9,
-        "w": 24,
-        "x": 0,
-        "y": 30
-      },
-      "id": 5,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "displayMode": "table",
           "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "showLegend": true
         },
         "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
-      "pluginVersion": "12.4.0",
+      "description": "Net public generation in Germany by source, averaged over the interval (MWh per hour = MW). Pumped storage is generation when discharging.",
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 11
+      },
+      "id": 12
+    },
+    {
+      "type": "timeseries",
+      "title": "Generation shares",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
       "targets": [
         {
-          "dataset": "opendata",
-          "editorMode": "builder",
-          "format": "table",
-          "rawSql": "SELECT $__timeGroup(datum_von,$__interval), AVG(\"volumen_(+)_[mwh]_berechnete_auflösungen\") AS \"pos_fcr\", AVG(\"volumen_(-)_[mwh]_berechnete_auflösungen\") AS \"neg_fcr\", AVG(\"preis_[€/mwh]_berechnete_auflösungen\") AS \"price\" FROM smard.frequency_reserve WHERE $__timeFilter(datum_von) GROUP BY $__timeGroup(datum_von, $__interval) ",
           "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "name": "$__timeGroup",
-                "parameters": [
-                  {
-                    "name": "datum_von",
-                    "type": "functionParameter"
-                  },
-                  {
-                    "name": "$__interval",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"pos_fcr\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"volumen_(+)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"neg_fcr\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"volumen_(-)_[mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              },
-              {
-                "alias": "\"price\"",
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "\"preis_[€/mwh]_berechnete_auflösungen\"",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "name": "$__timeGroup(datum_von, $__interval)",
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": null,
-            "whereJsonTree": {
-              "children1": [
-                {
-                  "id": "9b99aba9-4567-489a-bcde-f19c993a6ce7",
-                  "properties": {
-                    "field": "datum_von",
-                    "fieldSrc": "field",
-                    "operator": "macros",
-                    "value": [
-                      "timeFilter"
-                    ],
-                    "valueError": [
-                      null
-                    ],
-                    "valueSrc": [
-                      "value"
-                    ],
-                    "valueType": [
-                      "datetime"
-                    ]
-                  },
-                  "type": "rule"
-                }
-              ],
-              "id": "abbb9b9a-0123-4456-b89a-b19c99218e47",
-              "type": "group"
-            },
-            "whereString": "$__timeFilter(datum_von)"
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
-          "table": "smard.frequency_reserve"
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"kernenergie_[mwh]_berechnete_auflösungen\") as \"nuclear\", avg(\"braunkohle_[mwh]_berechnete_auflösungen\") as \"lignite\", avg(\"steinkohle_[mwh]_berechnete_auflösungen\") as \"hard coal\", avg(\"erdgas_[mwh]_berechnete_auflösungen\") as \"gas\", avg(\"sonstige_konventionelle_[mwh]_berechnete_auflösungen\") as \"other conventional\", avg(\"biomasse_[mwh]_berechnete_auflösungen\") as \"biomass\", avg(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\") as \"other renewable\", avg(\"wasserkraft_[mwh]_berechnete_auflösungen\") as \"hydro\", avg(\"wind_offshore_[mwh]_berechnete_auflösungen\") as \"wind offshore\", avg(\"wind_onshore_[mwh]_berechnete_auflösungen\") as \"wind onshore\", avg(\"photovoltaik_[mwh]_berechnete_auflösungen\") as \"solar\" from smard.generation where $__timeFilter(datum_von) group by 1 order by 1"
         }
       ],
-      "title": "Regelleistung",
-      "type": "timeseries"
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "percent",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nuclear"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lignite"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F6B3F"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hard coal"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other conventional"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#C4C4C4"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pumped storage"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8AB8FF"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "biomass"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#56A64B"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "other renewable"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#96D98D"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hydro"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F78C1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind offshore"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3274D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind onshore"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Share of each source, normalised to 100 % (without pumped storage).",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "id": 13
+    },
+    {
+      "type": "timeseries",
+      "title": "Renewable share of load",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(g.datum_von,$__interval), 100*sum(coalesce(\"biomasse_[mwh]_berechnete_auflösungen\",0)+coalesce(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wasserkraft_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_offshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_onshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"photovoltaik_[mwh]_berechnete_auflösungen\",0))/nullif(sum(c.\"netzlast_[mwh]_berechnete_auflösungen\"),0) as \"renewables / grid load\",\n100*sum(coalesce(\"wind_onshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"wind_offshore_[mwh]_berechnete_auflösungen\",0)+coalesce(\"photovoltaik_[mwh]_berechnete_auflösungen\",0))/nullif(sum(c.\"netzlast_[mwh]_berechnete_auflösungen\"),0) as \"wind + solar / grid load\"\nfrom smard.generation g join smard.consumption c using(datum_von) where $__timeFilter(g.datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Renewable (and wind + solar only) generation in relation to the grid load. Can exceed 100 % when exporting.",
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "id": 14
+    },
+    {
+      "type": "timeseries",
+      "title": "Load, residual load and pumping",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"netzlast_[mwh]_berechnete_auflösungen\") as \"grid load\", avg(\"residuallast_[mwh]_berechnete_auflösungen\") as \"residual load\", avg(\"pumpspeicher_[mwh]_berechnete_auflösungen\") as \"pumped storage consumption\" from smard.consumption where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Grid load (Netzlast), residual load (load minus wind and solar) and consumption of pumped-storage plants.",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "id": 15
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead forecast vs actual: wind and solar",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"wind_onshore_[mwh]_berechnete_auflösungen\"+\"wind_offshore_[mwh]_berechnete_auflösungen\") as \"wind actual\", avg(\"photovoltaik_[mwh]_berechnete_auflösungen\") as \"solar actual\" from smard.generation where $__timeFilter(datum_von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"wind_onshore_[mwh]_berechnete_auflösungen\"+\"wind_offshore_[mwh]_berechnete_auflösungen\") as \"wind forecast\", avg(\"photovoltaik_[mwh]_berechnete_auflösungen\") as \"solar forecast\" from smard.forecast_day_ahead where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind actual"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3274D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind forecast"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8AB8FF"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "solar actual"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "solar forecast"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Forecast (SMARD forecast_day_ahead) against realised generation. Forecast values of the last hours may exist before actuals do.",
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "id": 16
+    },
+    {
+      "type": "row",
+      "title": "Prices",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 24,
+        "h": 1
+      },
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead prices DE-LU and neighbours",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"deutschland/luxemburg_[€/mwh]_berechnete_auflösungen\") as \"DE-LU\", avg(\"belgien_[€/mwh]_berechnete_auflösungen\") as \"BE\", avg(\"dänemark_1_[€/mwh]_berechnete_auflösungen\") as \"DK1\", avg(\"dänemark_2_[€/mwh]_berechnete_auflösungen\") as \"DK2\", avg(\"frankreich_[€/mwh]_berechnete_auflösungen\") as \"FR\", avg(\"niederlande_[€/mwh]_berechnete_auflösungen\") as \"NL\", avg(\"norwegen_2_[€/mwh]_berechnete_auflösungen\") as \"NO2\", avg(\"österreich_[€/mwh]_berechnete_auflösungen\") as \"AT\", avg(\"polen_[€/mwh]_berechnete_auflösungen\") as \"PL\", avg(\"schweden_4_[€/mwh]_berechnete_auflösungen\") as \"SE4\", avg(\"schweiz_[€/mwh]_berechnete_auflösungen\") as \"CH\", avg(\"tschechien_[€/mwh]_berechnete_auflösungen\") as \"CZ\", avg(\"italien_(nord)_[€/mwh]_berechnete_auflösungen\") as \"IT-North\", avg(\"slowenien_[€/mwh]_berechnete_auflösungen\") as \"SI\", avg(\"ungarn_[€/mwh]_berechnete_auflösungen\") as \"HU\" from smard.market where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Day-ahead auction prices in EUR/MWh for the German-Luxembourg bidding zone and connected markets (hourly).",
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 16,
+        "h": 9
+      },
+      "id": 18
+    },
+    {
+      "type": "barchart",
+      "title": "Average price per market",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select market, price from (select 'DE-LU' as market, avg(\"deutschland/luxemburg_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'BE' as market, avg(\"belgien_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'DK1' as market, avg(\"dänemark_1_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'DK2' as market, avg(\"dänemark_2_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'FR' as market, avg(\"frankreich_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'NL' as market, avg(\"niederlande_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'NO2' as market, avg(\"norwegen_2_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'AT' as market, avg(\"österreich_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'PL' as market, avg(\"polen_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'SE4' as market, avg(\"schweden_4_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'CH' as market, avg(\"schweiz_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'CZ' as market, avg(\"tschechien_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'IT-North' as market, avg(\"italien_(nord)_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'SI' as market, avg(\"slowenien_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von) union all select 'HU' as market, avg(\"ungarn_[€/mwh]_berechnete_auflösungen\") as price from smard.market where $__timeFilter(datum_von)) t order by price desc"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Mean day-ahead price per market in the selected range.",
+      "gridPos": {
+        "x": 16,
+        "y": 43,
+        "w": 8,
+        "h": 9
+      },
+      "id": 19
+    },
+    {
+      "type": "barchart",
+      "title": "Average DE-LU price by hour of day (local time)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select extract(hour from datum_von at time zone 'Europe/Berlin')::int as \"hour\", avg(\"deutschland/luxemburg_[€/mwh]_berechnete_auflösungen\") as \"EUR/MWh\"\nfrom smard.market where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Daily price shape: solar noon dip and evening peak. Hour in Europe/Berlin local time.",
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 12,
+        "h": 8
+      },
+      "id": 20
+    },
+    {
+      "type": "timeseries",
+      "title": "Annual average DE-LU price (all years)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('year', datum_von) as time, avg(\"deutschland/luxemburg_[€/mwh]_berechnete_auflösungen\") as \"DE-LU\", avg(\"de/at/lu_[€/mwh]_berechnete_auflösungen\") as \"DE-AT-LU (until Sep 2018)\" from smard.market group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Yearly mean day-ahead price over the complete history; independent of the time range.",
+      "gridPos": {
+        "x": 12,
+        "y": 52,
+        "w": 12,
+        "h": 8
+      },
+      "id": 21
+    },
+    {
+      "type": "row",
+      "title": "Cross-border exchange",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 60,
+        "w": 24,
+        "h": 1
+      },
+      "id": 22
+    },
+    {
+      "type": "timeseries",
+      "title": "Physical net exchange by country",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"niederlande_(export)_[mwh]_berechnete_auflösungen\" + \"niederlande_(import)_[mwh]_berechnete_auflösungen\") as \"NL\", avg(\"schweiz_(export)_[mwh]_berechnete_auflösungen\" + \"schweiz_(import)_[mwh]_berechnete_auflösungen\") as \"CH\", avg(\"dänemark_(export)_[mwh]_berechnete_auflösungen\" + \"dänemark_(import)_[mwh]_berechnete_auflösungen\") as \"DK\", avg(\"tschechien_(export)_[mwh]_berechnete_auflösungen\" + \"tschechien_(import)_[mwh]_berechnete_auflösungen\") as \"CZ\", avg(\"luxemburg_(export)_[mwh]_berechnete_auflösungen\" + \"luxemburg_(import)_[mwh]_berechnete_auflösungen\") as \"LU\", avg(\"schweden_(export)_[mwh]_berechnete_auflösungen\" + \"schweden_(import)_[mwh]_berechnete_auflösungen\") as \"SE\", avg(\"österreich_(export)_[mwh]_berechnete_auflösungen\" + \"österreich_(import)_[mwh]_berechnete_auflösungen\") as \"AT\", avg(\"frankreich_(export)_[mwh]_berechnete_auflösungen\" + \"frankreich_(import)_[mwh]_berechnete_auflösungen\") as \"FR\", avg(\"polen_(export)_[mwh]_berechnete_auflösungen\" + \"polen_(import)_[mwh]_berechnete_auflösungen\") as \"PL\", avg(\"norwegen_(export)_[mwh]_berechnete_auflösungen\" + \"norwegen_(import)_[mwh]_berechnete_auflösungen\") as \"NO\", avg(\"belgien_(export)_[mwh]_berechnete_auflösungen\" + \"belgien_(import)_[mwh]_berechnete_auflösungen\") as \"BE\" from smard.power_flow where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Physical flows per neighbour: export minus import, positive = Germany exports. Stacked so that the sum is the net export.",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 12,
+        "h": 10
+      },
+      "id": 23
+    },
+    {
+      "type": "timeseries",
+      "title": "Physical vs commercial net export",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"nettoexport_[mwh]_berechnete_auflösungen\") as \"physical net export\" from smard.power_flow where $__timeFilter(datum_von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"nettoexport_[mwh]_berechnete_auflösungen\") as \"scheduled (commercial) net export\" from smard.allocation where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Physical flows (power_flow) against scheduled commercial exchange (allocation). The difference are loop flows and transit.",
+      "gridPos": {
+        "x": 12,
+        "y": 61,
+        "w": 12,
+        "h": 10
+      },
+      "id": 24
+    },
+    {
+      "type": "barchart",
+      "title": "Net exchange per neighbour in range",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select country, \"GWh\" from (select 'NL' as country, sum(\"niederlande_(export)_[mwh]_berechnete_auflösungen\" + \"niederlande_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'CH' as country, sum(\"schweiz_(export)_[mwh]_berechnete_auflösungen\" + \"schweiz_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'DK' as country, sum(\"dänemark_(export)_[mwh]_berechnete_auflösungen\" + \"dänemark_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'CZ' as country, sum(\"tschechien_(export)_[mwh]_berechnete_auflösungen\" + \"tschechien_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'LU' as country, sum(\"luxemburg_(export)_[mwh]_berechnete_auflösungen\" + \"luxemburg_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'SE' as country, sum(\"schweden_(export)_[mwh]_berechnete_auflösungen\" + \"schweden_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'AT' as country, sum(\"österreich_(export)_[mwh]_berechnete_auflösungen\" + \"österreich_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'FR' as country, sum(\"frankreich_(export)_[mwh]_berechnete_auflösungen\" + \"frankreich_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'PL' as country, sum(\"polen_(export)_[mwh]_berechnete_auflösungen\" + \"polen_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'NO' as country, sum(\"norwegen_(export)_[mwh]_berechnete_auflösungen\" + \"norwegen_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von) union all select 'BE' as country, sum(\"belgien_(export)_[mwh]_berechnete_auflösungen\" + \"belgien_(import)_[mwh]_berechnete_auflösungen\")/1000 as \"GWh\" from smard.power_flow where $__timeFilter(datum_von)) t order by 2 desc"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: GWh",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Sum of physical exchange per neighbour (positive = export from Germany).",
+      "gridPos": {
+        "x": 0,
+        "y": 71,
+        "w": 12,
+        "h": 8
+      },
+      "id": 25
+    },
+    {
+      "type": "timeseries",
+      "title": "Exchange with FR, AT and NL: exports and imports",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"frankreich_(export)_[mwh]_berechnete_auflösungen\") as \"to FR\", avg(\"frankreich_(import)_[mwh]_berechnete_auflösungen\") as \"from FR\", avg(\"österreich_(export)_[mwh]_berechnete_auflösungen\") as \"to AT\", avg(\"österreich_(import)_[mwh]_berechnete_auflösungen\") as \"from AT\", avg(\"niederlande_(export)_[mwh]_berechnete_auflösungen\") as \"to NL\", avg(\"niederlande_(import)_[mwh]_berechnete_auflösungen\") as \"from NL\" from smard.power_flow where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Physical exports (positive) and imports (negative) with France, Austria and Netherlands separately.",
+      "gridPos": {
+        "x": 12,
+        "y": 71,
+        "w": 12,
+        "h": 8
+      },
+      "id": 26
+    },
+    {
+      "type": "row",
+      "title": "Comparison with ENTSO-E (DE_LU)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 79,
+        "w": 24,
+        "h": 1
+      },
+      "id": 27
+    },
+    {
+      "type": "timeseries",
+      "title": "Wind and solar: SMARD vs ENTSO-E",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"wind_onshore_[mwh]_berechnete_auflösungen\") as \"SMARD wind onshore\", avg(\"wind_offshore_[mwh]_berechnete_auflösungen\") as \"SMARD wind offshore\", avg(\"photovoltaik_[mwh]_berechnete_auflösungen\") as \"SMARD solar\" from smard.generation where $__timeFilter(datum_von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(index,$__interval), avg(wind_onshore) as \"ENTSO-E wind onshore\", avg(wind_offshore) as \"ENTSO-E wind offshore\", avg(solar) as \"ENTSO-E solar\" from entsoe.query_generation where $__timeFilter(index) and country='DE_LU' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Same quantity from two sources. The ENTSO-E series ends when the entsoe crawler's backfill ends. Differences stem from different data providers and rounding.",
+      "gridPos": {
+        "x": 0,
+        "y": 80,
+        "w": 12,
+        "h": 9
+      },
+      "id": 28
+    },
+    {
+      "type": "timeseries",
+      "title": "Load and price: SMARD vs ENTSO-E",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"netzlast_[mwh]_berechnete_auflösungen\") as \"SMARD grid load\" from smard.consumption where $__timeFilter(datum_von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(index,$__interval), avg(actual_load) as \"ENTSO-E actual load DE_LU\" from entsoe.query_load where $__timeFilter(index) and country='DE_LU' group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"deutschland/luxemburg_[€/mwh]_berechnete_auflösungen\") as \"SMARD price\" from smard.market where $__timeFilter(datum_von) group by 1 order by 1"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(index,$__interval), avg(value) as \"ENTSO-E price DE_LU\" from entsoe.query_day_ahead_prices where $__timeFilter(index) and country='DE_LU' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*price.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Grid load (MW, left) and day-ahead price (EUR/MWh, right) from SMARD and from ENTSO-E.",
+      "gridPos": {
+        "x": 12,
+        "y": 80,
+        "w": 12,
+        "h": 9
+      },
+      "id": 29
+    },
+    {
+      "type": "timeseries",
+      "title": "Mix of ENTSO-E DE_LU (comparison)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(index,$__interval), avg(biomass) as biomass, avg(\"fossil_brown_coal/lignite\") as lignite, avg(fossil_hard_coal) as \"hard coal\", avg(fossil_gas) as gas, avg(nuclear) as nuclear, avg(coalesce(\"hydro_run-of-river_and_pondage\",0)+coalesce(hydro_water_reservoir,0)) as hydro, avg(solar) as solar, avg(wind_onshore) as \"wind onshore\", avg(wind_offshore) as \"wind offshore\" from entsoe.query_generation where $__timeFilter(index) and country='DE_LU' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lignite"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8F6B3F"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hard coal"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#464646"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gas"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nuclear"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hydro"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1F78C1"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "solar"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FADE2A"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind onshore"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wind offshore"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3274D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "biomass"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#56A64B"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "ENTSO-E generation of the DE_LU zone as stacked mix for visual comparison with the SMARD mix above.",
+      "gridPos": {
+        "x": 0,
+        "y": 89,
+        "w": 24,
+        "h": 9
+      },
+      "id": 30
+    },
+    {
+      "type": "row",
+      "title": "Long-term and balancing",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 98,
+        "w": 24,
+        "h": 1
+      },
+      "id": 31
+    },
+    {
+      "type": "barchart",
+      "title": "Annual generation by source (all years)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select extract(year from datum_von)::text as year, sum(\"kernenergie_[mwh]_berechnete_auflösungen\")/1e6 as \"nuclear\" , sum(\"braunkohle_[mwh]_berechnete_auflösungen\")/1e6 as \"lignite\" , sum(\"steinkohle_[mwh]_berechnete_auflösungen\")/1e6 as \"hard coal\" , sum(\"erdgas_[mwh]_berechnete_auflösungen\")/1e6 as \"gas\" , sum(\"sonstige_konventionelle_[mwh]_berechnete_auflösungen\")/1e6 as \"other conventional\" , sum(\"pumpspeicher_[mwh]_berechnete_auflösungen\")/1e6 as \"pumped storage\" , sum(\"biomasse_[mwh]_berechnete_auflösungen\")/1e6 as \"biomass\" , sum(\"sonstige_erneuerbare_[mwh]_berechnete_auflösungen\")/1e6 as \"other renewable\" , sum(\"wasserkraft_[mwh]_berechnete_auflösungen\")/1e6 as \"hydro\" , sum(\"wind_offshore_[mwh]_berechnete_auflösungen\")/1e6 as \"wind offshore\" , sum(\"wind_onshore_[mwh]_berechnete_auflösungen\")/1e6 as \"wind onshore\" , sum(\"photovoltaik_[mwh]_berechnete_auflösungen\")/1e6 as \"solar\" from smard.generation group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: TWh",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "normal",
+        "xField": "year"
+      },
+      "description": "Yearly net public generation in TWh, complete history (independent of the time range). 2026 is a partial year. Shows the phase-out of nuclear and coal and the growth of wind and solar.",
+      "gridPos": {
+        "x": 0,
+        "y": 99,
+        "w": 24,
+        "h": 10
+      },
+      "id": 32
+    },
+    {
+      "type": "timeseries",
+      "title": "Balancing energy price (SMARD frequency_reserve)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(datum_von,$__interval), avg(\"preis_[€/mwh]_berechnete_auflösungen\") as \"price\" from smard.frequency_reserve where $__timeFilter(datum_von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Price column of the SMARD balancing energy (Regelenergie) module in EUR/MWh. Volumes and net revenue columns of this table are empty after 2023. Note: the data differs from the DE-LU day-ahead price (correlation about 0.5).",
+      "gridPos": {
+        "x": 0,
+        "y": 109,
+        "w": 24,
+        "h": 8
+      },
+      "id": 33
     }
   ],
-  "preload": false,
-  "refresh": "",
-  "schemaVersion": 42,
-  "tags": [],
-  "templating": {
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ],
+  "annotations": {
     "list": []
-  },
-  "time": {
-    "from": "now-1y",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "smard",
-  "uid": "d7e44e51-6f7f-4316-b9fb-1bb32c03fa18",
-  "version": 1,
-  "weekStart": ""
+  }
 }
