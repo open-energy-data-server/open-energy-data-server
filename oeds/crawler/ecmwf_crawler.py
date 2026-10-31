@@ -493,7 +493,61 @@ class EcmwfCrawler(ContinuousCrawler):
             begin = last_date
         if begin >= end:
             return
+        self.crawl_range(begin, end)
 
+    def crawl_temporal(
+        self, begin: datetime | None = None, end: datetime | None = None
+    ):
+        if begin:
+            # a backfill: also fill the gaps between the stored data
+            self.crawl_missing(begin, end)
+        super().crawl_temporal(begin, end)
+
+    def stored_hours_by_month(self, begin: datetime, end: datetime) -> dict:
+        """Number of hours with values per month of [begin, end), by month start (UTC).
+
+        The NUTS table is much smaller than the grid table. Both are written in one
+        transaction, so a complete month in the NUTS table is complete in the grid
+        table as well. One query for the whole range.
+        """
+        query = text(
+            "SELECT date_trunc('month', time AT TIME ZONE 'UTC') AS month, "
+            "COUNT(DISTINCT time) FILTER (WHERE ghi IS NOT NULL) AS hours "
+            f"FROM {self.table_eu} WHERE time >= :begin AND time < :end GROUP BY 1"
+        )
+        with self.engine.connect() as conn:
+            rows = conn.execute(query, {"begin": begin, "end": end}).all()
+        return {pd.Timestamp(month).tz_localize("UTC"): hours for month, hours in rows}
+
+    def crawl_missing(self, begin: datetime | None = None, end: datetime | None = None):
+        """Crawls the months which have hours missing, also between stored data.
+
+        Resumes an interrupted backfill: a month with all hours is not requested again.
+        """
+        begin = max(as_utc(begin), as_utc(self.temporal_start)) if begin else None
+        begin = begin or as_utc(self.temporal_start)
+        end = as_utc(end) if end else utcnow()
+        # the CDS requests are made for whole days
+        end = as_utc(min(end, utcnow() - self.get_minimum_offset())).floor("D")
+        if begin >= end:
+            return
+        stored = self.stored_hours_by_month(begin, end)
+        for month in pd.date_range(
+            begin.floor("D").replace(day=1), end, freq="MS", inclusive="left"
+        ):
+            first = max(month, begin)
+            last = min(month + pd.DateOffset(months=1), end)
+            expected = int((last - first) / timedelta(hours=1))
+            if first == self.temporal_start and DATASETS[self.dataset]["accumulated"]:
+                # the first hour of accumulated data can not be converted
+                expected -= 1
+            if expected <= 0 or stored.get(month, 0) >= expected:
+                continue
+            log.info("hours missing in %s, crawling %s to %s", month, first, last)
+            self.crawl_range(first, last)
+
+    def crawl_range(self, begin: datetime, end: datetime):
+        """Requests and stores the days from begin until end (exclusive)."""
         # the requests are build from 00:00 - 23:00 for each day
         # however, for recent dates the cds API delivers data up until the latest hour of the day it can deliver
         # the hour is UTC, we check for 0
@@ -505,7 +559,8 @@ class EcmwfCrawler(ContinuousCrawler):
             log.info("ERA5 request: %s", request)
             path = save_era5_request_to_file(request, self.ecmwf_client, self.dataset)
             self.build_dataframe(request, path)
-            begin = self.get_latest_data()
+            # the rest of the day was just stored, continue with the next day
+            begin = (as_utc(begin) + timedelta(days=1)).floor("D")
 
         dates = list(daterange(begin, end))
         for request in request_list_from_dates(dates, self.dataset):

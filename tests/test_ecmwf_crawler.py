@@ -200,6 +200,30 @@ def test_sea_cells_without_values_are_dropped():
     assert df["latitude"].tolist() == [50.0]
 
 
+def test_crawl_missing_requests_only_months_with_gaps(monkeypatch):
+    from oeds.crawler import ecmwf_crawler
+
+    crawler = object.__new__(ecmwf_crawler.EcmwfCrawler)
+    crawler.temporal_start = datetime(2019, 1, 1, tzinfo=UTC)
+    stored = {
+        pd.Timestamp("2019-01-01", tz="UTC"): 31 * 24,
+        pd.Timestamp("2019-02-01", tz="UTC"): 28 * 24 - 5,
+    }
+    crawler.stored_hours_by_month = lambda first, last: stored
+    crawled = []
+    crawler.crawl_range = lambda first, last: crawled.append((first, last))
+
+    crawler.crawl_missing(
+        datetime(2019, 1, 1, tzinfo=UTC), datetime(2019, 3, 5, 12, tzinfo=UTC)
+    )
+
+    # January is complete, the requests cover whole days
+    assert crawled == [
+        (pd.Timestamp("2019-02-01", tz="UTC"), pd.Timestamp("2019-03-01", tz="UTC")),
+        (pd.Timestamp("2019-03-01", tz="UTC"), pd.Timestamp("2019-03-05", tz="UTC")),
+    ]
+
+
 def test_land_without_stored_hours_keeps_float_columns():
     from oeds.crawler.ecmwf_crawler import ACCUMULATED_COLUMNS, process_era5_dataframe
 
@@ -251,3 +275,33 @@ def test_prior_is_only_used_for_the_first_row_of_a_cell():
     result = _deaccumulate([float("nan"), 12, 15], [2, 3, 4], prior)
     assert pd.isna(result[0]) and pd.isna(result[1])
     assert result[2] == 3
+
+
+def test_stored_hours_are_counted_in_one_query_on_the_nuts_table():
+    from oeds.crawler import ecmwf_crawler
+
+    crawler = object.__new__(ecmwf_crawler.EcmwfCrawler)
+    crawler.table_eu = "era5_eu"
+    queries = []
+
+    class Conn:
+        def execute(self, query, params):
+            queries.append(str(query))
+            return type("R", (), {"all": lambda self: [("2019-02-01 00:00:00", 7)]})()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    class Engine:
+        def connect(self):
+            return Conn()
+
+    crawler.engine = Engine()
+    result = crawler.stored_hours_by_month(
+        datetime(2019, 1, 1, tzinfo=UTC), datetime(2019, 3, 1, tzinfo=UTC)
+    )
+    assert result == {pd.Timestamp("2019-02-01", tz="UTC"): 7}
+    assert len(queries) == 1 and "era5_eu" in queries[0]
