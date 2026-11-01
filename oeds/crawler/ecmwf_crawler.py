@@ -237,9 +237,16 @@ def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
     )
 
 
-def deaccumulate_radiation(series: pd.Series, times: pd.Series) -> pd.Series:
+def deaccumulate_radiation(
+    series: pd.Series, times: pd.Series, latitudes: pd.Series, longitudes: pd.Series
+) -> pd.Series:
     """Convert CDS accumulated J/m² to hourly increments (still J/m²)."""
-    out = series.diff().clip(lower=0).fillna(0)
+    out = (
+        series.groupby([latitudes, longitudes], sort=False)
+        .diff()
+        .clip(lower=0)
+        .fillna(0)
+    )
     return out.where(times.dt.hour != 0, 0)
 
 
@@ -275,7 +282,9 @@ def process_era5_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df["wind_speed"] = (df["wind_zonal"] ** 2 + df["wind_meridional"] ** 2) ** 0.5
     df = df.round({"latitude": 2, "longitude": 2})
     df = df.sort_values(by=["latitude", "longitude", "time"])
-    df["ghi"] = deaccumulate_radiation(df["ghi"], df["time"])
+    df["ghi"] = deaccumulate_radiation(
+        df["ghi"], df["time"], df["latitude"], df["longitude"]
+    )
     if "precipitation" not in df.columns:
         df["precipitation"] = 0.0
 
@@ -305,7 +314,9 @@ class EcmwfCrawler(ContinuousCrawler):
 
         # nuts data must have the public schema configured, otherwise
         # relation "spatial_ref_sys" does not exist
-        self.nuts_data = self.get_nuts_data(config["db_uri"].format(DBNAME="public"))
+        self.nuts_data = self.get_nuts_data(
+            self.config["db_uri"].format(DBNAME="public")
+        )
 
     def get_nuts_data(self, db_uri: str):
         nuts_engine = create_engine(db_uri)
@@ -357,10 +368,13 @@ class EcmwfCrawler(ContinuousCrawler):
         if end > data_available_until:
             end = data_available_until
 
-        last_date = self.get_latest_data()
-        last_date += timedelta(hours=1)
-        if last_date > begin:
+        # only skip what is already stored when the range reaches into it; an
+        # older begin (backfill before the first row) is honoured
+        last_date = self.get_latest_data() + timedelta(hours=1)
+        if begin >= self.get_first_data() and last_date > begin:
             begin = last_date
+        if begin >= end:
+            return
 
         # the requests are build from 00:00 - 23:00 for each day
         # however, for recent dates the cds API delivers data up until the latest hour of the day it can deliver
