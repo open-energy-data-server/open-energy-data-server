@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+import os
 import sqlite3
 from io import StringIO
 from pathlib import Path
@@ -29,6 +30,8 @@ metadata_info = {
 
 
 when2heat_path = Path(__file__).parent.parent / "when2heat.db"
+DOWNLOAD_TIMEOUT = 300
+
 when2heat_url = (
     "https://data.open-power-system-data.org/when2heat/latest/when2heat.sqlite"
 )
@@ -79,9 +82,19 @@ class OpsdCrawler(DownloadOnceCrawler):
         if db_path.is_file():
             log.info(f"{db_path} already exists")
         else:
-            when2heat_file = requests.get(when2heat_url)
-            with open(db_path, "wb") as f:
-                f.write(when2heat_file.content)
+            when2heat_file = requests.get(when2heat_url, timeout=DOWNLOAD_TIMEOUT)
+            when2heat_file.raise_for_status()
+            part_path = db_path.with_name(db_path.name + ".part")
+            try:
+                with open(part_path, "wb") as f:
+                    f.write(when2heat_file.content)
+                # an error page served with HTTP 200 must not become the cache
+                with sqlite3.connect(part_path) as conn:
+                    conn.execute("SELECT 1 FROM when2heat LIMIT 1")
+                os.replace(part_path, db_path)
+            except Exception:
+                part_path.unlink(missing_ok=True)
+                raise
             log.info(f"downloaded when2heat.db to {db_path}")
 
         with sqlite3.connect(db_path) as conn:
@@ -98,7 +111,9 @@ class OpsdCrawler(DownloadOnceCrawler):
 
     def crawl_capacities(self):
         log.info("Fetching data from %s", national_generation_capacity_url)
-        response = requests.get(national_generation_capacity_url)
+        response = requests.get(
+            national_generation_capacity_url, timeout=DOWNLOAD_TIMEOUT
+        )
         response.raise_for_status()
 
         log.info("Loading OPSD capacities into DataFrame")
