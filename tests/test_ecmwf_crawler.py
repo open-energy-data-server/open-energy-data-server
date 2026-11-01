@@ -338,3 +338,26 @@ def test_partial_day_requests_the_rest_of_the_day_before_later_days(monkeypatch)
     requested = _requests_of_range(monkeypatch, begin, end)
     assert requested[0]["time"] == [f"{h:02d}:00" for h in range(5, 24)]
     assert requested[1]["day"] == ["21", "22"]
+
+
+def test_extracted_files_are_removed_when_reading_fails(tmp_path, monkeypatch):
+    import sys
+    import types
+    import zipfile
+
+    from oeds.crawler import ecmwf_crawler
+
+    monkeypatch.setattr(ecmwf_crawler, "TEMP_DIR", tmp_path)
+    archive = tmp_path / "request.zip"
+    with zipfile.ZipFile(archive, "w") as z:
+        z.writestr("data.grib", b"broken")
+
+    def fail(path):
+        raise ValueError("broken grib")
+
+    monkeypatch.setitem(
+        sys.modules, "cfgrib", types.SimpleNamespace(open_datasets=fail)
+    )
+    with pytest.raises(ValueError):
+        ecmwf_crawler.open_grib_as_dataframe(archive)
+    assert not (tmp_path / "request.dir").exists()

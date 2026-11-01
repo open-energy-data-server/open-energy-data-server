@@ -248,14 +248,14 @@ def open_grib_as_dataframe(file_path: Path) -> pd.DataFrame:
     grib_path, extract_dir = _resolve_grib_path(file_path)
     log.info("successfully read file %s", file_path)
 
-    datasets = cfgrib.open_datasets(str(grib_path))
-    if not datasets:
-        raise FileNotFoundError(f"cfgrib found no datasets in {grib_path}")
-    merged = datasets_to_dataframe(datasets)
-
-    if extract_dir is not None:
-        shutil.rmtree(extract_dir, ignore_errors=True)
-    return merged
+    try:
+        datasets = cfgrib.open_datasets(str(grib_path))
+        if not datasets:
+            raise FileNotFoundError(f"cfgrib found no datasets in {grib_path}")
+        return datasets_to_dataframe(datasets)
+    finally:
+        if extract_dir is not None:
+            shutil.rmtree(extract_dir, ignore_errors=True)
 
 
 def datasets_to_dataframe(datasets: list) -> pd.DataFrame:
