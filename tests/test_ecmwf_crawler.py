@@ -305,3 +305,36 @@ def test_stored_hours_are_counted_in_one_query_on_the_nuts_table():
     )
     assert result == {pd.Timestamp("2019-02-01", tz="UTC"): 7}
     assert len(queries) == 1 and "era5_eu" in queries[0]
+
+
+def _requests_of_range(monkeypatch, begin, end):
+    from oeds.crawler import ecmwf_crawler
+
+    crawler = object.__new__(ecmwf_crawler.EcmwfCrawler)
+    crawler.dataset = "era5"
+    crawler.ecmwf_client = None
+    crawler.build_dataframe = lambda request, path: None
+    requested = []
+    monkeypatch.setattr(
+        ecmwf_crawler,
+        "save_era5_request_to_file",
+        lambda request, client, dataset: requested.append(request) or "file",
+    )
+    crawler.crawl_range(begin, end)
+    return requested
+
+
+def test_partial_day_is_not_requested_after_the_end(monkeypatch):
+    begin = datetime(2026, 10, 20, 5, tzinfo=UTC)
+    end = datetime(2026, 10, 20, 14, 37, tzinfo=UTC)
+    requested = _requests_of_range(monkeypatch, begin, end)
+    assert len(requested) == 1
+    assert requested[0]["time"] == [f"{h:02d}:00" for h in range(5, 15)]
+
+
+def test_partial_day_requests_the_rest_of_the_day_before_later_days(monkeypatch):
+    begin = datetime(2026, 10, 20, 5, tzinfo=UTC)
+    end = datetime(2026, 10, 23, tzinfo=UTC)
+    requested = _requests_of_range(monkeypatch, begin, end)
+    assert requested[0]["time"] == [f"{h:02d}:00" for h in range(5, 24)]
+    assert requested[1]["day"] == ["21", "22"]

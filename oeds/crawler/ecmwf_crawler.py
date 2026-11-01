@@ -212,13 +212,16 @@ def request_list_from_dates(dates: list[datetime], dataset: str = "era5") -> lis
     return requests_list
 
 
-def single_day_request(last_date: datetime, dataset: str = "era5") -> dict:
+def single_day_request(
+    last_date: datetime, dataset: str = "era5", end_hour: int = 24
+) -> dict:
+    """Request of the hours from last_date until end_hour (exclusive) of its day."""
     return dict(
         base_request(dataset),
         year=f"{last_date.year}",
         month=f"{last_date.month:02d}",
         day=f"{last_date.day:02d}",
-        time=[f"{i:02d}:00" for i in range(last_date.hour, 24)],
+        time=[f"{i:02d}:00" for i in range(last_date.hour, end_hour)],
     )
 
 
@@ -551,16 +554,22 @@ class EcmwfCrawler(ContinuousCrawler):
         # the requests are build from 00:00 - 23:00 for each day
         # however, for recent dates the cds API delivers data up until the latest hour of the day it can deliver
         # the hour is UTC, we check for 0
+        begin, end = as_utc(begin), as_utc(end)
         if begin.hour != 0:
             log.info(
                 "Creating request for single day because begin hour is %s", begin.hour
             )
-            request = single_day_request(begin, self.dataset)
+            day = begin.floor("D")
+            # the hours of the day before end, rounded up to a full hour
+            end_hour = min(24, -(-(end - day) // timedelta(hours=1)))
+            request = single_day_request(begin, self.dataset, end_hour)
             log.info("ERA5 request: %s", request)
             path = save_era5_request_to_file(request, self.ecmwf_client, self.dataset)
             self.build_dataframe(request, path)
             # the rest of the day was just stored, continue with the next day
-            begin = (as_utc(begin) + timedelta(days=1)).floor("D")
+            begin = day + timedelta(days=1)
+            if begin >= end:
+                return
 
         dates = list(daterange(begin, end))
         for request in request_list_from_dates(dates, self.dataset):
