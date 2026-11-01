@@ -65,6 +65,7 @@ class JrcIdeesCrawler(DownloadOnceCrawler):
         self.table_names = []
         # tables which were already (re)created in this run, the others are replaced
         written = set()
+        failed = []
         with zipfile.ZipFile(io.BytesIO(response.content)) as thezip:
             for zipinfo in thezip.infolist():
                 try:
@@ -126,6 +127,10 @@ class JrcIdeesCrawler(DownloadOnceCrawler):
                                 self.table_names.append(table_name)
                 except Exception as e:
                     log.error(f"Error: {e} - {zipinfo}")
+                    failed.append(zipinfo.filename)
+        if failed:
+            # no crawl_complete marker for a partial dataset, so the next run retries
+            raise RuntimeError(f"JRC-IDEES: {len(failed)} files failed: {failed}")
 
     def create_hypertable_if_not_exists(self) -> None:
         for table_name in self.table_names:
