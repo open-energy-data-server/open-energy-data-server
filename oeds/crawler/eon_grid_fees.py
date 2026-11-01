@@ -32,6 +32,10 @@ metadata_info = {
 
 EON_URI = "https://occ.eon.de/b2b-pricing/1.0/api/v2/offers"
 GRID_FEES_URI = "https://occ.eon.de/b2b-pricing/1.0/api/v2/thirdPartyCosts/rlm/power"
+REQUEST_TIMEOUT = 30
+STAGING_TABLE = "eon_grid_fees_staging"
+FLUSH_SIZE = 100
+MAX_FAILED_SHARE = 0.1
 
 
 def get_contract_data(address: dict):
@@ -49,7 +53,7 @@ def get_contract_data(address: dict):
         "start_date": start_str,
         # "street": address.get('road'),
     }
-    response = requests.post(EON_URI, json=data)
+    response = requests.post(EON_URI, json=data, timeout=REQUEST_TIMEOUT)
     assert response.status_code == 200, f"{response.status_code}: {response.text}"
     contract = response.json()
     return contract["price_details"]
@@ -62,12 +66,14 @@ def get_grid_data(address: dict):
     city = address.get("city", address.get("town"))
     if not city:
         city = requests.get(
-            f"https://occ.eon.de/zipcodes/1.3/api?clientId=eonde&query={postcode}"
+            f"https://occ.eon.de/zipcodes/1.3/api?clientId=eonde&query={postcode}",
+            timeout=REQUEST_TIMEOUT,
         ).json()
         city = city["zipCodes"][0]["cities"][0]["city"]
 
     street = requests.get(
-        f"https://occ.eon.de/streets/1.3/api?clientId=eonde&zipCode={postcode}&streetName=a"
+        f"https://occ.eon.de/streets/1.3/api?clientId=eonde&zipCode={postcode}&streetName=a",
+        timeout=REQUEST_TIMEOUT,
     ).json()
 
     # extract first element if available
@@ -85,7 +91,7 @@ def get_grid_data(address: dict):
         # "houseNumber" is not used anyway and can be left out
     }
 
-    grid_response = requests.get(GRID_FEES_URI, params=params)
+    grid_response = requests.get(GRID_FEES_URI, params=params, timeout=REQUEST_TIMEOUT)
     assert grid_response.status_code == 200, (
         f"{grid_response.status_code}: {grid_response.text}"
     )
@@ -115,83 +121,88 @@ class EonGridFeeCrawler(DownloadOnceCrawler):
                 index_col="code",
             )
         # Initialize Nominatim API
-        geolocator = Nominatim(user_agent="OEDS FH-Aachen")
-        grid_fee_results = {}
-        contracts_results = {}
+        geolocator = Nominatim(user_agent="OEDS FH-Aachen", timeout=REQUEST_TIMEOUT)
+        rows = []
+        failed = 0
+        flushed = 0
 
-        # code = 72516
-        # row = plz_nuts.loc[code]
+        with self.engine.begin() as conn:
+            conn.execute(text(f"DROP TABLE IF EXISTS {STAGING_TABLE}"))
+
         # location is only based on nuts3, but we crawl all to get all DSO data
         for nuts3, plzs in tqdm(plz_nuts.groupby("nuts3")):
             for code, row in plzs.iterrows():
-                # sleep to reduce load a nominatim API
-                # https://operations.osmfoundation.org/policies/nominatim/
-                time.sleep(2)
-                log.info(f"currently working at {code}")
-                # Perform reverse geocoding
-                loc = geolocator.geocode(f"{code}")
-                if loc is None:
-                    log.warning(f"no location found for {code}, skipping")
-                    continue
-                time.sleep(1)
-
-                location = geolocator.reverse(f"{loc.raw['lat']}, {loc.raw['lon']}")
-                address = location.raw["address"]
-                # some location middles do not have a postcode set like
-                # 57642
-                # fill with leading zeros
-                address["postcode"] = str(address.get("postcode", code)).zfill(5)
                 try:
-                    contracts_results[code] = get_contract_data(address)
-                except Exception:
-                    log.exception(f"error in contract fees eon for {code}")
-
-                try:
-                    grid_fee_results[code] = get_grid_data(address)
+                    result = self.get_plz_fees(geolocator, code)
                 except Exception:
                     log.exception(f"error in grid fees eon for {code}")
+                    result = None
+                if result is None:
+                    failed += 1
+                else:
+                    rows.append(result)
+                if len(rows) - flushed >= FLUSH_SIZE:
+                    self.write_staging(rows[flushed:])
+                    flushed = len(rows)
 
-        df = pd.DataFrame()
-        df["zip_code"] = pd.Series(grid_fee_results.keys()).values
-        df["working_price_grid_ct_per_kwh"] = list(
-            map(
-                lambda i: i.get("prices").get("working_price_grid").get("value_vat"),
-                map(grid_fee_results.get, grid_fee_results.keys()),
+        self.write_staging(rows[flushed:])
+        total = len(rows) + failed
+        if not rows or failed > MAX_FAILED_SHARE * total:
+            raise RuntimeError(
+                f"{failed} of {total} postcodes failed, keeping the existing grid fees"
             )
-        )
-        df["power_price_grid_eur_per_kw"] = list(
-            map(
-                lambda i: i.get("prices").get("power_price_grid").get("value_vat"),
-                map(grid_fee_results.get, grid_fee_results.keys()),
-            )
-        )
-        df["fee_measurement_eur_per_year"] = list(
-            map(
-                lambda i: i.get("prices").get("fee_measurement").get("value_vat"),
-                map(grid_fee_results.get, grid_fee_results.keys()),
-            )
-        )
-        df["market_partner_name"] = list(
-            map(
-                lambda i: (
-                    i.get("prices").get("working_price_grid").get("market_partner_name")
-                ),
-                map(grid_fee_results.get, grid_fee_results.keys()),
-            )
-        )
-        df["market_partner_code"] = list(
-            map(
-                lambda i: (
-                    i.get("prices").get("working_price_grid").get("market_partner_code")
-                ),
-                map(grid_fee_results.get, grid_fee_results.keys()),
-            )
-        )
+        log.info(f"{failed} of {total} postcodes failed")
 
+        # replace the snapshot only after a finished run
         with self.engine.begin() as conn:
-            df.to_sql("eon_grid_fees", conn, if_exists="replace")
+            conn.execute(text("DROP TABLE IF EXISTS eon_grid_fees"))
+            conn.execute(text(f"ALTER TABLE {STAGING_TABLE} RENAME TO eon_grid_fees"))
 
-        return df
+        return pd.DataFrame(rows)
+
+    def write_staging(self, rows: list[dict]):
+        if rows:
+            with self.engine.begin() as conn:
+                pd.DataFrame(rows).to_sql(
+                    STAGING_TABLE, conn, if_exists="append", index=False
+                )
+
+    def get_plz_fees(self, geolocator, code) -> dict | None:
+        """Returns the grid fees of a postcode or None if they could not be found."""
+        # sleep to reduce load a nominatim API
+        # https://operations.osmfoundation.org/policies/nominatim/
+        time.sleep(2)
+        log.info(f"currently working at {code}")
+        loc = geolocator.geocode(f"{code}")
+        if loc is None:
+            log.warning(f"no location found for {code}, skipping")
+            return None
+        time.sleep(1)
+
+        location = geolocator.reverse(f"{loc.raw['lat']}, {loc.raw['lon']}")
+        if location is None:
+            log.warning(f"no address found for {code}, skipping")
+            return None
+        address = location.raw["address"]
+        # some location middles do not have a postcode set like
+        # 57642
+        # fill with leading zeros
+        address["postcode"] = str(address.get("postcode", code)).zfill(5)
+        try:
+            get_contract_data(address)
+        except Exception:
+            log.exception(f"error in contract fees eon for {code}")
+
+        prices = get_grid_data(address)["prices"]
+        working_price = prices["working_price_grid"]
+        return {
+            "zip_code": code,
+            "working_price_grid_ct_per_kwh": working_price["value_vat"],
+            "power_price_grid_eur_per_kw": prices["power_price_grid"]["value_vat"],
+            "fee_measurement_eur_per_year": prices["fee_measurement"]["value_vat"],
+            "market_partner_name": working_price.get("market_partner_name"),
+            "market_partner_code": working_price.get("market_partner_code"),
+        }
 
 
 if __name__ == "__main__":
