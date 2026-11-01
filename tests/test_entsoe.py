@@ -2,10 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import threading
+from datetime import timedelta
+
 import pandas as pd
 from entsoe import EntsoePandasClient
 from oeds.crawler.entsoe_crawler import (
     EntsoeClient,
+    EntsoeCrawler,
     name_unnamed_plants,
     query_kwargs,
     to_utc,
@@ -68,3 +72,46 @@ def test_client_parses_per_plant_data_without_name(monkeypatch):
     )
     names = set(df.columns.get_level_values(0))
     assert names == {"11WD7ELVE2S-E4-9", "Niederaussem K"}
+
+
+def make_crawler(tmp_path):
+    from sqlalchemy import create_engine
+
+    crawler = EntsoeCrawler.__new__(EntsoeCrawler)
+    crawler.engine = create_engine(f"sqlite:///{tmp_path / 'entsoe.db'}")
+    crawler._db_lock = threading.Lock()
+    crawler.create_state_table()
+    return crawler
+
+
+def test_find_gaps_reports_missing_days_between_first_and_last_day(tmp_path):
+    crawler = make_crawler(tmp_path)
+    days = ["2024-01-01", "2024-01-02", "2024-01-05", "2024-01-06", "2024-01-08"]
+    data = pd.DataFrame(
+        {"value": 1.0, "country": "NL"}, index=pd.DatetimeIndex(days, name="index")
+    )
+    data.to_sql("query_load", crawler.engine, if_exists="append")
+    assert crawler.find_gaps("query_load") == [
+        (
+            "NL",
+            pd.Timestamp("2024-01-03", tz="UTC"),
+            pd.Timestamp("2024-01-05", tz="UTC"),
+        ),
+        (
+            "NL",
+            pd.Timestamp("2024-01-07", tz="UTC"),
+            pd.Timestamp("2024-01-08", tz="UTC"),
+        ),
+    ]
+
+
+def test_crawl_ranges_start_before_the_crawl_state_but_state_never_moves_back(tmp_path):
+    crawler = make_crawler(tmp_path)
+    until = pd.Timestamp("2024-06-10", tz="UTC")
+    crawler.set_crawled_until("query_load", "NL", until)
+    ranges, update_state = crawler.crawl_ranges("query_load", ["NL"])
+    assert update_state
+    assert ranges["NL"][0] == until - crawler.REVISION_WINDOW
+    assert crawler.REVISION_WINDOW >= timedelta(days=2)
+    ranges, _ = crawler.crawl_ranges("query_load", ["NL"], revision=timedelta(0))
+    assert ranges["NL"][0] == until

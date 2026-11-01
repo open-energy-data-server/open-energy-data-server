@@ -167,6 +167,9 @@ class EntsoeCrawler(ContinuousCrawler):
 
     # data in the last two days might not be available yet, so we wait for it.
     OFFSET_FROM_NOW = timedelta(days=2)
+    # ENTSO-E revises recent data and delivers late after short outages,
+    # so every run fetches the last days again (replacing them, see write_chunk).
+    REVISION_WINDOW = timedelta(days=7)
 
     def __init__(self, schema_name, config):
         super().__init__(schema_name, config)
@@ -273,11 +276,18 @@ class EntsoeCrawler(ContinuousCrawler):
         return None if d is None else to_utc(d)
 
     def crawl_ranges(
-        self, tablename, items, begin=None, end=None, column_per_item=False
+        self,
+        tablename,
+        items,
+        begin=None,
+        end=None,
+        column_per_item=False,
+        revision=None,
     ):
         """
         Find the range to crawl for each item (area or column) of a table.
-        Starts where the last successful crawl of the item ended.
+        Starts REVISION_WINDOW before the end of the last successful crawl of the item,
+        so that late or revised data is fetched again.
         Items without crawl state (crawled before it existed) start at their latest data,
         items without data at DEFAULT_START.
 
@@ -290,6 +300,8 @@ class EntsoeCrawler(ContinuousCrawler):
             if both are given, they are used for all items and the crawl state is not updated
         column_per_item : bool
             whether each item is stored in its own column instead of a country column
+        revision : timedelta
+            how far before the crawl state to start again (default: REVISION_WINDOW)
 
         Returns
         -------
@@ -307,9 +319,12 @@ class EntsoeCrawler(ContinuousCrawler):
         if insp.has_table(tablename):
             columns = {c["name"] for c in insp.get_columns(tablename)}
 
+        revision = self.REVISION_WINDOW if revision is None else revision
         ranges = {}
         for item in items:
             start = state.get(item)
+            if start is not None:
+                start = max(start - revision, DEFAULT_START)
             if start is None and column_per_item and item in columns:
                 start = self._latest_index(tablename, f'"{item}" IS NOT NULL', {})
             elif start is None and not column_per_item and "country" in columns:
@@ -469,6 +484,7 @@ class EntsoeCrawler(ContinuousCrawler):
         create_hypertable=True,
         chunk_freq="YS",
         min_days=2,
+        revision=None,
     ):
         """
         Downloads data with a procedure from a EntsoePandasClient
@@ -491,6 +507,8 @@ class EntsoeCrawler(ContinuousCrawler):
             None downloads the whole range at once
         min_days : int
             minimum length of the range to crawl for a country
+        revision : timedelta
+            see crawl_ranges
 
         Returns
         -------
@@ -498,7 +516,9 @@ class EntsoeCrawler(ContinuousCrawler):
         """
         tablename = proc.__name__
         log.info(f"****** {tablename} *******")
-        ranges, update_state = self.crawl_ranges(tablename, countries, begin, end)
+        ranges, update_state = self.crawl_ranges(
+            tablename, countries, begin, end, revision=revision
+        )
         chunks = {
             country: time_chunks(start, end_, chunk_freq)
             for country, (start, end_) in ranges.items()
@@ -528,6 +548,7 @@ class EntsoeCrawler(ContinuousCrawler):
                 success[futures[future]] = future.result()
 
         if update_state:
+            old_state = self.get_crawled_until(tablename)
             for country, country_chunks in chunks.items():
                 # only the chunks before the first failed one count as crawled,
                 # so the next run retries from the failed chunk on
@@ -537,11 +558,70 @@ class EntsoeCrawler(ContinuousCrawler):
                         log.error(f"{tablename} {country} will be retried from {s}")
                         break
                     until = e
-                if until is not None:
+                # never move the state backwards (the range starts before it)
+                if until is not None and until > old_state.get(country, DEFAULT_START):
                     self.set_crawled_until(tablename, country, until)
 
         if create_hypertable:
             self.create_single_hypertable_if_not_exists(tablename, "index")
+
+    def find_gaps(self, tablename, min_gap_days=1):
+        """
+        Finds ranges of days without any row between the first and the last day of each country.
+
+        Returns
+        -------
+        gaps : list[tuple[str, pd.Timestamp, pd.Timestamp]]
+            country, first missing day and the day after the last missing day (UTC)
+        """
+        if self.engine.dialect.name == "sqlite":
+            day = 'date("index")'
+        else:
+            day = "(\"index\" AT TIME ZONE 'UTC')::date"
+        with self.engine.connect() as conn:
+            days = pd.read_sql_query(
+                text(f'SELECT DISTINCT country, {day} AS day FROM "{tablename}"'), conn
+            )
+        days["day"] = pd.to_datetime(days["day"])
+        gaps = []
+        for country, group in days.groupby("country"):
+            d = group["day"].sort_values()
+            missing = d.diff() > timedelta(days=min_gap_days)
+            for after, before in zip(d.shift()[missing], d[missing]):
+                gaps.append(
+                    (
+                        country,
+                        to_utc(after + timedelta(days=1)),
+                        to_utc(before),
+                    )
+                )
+        return gaps
+
+    def fill_gaps(self, countries, proc, chunk_freq="YS"):
+        """
+        Downloads the gaps (see find_gaps) of the countries again.
+        Gaps which the source has no data for stay open and are reported in the log.
+        Does not change the crawl state.
+
+        Returns
+        -------
+        gaps : list[tuple[str, pd.Timestamp, pd.Timestamp]]
+            the gaps which were tried
+        """
+        tablename = proc.__name__
+        gaps = [g for g in self.find_gaps(tablename) if g[0] in countries]
+        log.info(f"{tablename}: filling {len(gaps)} gaps")
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = [
+                executor.submit(self.fetch_and_write_entsoe_df_to_db, c, proc, s, e)
+                for c, start, end in gaps
+                for s, e in time_chunks(start, end, chunk_freq)
+            ]
+            for future in tqdm(
+                as_completed(futures), total=len(futures), desc=tablename
+            ):
+                future.result()
+        return gaps
 
     def pull_crossborders(self, begin=None, end=None, allZones=True, countries=None):
         """
@@ -790,6 +870,7 @@ class EntsoeCrawler(ContinuousCrawler):
             create_hypertable=False,
             chunk_freq=None,
             min_days=366,
+            revision=timedelta(0),
         )
 
         # timeseries
