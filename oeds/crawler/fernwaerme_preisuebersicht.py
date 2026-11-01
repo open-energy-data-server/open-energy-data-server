@@ -47,6 +47,11 @@ def parse_network_size(value) -> tuple[str | None, str | None]:
     return text, text
 
 
+def parse_price_date(values: pd.Series) -> pd.Series:
+    """Parses the German dates (dd.mm.yyyy) of the source to calendar days."""
+    return pd.to_datetime(values, format="%d.%m.%Y", errors="coerce").dt.date
+
+
 class FWCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
@@ -150,8 +155,8 @@ class FWCrawler(DownloadOnceCrawler):
         df["Max EE & KN"] = pd.to_numeric(df["Max EE & KN"], errors="coerce")
         # df['Min EE & KN'].fillna('-', inplace=True)
         # df['Max EE & KN'].fillna('-', inplace=True)
-        df["Preisstand Datum der letzten Preisanpassung"] = pd.to_datetime(
-            df["Preisstand Datum der letzten Preisanpassung"], errors="coerce"
+        df["Preisstand Datum der letzten Preisanpassung"] = parse_price_date(
+            df["Preisstand Datum der letzten Preisanpassung"]
         )
 
         df.drop(columns=[column_name4, column_name7], inplace=True)
