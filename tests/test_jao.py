@@ -5,8 +5,10 @@
 from datetime import UTC, datetime, timedelta
 
 import pandas as pd
+import pytest
+import requests
 from oeds.base_crawler import empty_config
-from oeds.crawler.jao_crawler import JaoCrawler
+from oeds.crawler.jao_crawler import JaoClientWrapper, JaoCrawler
 from sqlalchemy import text
 
 
@@ -91,3 +93,64 @@ def test_crawl_temporal_looks_back_for_late_published_auctions():
     crawler.create_hypertable_if_not_exists = lambda: None
     crawler.crawl_temporal(end=datetime(2024, 4, 1, tzinfo=UTC))
     assert calls == [latest - timedelta(days=45)]
+
+
+class FakeResponse:
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self.payload = payload or []
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.exceptions.HTTPError(f"{self.status_code}")
+
+    def json(self):
+        return self.payload
+
+
+def wrapper_returning(response):
+    wrapper = JaoClientWrapper.__new__(JaoClientWrapper)
+
+    class Session:
+        def get(self, *args, **kwargs):
+            assert kwargs["timeout"]
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+    wrapper.client = type("C", (), {"s": Session(), "BASEURL": "http://x/"})()
+    return wrapper
+
+
+NO_DATA = {"status": 400, "message": "No Data found"}
+
+
+def test_get_bids_without_data_is_empty_and_other_errors_raise():
+    assert wrapper_returning(FakeResponse(400, NO_DATA)).get_bids("A").empty
+    assert len(wrapper_returning(FakeResponse(200, [{"price": 1}])).get_bids("A")) == 1
+    validation_error = {"status": 400, "message": "Wrong format for value x"}
+    for failure in (
+        FakeResponse(400, validation_error),
+        FakeResponse(401),
+        FakeResponse(503),
+        requests.exceptions.Timeout(),
+    ):
+        with pytest.raises(requests.exceptions.RequestException):
+            wrapper_returning(failure).get_bids("A")
+
+
+def test_auction_with_failed_bid_request_is_retried_next_run():
+    crawler = make_crawler()
+
+    class FailingClient(FakeClient):
+        def get_bids(self, auction_id):
+            raise requests.exceptions.ConnectionError("down")
+
+    args = (datetime(2019, 1, 1), datetime(2019, 4, 1), "CH-DE", "Monthly")
+    shared = auction("CH-DE-M-BASE-190301-01", "CH-DE", None)
+    crawler.crawl_single_horizon(FailingClient([shared]), *args)
+    assert crawler.get_known_auctions("Monthly") == set()
+    client = FakeClient([shared])
+    crawler.crawl_single_horizon(client, *args)
+    assert client.bid_requests == ["CH-DE-M-BASE-190301-01"]
+    assert crawler.get_known_auctions("Monthly") == {"CH-DE-M-BASE-190301-01"}
