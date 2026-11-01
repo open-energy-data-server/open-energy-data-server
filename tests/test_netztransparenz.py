@@ -129,3 +129,51 @@ def test_store_rejects_naive_datetimes():
     df = pd.DataFrame({"BEGINN": pd.to_datetime(["2024-01-01 10:00"])})
     with pytest.raises(ValueError):
         crawler._store("redispatch", df)
+
+
+def test_redispatch_localizes_naive_utc_like_the_client():
+    crawler = make_crawler()
+
+    class Client:
+        def redispatch(self, begin, end, transform):
+            return pd.DataFrame(
+                {
+                    "BEGINN": pd.to_datetime(["2024-01-01 10:00"]),
+                    "ENDE": pd.to_datetime(["2024-01-01 11:00"]),
+                }
+            )
+
+    crawler.client = Client()
+    crawler.redispatch()
+    with crawler.engine.connect() as conn:
+        beginn = conn.execute(text("SELECT beginn FROM redispatch")).scalar()
+    assert beginn.startswith("2024-01-01 10:00")
+
+
+def test_failing_table_does_not_abort_others():
+    crawler = make_crawler(ipnt_client_id="id", ipnt_client_secret="secret")
+    fetched = []
+    hypertables = []
+
+    class Client:
+        def prognose_solar(self, transform_dates):
+            return utc_frame("2024-01-01", 2)
+
+        prognose_wind = prognose_solar
+
+        def redispatch(self, begin, end, transform):
+            raise RuntimeError("boom")
+
+        def __getattr__(self, name):
+            def fetch(begin, end, transform):
+                fetched.append(name)
+                return pd.DataFrame()
+
+            return fetch
+
+    crawler.client = Client()
+    crawler.create_hypertable_if_not_exists = lambda: hypertables.append(True)
+    with pytest.raises(RuntimeError, match="redispatch"):
+        crawler.crawl_temporal()
+    assert "nrvsaldo_rzsaldo_qualitaetsgesichert" in fetched
+    assert hypertables

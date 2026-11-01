@@ -4,6 +4,7 @@
 
 import csv
 import logging
+import os
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,16 +35,21 @@ SCADA_ZIP_URL = (
     f"https://zenodo.org/records/16807551/files/{SCADA_ZIP_FILENAME}?download=1"
 )
 scada_zip_path = Path(__file__).parent.parent / SCADA_ZIP_FILENAME
+DOWNLOAD_TIMEOUT = 300
+
+TURBINES = {
+    "KWF1": "Turbine_Data_Kelmarsh_1_2023-01-01_-_2024-01-01_228.csv",
+    "KWF2": "Turbine_Data_Kelmarsh_2_2023-01-01_-_2024-01-01_229.csv",
+    "KWF3": "Turbine_Data_Kelmarsh_3_2023-01-01_-_2024-01-01_230.csv",
+    "KWF4": "Turbine_Data_Kelmarsh_4_2023-01-01_-_2024-01-01_231.csv",
+    "KWF5": "Turbine_Data_Kelmarsh_5_2023-01-01_-_2024-01-01_232.csv",
+    "KWF6": "Turbine_Data_Kelmarsh_6_2023-01-01_-_2024-01-01_233.csv",
+}
 
 
 class KelmarshCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
-        try:
-            query = text("SELECT 1 from scada limit 1")
-            with self.engine.connect() as conn:
-                return conn.execute(query).scalar() == 1
-        except Exception:
-            return False
+        return self.loaded_turbines() == set(TURBINES)
 
     def create_hypertable_if_not_exists(self):
         self.create_single_hypertable_if_not_exists("scada", "datetime")
@@ -83,41 +89,55 @@ class KelmarshCrawler(DownloadOnceCrawler):
             return zip_path
 
         log.info("Downloading Kelmarsh SCADA archive from %s", SCADA_ZIP_URL)
-        response = requests.get(SCADA_ZIP_URL, stream=True)
+        response = requests.get(SCADA_ZIP_URL, stream=True, timeout=DOWNLOAD_TIMEOUT)
         response.raise_for_status()
 
         zip_path.parent.mkdir(parents=True, exist_ok=True)
-        with zip_path.open("wb") as archive:
+        part_path = zip_path.with_name(zip_path.name + ".part")
+        with part_path.open("wb") as archive:
             for chunk in response.iter_content(chunk_size=1024 * 1024):
                 if chunk:
                     archive.write(chunk)
+        os.replace(part_path, zip_path)
 
         log.info("Downloaded Kelmarsh SCADA archive to %s", zip_path)
         return zip_path
 
+    def loaded_turbines(self) -> set[str]:
+        try:
+            with self.engine.connect() as conn:
+                rows = conn.execute(text("SELECT DISTINCT turbine FROM scada"))
+                return {row[0] for row in rows}
+        except Exception:
+            return set()
+
     def load_scada_data(self):
         zip_path = self.download_scada_archive()
 
-        turbines = {
-            "KWF1": "Turbine_Data_Kelmarsh_1_2023-01-01_-_2024-01-01_228.csv",
-            "KWF2": "Turbine_Data_Kelmarsh_2_2023-01-01_-_2024-01-01_229.csv",
-            "KWF3": "Turbine_Data_Kelmarsh_3_2023-01-01_-_2024-01-01_230.csv",
-            "KWF4": "Turbine_Data_Kelmarsh_4_2023-01-01_-_2024-01-01_231.csv",
-            "KWF5": "Turbine_Data_Kelmarsh_5_2023-01-01_-_2024-01-01_232.csv",
-            "KWF6": "Turbine_Data_Kelmarsh_6_2023-01-01_-_2024-01-01_233.csv",
-        }
+        # every turbine is written in one transaction, so it is either complete or absent
+        loaded = self.loaded_turbines()
 
         log.info(f"Loading Kelmarsh SCADA data from {zip_path}...")
 
         chunk_size = 50000
 
+        def insert(conn, rows, t_name):
+            df = pd.DataFrame(rows)
+            df.to_sql("scada", con=conn, if_exists="append", index=False)
+            log.info(f"  Inserted chunk of {len(df)} records for {t_name}")
+
         with zipfile.ZipFile(zip_path) as z:
-            for t_name, csv_filename in turbines.items():
+            for t_name, csv_filename in TURBINES.items():
+                if t_name in loaded:
+                    log.info(f"{t_name} SCADA data already loaded")
+                    continue
                 log.info(f"Processing {t_name} SCADA file: {csv_filename}...")
 
                 rows_accumulator = []
+                total_rows = 0
+                bad_rows = 0
 
-                with z.open(csv_filename) as f:
+                with self.engine.begin() as conn, z.open(csv_filename) as f:
                     # Stream CSV line-by-line to avoid unzipping large files to disk
                     csv_reader = csv.reader(line.decode("utf-8") for line in f)
 
@@ -155,43 +175,35 @@ class KelmarshCrawler(DownloadOnceCrawler):
                                 else 0.0
                             )
                             power_kw = float(power_kw_str)
-
-                            rows_accumulator.append(
-                                {
-                                    "datetime": dt,
-                                    "turbine": t_name,
-                                    "power": power_kw,
-                                    "wind_speed": wind_speed,
-                                    "energy_export": energy_export,
-                                }
-                            )
-
-                            # Write in chunks to the database
-                            if len(rows_accumulator) >= chunk_size:
-                                df = pd.DataFrame(rows_accumulator)
-                                with self.engine.begin() as conn:
-                                    df.to_sql(
-                                        "scada",
-                                        con=conn,
-                                        if_exists="append",
-                                        index=False,
-                                    )
-                                log.info(
-                                    f"  Inserted chunk of {len(df)} records for {t_name}"
-                                )
-                                rows_accumulator = []
-
                         except Exception:
+                            bad_rows += 1
                             continue
 
-                # Write remaining rows
-                if rows_accumulator:
-                    df = pd.DataFrame(rows_accumulator)
-                    with self.engine.begin() as conn:
-                        df.to_sql("scada", con=conn, if_exists="append", index=False)
-                    log.info(
-                        f"  Inserted final chunk of {len(df)} records for {t_name}"
-                    )
+                        total_rows += 1
+                        rows_accumulator.append(
+                            {
+                                "datetime": dt,
+                                "turbine": t_name,
+                                "power": power_kw,
+                                "wind_speed": wind_speed,
+                                "energy_export": energy_export,
+                            }
+                        )
+
+                        # Write in chunks to the database
+                        if len(rows_accumulator) >= chunk_size:
+                            insert(conn, rows_accumulator, t_name)
+                            rows_accumulator = []
+
+                    if bad_rows:
+                        log.warning(f"  skipped {bad_rows} unparsable rows of {t_name}")
+                    if bad_rows > 0.01 * (total_rows + bad_rows):
+                        # the transaction is rolled back, the turbine is loaded next time
+                        raise ValueError(f"too many unparsable rows in {csv_filename}")
+
+                    # Write remaining rows
+                    if rows_accumulator:
+                        insert(conn, rows_accumulator, t_name)
 
         # Create indexes
         log.info("Creating index on scada (datetime, turbine)...")

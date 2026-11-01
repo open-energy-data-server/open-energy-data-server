@@ -2,8 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import io
 import logging
 import re
+import time
 from datetime import UTC, datetime, timedelta
 
 import pandas as pd
@@ -39,6 +41,9 @@ TEMPORAL_START = datetime(2009, 1, 1, tzinfo=UTC)
 # the export contains local time (Europe/Berlin), we store timestamptz (UTC)
 LOCAL_TIMEZONE = "Europe/Berlin"
 # using http instead of https to be faster
+REQUEST_TIMEOUT = 60  # seconds
+FETCH_ATTEMPTS = 3
+RETRY_BACKOFF = 5  # seconds, doubled with every attempt
 
 
 def local_to_utc(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
@@ -80,12 +85,25 @@ class EViewCrawler(ContinuousCrawler):
         units = re.findall(r"login\.php\?p=;(\w{2});", data.text)
         return list(dict.fromkeys(units))
 
+    def fetch(self, url: str) -> bytes:
+        """Raises requests.RequestException if the url is not reachable after retries."""
+        for attempt in range(FETCH_ATTEMPTS):
+            try:
+                response = requests.get(url, timeout=REQUEST_TIMEOUT)
+                response.raise_for_status()
+                return response.content
+            except requests.RequestException:
+                if attempt == FETCH_ATTEMPTS - 1:
+                    raise
+                time.sleep(RETRY_BACKOFF * 2**attempt)
+
     def crawl_unit_date(self, unit, fetch_date):
         day = datetime.strftime(fetch_date, "%d.%m.%Y")
         url = f"http://www.eview.de/solarstromdaten/export.php?p=;{unit};z;dg1;f0;t{day}/1;km250"
+        content = self.fetch(url)
         try:
             df = pd.read_csv(
-                url,
+                io.BytesIO(content),
                 decimal=",",
                 index_col=0,
                 encoding="iso-8859-1",
@@ -119,7 +137,12 @@ class EViewCrawler(ContinuousCrawler):
         for fetch_date in pd.date_range(
             as_utc(begin).date().isoformat(), as_utc(end).date().isoformat()
         ):
-            self.crawl_unit_date(unit, fetch_date)
+            try:
+                self.crawl_unit_date(unit, fetch_date)
+            except requests.RequestException:
+                # stop here, so that the next run resumes at this day
+                log.exception("fetching %s at %s failed - stopping", unit, fetch_date)
+                return
 
     def select_bound_per_unit(self, unit: str, func: str) -> datetime | None:
         """min/max of the stored (UTC) datetime of a unit - None if there is no data"""

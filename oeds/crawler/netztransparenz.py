@@ -170,6 +170,10 @@ class NetztransparenzCrawler(ContinuousCrawler):
 
     def redispatch(self, begin: datetime | None = None, end: datetime | None = None):
         df = self.client.redispatch(begin, end, True)
+        # the client returns these as naive UTC
+        for column in ("BEGINN", "ENDE"):
+            if column in df.columns and df[column].dt.tz is None:
+                df[column] = df[column].dt.tz_localize("UTC")
         self._store("redispatch", df)
 
     def gcc_balance(self, begin: datetime, end: datetime):
@@ -215,8 +219,13 @@ class NetztransparenzCrawler(ContinuousCrawler):
             log.error("no netztransparenz client available - skipping crawl")
             return
         # forecasts change with every publication, so they are refreshed on each run
-        self.forecast_solar()
-        self.forecast_wind()
+        failed = []
+        for forecast in (self.forecast_solar, self.forecast_wind):
+            try:
+                forecast()
+            except Exception:
+                log.exception(f"{forecast.__name__} failed")
+                failed.append(forecast.__name__)
 
         temporal_funcs = [
             # 0=function, 1=start of data, 2=crawling delay, 3=table name, 4=index name in table
@@ -299,8 +308,16 @@ class NetztransparenzCrawler(ContinuousCrawler):
                 current_end = earliest
             log.info(f"Crawling from {current_begin} to {current_end}")
             # the client interprets naive datetimes as local time, pass aware ones
-            func_tuple[0](current_begin.to_pydatetime(), current_end.to_pydatetime())
+            try:
+                func_tuple[0](
+                    current_begin.to_pydatetime(), current_end.to_pydatetime()
+                )
+            except Exception:
+                log.exception(f"Crawling {func_tuple[3]} failed")
+                failed.append(func_tuple[3])
         self.create_hypertable_if_not_exists()
+        if failed:
+            raise RuntimeError(f"netztransparenz tables failed: {failed}")
 
 
 if __name__ == "__main__":

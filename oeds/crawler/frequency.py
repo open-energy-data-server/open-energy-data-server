@@ -5,6 +5,7 @@
 import io
 import logging
 import zipfile
+from datetime import UTC, datetime
 
 import pandas as pd
 import requests
@@ -78,21 +79,53 @@ def local_to_utc(local_times: pd.Series) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(result)
 
 
+def expected_months(first: int = 2011, last: int = 2019) -> list[tuple[int, int]]:
+    # the archive ends in August 2019
+    return [
+        (year, month)
+        for year in range(first, last + 1)
+        for month in range(1, 13)
+        if (year, month) < (2019, 9)
+    ]
+
+
 class FrequencyCrawler(DownloadOnceCrawler):
-    def structure_exists(self) -> bool:
+    def missing_years(self, first: int = 2011, last: int = 2019) -> list[int]:
+        """Years with at least one month without data, e.g. after an interrupted run."""
+        query = text(
+            'SELECT 1 FROM frequency WHERE "index" >= :begin AND "index" < :end LIMIT 1'
+        )
+        missing = set()
         try:
-            query = text("SELECT 1 from frequency limit 1")
             with self.engine.connect() as conn:
-                return conn.execute(query).scalar() == 1
+                for year, month in expected_months(first, last):
+                    begin = datetime(year, month, 1, tzinfo=UTC)
+                    end = (
+                        datetime(year + 1, 1, 1, tzinfo=UTC)
+                        if month == 12
+                        else datetime(year, month + 1, 1, tzinfo=UTC)
+                    )
+                    if conn.execute(query, {"begin": begin, "end": end}).scalar() != 1:
+                        missing.add(year)
         except Exception:
-            return False
+            return list(range(first, last + 1))
+        return sorted(missing)
+
+    def structure_exists(self) -> bool:
+        return not self.missing_years()
 
     def crawl_structural(self, recreate: bool = False):
-        if not self.structure_exists() or recreate:
+        years = self.missing_years()
+        if recreate:
             self.crawl_frequency()
+        elif years:
+            # already loaded years are kept, the others are (re)loaded
+            for year in years:
+                self.crawl_frequency(year, year)
         self.create_hypertable_if_not_exists()
 
     def crawl_year_by_url(self, url):
+        failed = []
         for name, thefile, count in download_extract_zip(url):
             log.info("file %s", name)
             if count == 1:  # only 2010
@@ -129,8 +162,11 @@ class FrequencyCrawler(DownloadOnceCrawler):
                     self.replace_overlap(
                         conn, "frequency", df, "index", method=copy_insert
                     )
-            except Exception as e:
-                log.error(f"Error: {e}")
+            except Exception:
+                log.exception("could not store file %s", name)
+                failed.append(name)
+        if failed:
+            raise RuntimeError(f"could not store {len(failed)} files of {url}")
 
     def crawl_frequency(self, first=2011, last=2019):
         for year in range(first, last + 1):

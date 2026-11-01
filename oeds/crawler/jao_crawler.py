@@ -45,6 +45,7 @@ metadata_info = {
     "concave_hull_geometry": None,
 }
 
+REQUEST_TIMEOUT = 120  # seconds
 MAX_QUERY_DAYS = 30  # the JAO API rejects periods longer than 31 days
 
 TEMPORAL_START = datetime(2019, 1, 1, tzinfo=UTC)
@@ -112,18 +113,40 @@ def convert_time_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     return df
 
 
+def is_no_data(response) -> bool:
+    """JAO reports an empty result as HTTP 400 with the message "No Data found".
+
+    Other 400 responses are validation errors (e.g. a wrong date format).
+    """
+    if response.status_code != 400:
+        return False
+    try:
+        body = response.json()
+    except ValueError:
+        return False
+    return isinstance(body, dict) and body.get("message") == "No Data found"
+
+
 class JaoClientWrapper:
     def __init__(self, api_key: str | None):
         if not api_key:
             raise Exception("No JAO API key provided")
         self.client = JaoAPIClient(api_key)
 
-    def get_bids(self, auction_id: str):
-        try:
-            return self.client.query_auction_bids_by_id(auction_id)
-        except requests.exceptions.HTTPError as e:
-            log.error(f"Error fetching bids for auction {auction_id}: {e}")
+    def get_bids(self, auction_id: str) -> pd.DataFrame:
+        """Returns the bids of an auction, empty if the source has none.
+
+        Other errors are raised, so that the auction is retried in a later run.
+        """
+        r = self.client.s.get(
+            self.client.BASEURL + "getbids",
+            params={"auctionid": auction_id},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if is_no_data(r):
             return pd.DataFrame()
+        r.raise_for_status()
+        return pd.DataFrame(r.json())
 
     def get_auctions(
         self,
@@ -150,10 +173,10 @@ class JaoClientWrapper:
                     "horizon": horizon,
                     "shadow": 0,
                 },
+                timeout=REQUEST_TIMEOUT,
             )
             day = chunk_end + timedelta(days=1)
-            if r.status_code == 400:
-                # "No Data found" is reported as a 400
+            if is_no_data(r):
                 continue
             try:
                 r.raise_for_status()
@@ -322,7 +345,12 @@ class JaoCrawler(ContinuousCrawler):
                 if not results_df.empty
                 else results_df
             )
-            bids_data = jao_client.get_bids(auction_id)
+            try:
+                bids_data = jao_client.get_bids(auction_id)
+            except requests.exceptions.RequestException as e:
+                # not storing the auction row lets the next run retry it
+                log.error(f"Error fetching bids for auction {auction_id}: {e}")
+                continue
             if not bids_data.empty:
                 bids_data["auctionId"] = auction_id
                 bids_data["date"] = auction_date

@@ -4,8 +4,9 @@
 
 from oeds.base_crawler import BaseCrawler
 from oeds.crawler.chargepoint import ChargepointDownloader
+from oeds.crawler.dwd import DWDCrawler
 from oeds.crawler.e2watch import E2WatchCrawler
-from oeds.crawler.ecmwf_crawler import EcmwfCrawler
+from oeds.crawler.ecmwf_crawler import EcmwfCrawler, EcmwfLandCrawler
 from oeds.crawler.entsoe_crawler import EntsoeCrawler
 from oeds.crawler.entsog import EntsogCrawler
 from oeds.crawler.eon_grid_fees import EonGridFeeCrawler
@@ -39,7 +40,9 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "public": NutsCrawler,
     "chargepoint": ChargepointDownloader,
     "e2watch": E2WatchCrawler,
+    "dwd": DWDCrawler,
     "ecmwf": EcmwfCrawler,
+    "ecmwf_land": EcmwfLandCrawler,
     "eon_grid_fees": EonGridFeeCrawler,
     "entsoe": EntsoeCrawler,
     "entsog": EntsogCrawler,
@@ -66,6 +69,5 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "smard": SmardCrawler,
     "synpro": SynproLoadProfileCrawler,
     "vea_industrial_load_profiles": IndustrialLoadProfileCrawler,
-    "weather": EcmwfCrawler,
     "windmodel": WindTurbineCrawler,
 }

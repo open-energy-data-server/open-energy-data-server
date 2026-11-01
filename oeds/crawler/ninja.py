@@ -32,7 +32,7 @@ SOLAR_URL = "https://www.renewables.ninja/downloads/ninja_europe_pv_v1.1.zip"
 class NinjaCrawler(DownloadOnceCrawler):
     def structure_exists(self) -> bool:
         try:
-            query = text("SELECT 1 from capacity_wind_off limit 1")
+            query = text("SELECT 1 from capacity_solar_merra2 limit 1")
             with self.engine.connect() as conn:
                 return conn.execute(query).scalar() == 1
         except Exception:

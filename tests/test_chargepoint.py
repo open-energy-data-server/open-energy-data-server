@@ -38,3 +38,30 @@ def test_too_many_failed_requests_abort_the_crawl(monkeypatch):
     monkeypatch.setattr(chargepoint.requests, "get", fail)
     with pytest.raises(RuntimeError):
         chargepoint.read_stations(max_locations=2)
+
+
+def test_capped_cells_are_subdivided_and_north_is_covered(monkeypatch):
+    requested = []
+
+    def get(url, **kwargs):
+        requested.append(url)
+        # only the first (whole) cell hits the cap
+        capped = len(requested) == 1
+        n = chargepoint.PAGE_SIZE if capped else 1
+        return Response(
+            [
+                {"device_id": len(requested) * 1000 + i, "lat": 1, "lon": 2}
+                for i in range(n)
+            ]
+        )
+
+    monkeypatch.setattr(chargepoint.requests, "get", get)
+    monkeypatch.setattr(chargepoint.requests, "post", lambda *a, **k: Response([]))
+    chargepoint.read_stations(max_locations=1)
+    # whole cell + 4 quadrants for the first sort, one request for the second
+    assert len(requested) == 6
+    assert '"ne_lat":44.5' in requested[1]
+
+    requested.clear()
+    chargepoint.read_stations()
+    assert any('"ne_lat":55.1,' in url for url in requested)
