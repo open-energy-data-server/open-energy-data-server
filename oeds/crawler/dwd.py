@@ -45,6 +45,7 @@ geo_path = Path(__file__).parent.parent / "shapes" / "NUTS_RG_01M_2021_4326.shp"
 DOWNLOAD_DIR = Path(__file__).parent.parent / "grb_files"
 DATA_PATH = Path(__file__).parent.parent / "data"
 COSMO_START = datetime(1995, 1, 1, tzinfo=UTC)
+DOWNLOAD_TIMEOUT = 300
 
 geo_information = None
 if geo_path.exists():
@@ -108,7 +109,11 @@ class DWDCrawler(ContinuousCrawler):
         self.create_single_hypertable_if_not_exists("cosmo", "time")
 
     def _download_data(self, key, year, month):
-        response = requests.get(f"{base_url}{to_download[key]}{year}{month}.grb.bz2")
+        response = requests.get(
+            f"{base_url}{to_download[key]}{year}{month}.grb.bz2",
+            timeout=DOWNLOAD_TIMEOUT,
+        )
+        response.raise_for_status()
         log.info(f"get weather for {key} with status code {response.status_code}")
 
         weather_data = bz2.decompress(response.content)
@@ -205,9 +210,17 @@ class DWDCrawler(ContinuousCrawler):
                     )
                     df.to_sql("cosmo", con=conn, if_exists="append")
                     log.info("import in db complete --> start with next hour")
-                except Exception as e:
-                    log.error(repr(e))
+                except requests.HTTPError as e:
+                    # months after the end of COSMO-REA6 have no file
+                    if e.response is not None and e.response.status_code == 404:
+                        log.warning(f"no data available for {date}")
+                        continue
+                    # stop here: resuming from max(time) must retry this month
                     log.exception(f"could not read {date}")
+                    raise
+                except Exception:
+                    log.exception(f"could not read {date}")
+                    raise
 
 
 def create_nuts_matrix(nuts_matrix_path):
