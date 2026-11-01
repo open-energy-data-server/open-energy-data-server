@@ -16,6 +16,11 @@ log = logging.getLogger(__name__)
 CHARGEPOINT_MAP_URL = "https://mc-eu.chargepoint.com/map-prod/get"
 REQUEST_TIMEOUT = 30
 MAX_FAILED_SHARE = 0.1
+# the map returns at most 50 stations per request, also for a larger page_size
+PAGE_SIZE = 50
+MAX_LAT = 55.1
+# smallest edge length (degrees) of a cell which is still subdivided
+MIN_CELL_SIZE = 0.0001
 PRICE_URL = "https://de.chargepoint.com/dashboard/getStationPricingDetails"
 
 
@@ -31,43 +36,67 @@ def read_stations(max_locations: int | None = None):
     # for key in stations.keys():
     #    stations[key]['price'] = stations[key]['price'].strip()
 
-    # does not give more than 50 stations
-    # no matter which are or page is given (page does not work at all)
-    location = '"ne_lat":55.10666691630692,"ne_lon":22.321837533755254,"sw_lat":43.833901738393294,"sw_lon":-5.3856819974947445,'
-
+    # the map returns at most PAGE_SIZE stations per request and ignores paging,
+    # so cells which hit the cap are subdivided
     locations = []
-    for lat in range(44, 54):
+    for lat in range(44, 56):
         for lon in range(3, 22):
-            loc = f'"ne_lat":{lat + 1},"ne_lon":{lon + 1},"sw_lat":{lat},"sw_lon":{lon}'
-            locations.append(loc)
+            locations.append((lat, lon, min(lat + 1, MAX_LAT), lon + 1))
 
     if max_locations is not None:
         locations = locations[:max_locations]
 
-    requests_total = 0
-    requests_failed = 0
-    for location in locations:
-        for sort in ["installation_date", "distance"]:
-            # f-string would be unreadable here
-            url = (
-                CHARGEPOINT_MAP_URL
-                + '?{"station_list":{'
-                + location
-                + '"page_size":100,"page_offset":"", "sort_by":"'
-                + sort
-                + '","filter":{"network_chargepoint":true},"include_map_bound":true,"estimated_fee_input":{"arrival_time":"12:45","battery_size":30}}}'
-            )
+    counts = {"total": 0, "failed": 0}
 
-            requests_total += 1
-            try:
-                resp = requests.get(url, timeout=REQUEST_TIMEOUT)
-                resp.raise_for_status()
-                j = resp.json()
-                summaries = j["station_list"]["summaries"]
-            except (requests.RequestException, ValueError, KeyError, TypeError):
-                log.exception("could not read stations for %s", location)
-                requests_failed += 1
-                continue
+    def request_cell(cell, sort):
+        sw_lat, sw_lon, ne_lat, ne_lon = cell
+        location = (
+            f'"ne_lat":{ne_lat},"ne_lon":{ne_lon},"sw_lat":{sw_lat},"sw_lon":{sw_lon}'
+        )
+        # f-string would be unreadable here
+        url = (
+            CHARGEPOINT_MAP_URL
+            + '?{"station_list":{'
+            + location
+            + f',"page_size":{PAGE_SIZE},"page_offset":"", "sort_by":"'
+            + sort
+            + '","filter":{"network_chargepoint":true},"include_map_bound":true,"estimated_fee_input":{"arrival_time":"12:45","battery_size":30}}}'
+        )
+
+        counts["total"] += 1
+        try:
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+            resp.raise_for_status()
+            j = resp.json()
+            summaries = j["station_list"]["summaries"]
+        except (requests.RequestException, ValueError, KeyError, TypeError):
+            log.exception("could not read stations for %s", location)
+            counts["failed"] += 1
+            return location, []
+        return location, summaries
+
+    def read_cell(cell, sort):
+        """Returns the summaries of cell, splitting it into quadrants if capped."""
+        location, summaries = request_cell(cell, sort)
+        sw_lat, sw_lon, ne_lat, ne_lon = cell
+        if (
+            len(summaries) >= PAGE_SIZE
+            and min(ne_lat - sw_lat, ne_lon - sw_lon) / 2 >= MIN_CELL_SIZE
+        ):
+            mid_lat = (sw_lat + ne_lat) / 2
+            mid_lon = (sw_lon + ne_lon) / 2
+            result = []
+            for lat_lo, lat_hi in ((sw_lat, mid_lat), (mid_lat, ne_lat)):
+                for lon_lo, lon_hi in ((sw_lon, mid_lon), (mid_lon, ne_lon)):
+                    result += read_cell((lat_lo, lon_lo, lat_hi, lon_hi), sort)[1]
+            return location, result
+        if len(summaries) >= PAGE_SIZE:
+            log.warning("cell %s is capped at %s stations", location, PAGE_SIZE)
+        return location, summaries
+
+    for cell in locations:
+        for sort in ["installation_date", "distance"]:
+            location, summaries = read_cell(cell, sort)
 
             log.info(
                 "Summary Count for %s: %s",
@@ -80,6 +109,8 @@ def read_stations(max_locations: int | None = None):
                 device_id = station.get("device_id")
                 if device_id is None:
                     log.warning("skipping station without device_id in %s", location)
+                    continue
+                if device_id in stations:
                     continue
                 try:
                     response = requests.post(
@@ -111,10 +142,10 @@ def read_stations(max_locations: int | None = None):
                 }
             log.info("added %s new stations", new_stations)
 
-    if requests_failed > MAX_FAILED_SHARE * requests_total:
+    if counts["failed"] > MAX_FAILED_SHARE * counts["total"]:
         # the caller replaces the stored table, which must not happen with a partial crawl
         raise RuntimeError(
-            f"{requests_failed} of {requests_total} station requests failed"
+            f"{counts['failed']} of {counts['total']} station requests failed"
         )
 
     for s_id, station in stations.items():
