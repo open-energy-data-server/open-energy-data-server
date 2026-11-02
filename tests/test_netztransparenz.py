@@ -385,3 +385,34 @@ def test_empty_frames_with_naive_columns_are_skipped():
         pd.Timestamp("2024-01-02", tz="UTC"),
     )
     assert not crawler.check_table_exists("kapazitaetsreserve")
+
+
+def test_failing_ranges_are_split(monkeypatch):
+    monkeypatch.setattr(netztransparenz, "RETRY_WAIT", 0)
+    ranges = []
+
+    def fetch(begin, end, transform):
+        ranges.append((begin, end))
+        # like NrvSaldo/NRVSaldo/Betrieblich for 2024-02..2025-02
+        if end - begin > pd.Timedelta(days=100):
+            raise _http_error(500)
+        return utc_frame(begin.replace(tzinfo=None), 2)
+
+    crawler = _chunk_crawler(fetch)
+    end = datetime(2012, 3, 31, tzinfo=UTC)
+    crawler.crawl_temporal(end=end)
+    stored = [(b, e) for b, e in ranges if e - b <= pd.Timedelta(days=100)]
+    assert stored[0][0] == datetime(2011, 3, 31, 22, tzinfo=UTC)
+    assert stored[-1][1] == end
+    assert all(a[1] == b[0] for a, b in zip(stored, stored[1:]))
+
+
+def test_ranges_failing_down_to_a_day_fail_the_table(monkeypatch):
+    monkeypatch.setattr(netztransparenz, "RETRY_WAIT", 0)
+
+    def fetch(begin, end, transform):
+        raise _http_error(500)
+
+    crawler = _chunk_crawler(fetch)
+    with pytest.raises(RuntimeError, match="hochrechnung_wind"):
+        crawler.crawl_temporal(end=datetime(2011, 6, 1, tzinfo=UTC))
