@@ -283,7 +283,7 @@ class NetztransparenzCrawler(ContinuousCrawler):
             ),
             (
                 self.redispatch,
-                datetime(2021, 10, 1, 0, 0, tzinfo=UTC),
+                datetime(2020, 12, 31, 23, 0, tzinfo=UTC),
                 timedelta(days=1),
                 "redispatch",
                 "beginn",
