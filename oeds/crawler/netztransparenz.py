@@ -14,10 +14,12 @@ with the credentials from the previous step.
 """
 
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 
 import netztransparenz as nt
 import pandas as pd
+import requests
 import sqlalchemy as sql
 
 from oeds.base_crawler import (
@@ -53,6 +55,10 @@ def database_friendly(string):
 
 
 TEMPORAL_START = datetime(2011, 3, 31, tzinfo=UTC)
+# the client splits longer ranges into requests of a year and concatenates them
+CHUNK = timedelta(days=365)
+RETRIES = 3
+RETRY_WAIT = 30  # seconds, times the attempt
 
 
 def to_utc(value) -> pd.Timestamp:
@@ -205,6 +211,21 @@ class NetztransparenzCrawler(ContinuousCrawler):
         df = self.client.nrvsaldo_voaa_qualitaetsgesichert(begin, end, True)
         self._store("value_of_avoided_activation", df)
 
+    def _fetch(self, func, begin: pd.Timestamp, end: pd.Timestamp):
+        """Calls func for [begin, end], again after server errors and timeouts."""
+        for attempt in range(1, RETRIES + 1):
+            try:
+                # the client interprets naive datetimes as local time, pass aware ones
+                return func(begin.to_pydatetime(), end.to_pydatetime())
+            except requests.RequestException as e:
+                response = getattr(e, "response", None)
+                if response is not None and response.status_code < 500:
+                    raise
+                if attempt == RETRIES:
+                    raise
+                log.warning(f"{func.__name__} {begin} - {end} failed ({e}), retrying")
+                time.sleep(RETRY_WAIT * attempt)
+
     def find_latest(self, tablename: str, column_name: str, default):
         try:
             with self.engine.begin() as conn:
@@ -317,11 +338,13 @@ class NetztransparenzCrawler(ContinuousCrawler):
             if current_end is None or current_end > earliest:
                 current_end = earliest
             log.info(f"Crawling from {current_begin} to {current_end}")
-            # the client interprets naive datetimes as local time, pass aware ones
             try:
-                func_tuple[0](
-                    current_begin.to_pydatetime(), current_end.to_pydatetime()
-                )
+                # stored per chunk, so a failure keeps the chunks before and the
+                # next run resumes there
+                while current_begin < current_end:
+                    chunk_end = min(current_begin + CHUNK, current_end)
+                    self._fetch(func_tuple[0], current_begin, chunk_end)
+                    current_begin = chunk_end
             except Exception:
                 log.exception(f"Crawling {func_tuple[3]} failed")
                 failed.append(func_tuple[3])
