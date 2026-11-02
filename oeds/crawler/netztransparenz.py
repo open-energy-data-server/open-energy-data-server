@@ -119,9 +119,18 @@ class NetztransparenzCrawler(ContinuousCrawler):
     def _store(self, table: str, df: pd.DataFrame):
         """Writes df as aware UTC and replaces rows of the same time range, so that
         fetching an overlapping range again does not create duplicates."""
+        time_column = self.TIME_COLUMNS[table]
+        if (
+            time_column in df.columns
+            and df[time_column].isna().all()
+            and isinstance(df.index, pd.DatetimeIndex)
+        ):
+            # the client returns a chunk without data as a frame with a time column;
+            # concatenated with the chunks indexed by time, the times are in the index
+            df = df.drop(columns=time_column).infer_objects()
+            df.index.name = time_column
         df = ensure_utc(df)
         df = df.rename(mapper=database_friendly, axis="columns")
-        time_column = self.TIME_COLUMNS[table]
         in_index = time_column not in df.columns
         times = df.index if in_index else df[time_column]
         if df.empty:

@@ -177,3 +177,22 @@ def test_failing_table_does_not_abort_others():
         crawler.crawl_temporal()
     assert "nrvsaldo_rzsaldo_qualitaetsgesichert" in fetched
     assert hypertables
+
+
+def test_store_keeps_the_times_of_chunks_concatenated_with_an_empty_chunk():
+    import io
+
+    from netztransparenz.constants import endpoints
+
+    crawler = make_crawler()
+    header = endpoints["/NrvSaldo/AktivierteMRL/Qualitaetsgesichert"]
+    empty = pd.read_csv(io.StringIO(header["transformed_header"]), sep=";")
+    data = utc_frame("2014-05-01", 2).rename(columns={"Wert": "Deutschland (Positiv)"})
+    crawler._store("aktivierte_mrl", pd.concat([empty, data]))
+    with crawler.engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT von, deutschland_positiv FROM aktivierte_mrl ORDER BY von")
+        ).all()
+    assert [r[0][:16] for r in rows] == ["2014-05-01 00:00", "2014-05-01 01:00"]
+    assert [r[1] for r in rows] == [0.0, 1.0]
+
