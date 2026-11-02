@@ -10,7 +10,9 @@ import requests
 from oeds.base_crawler import empty_config
 from oeds.crawler import netztransparenz
 from oeds.crawler.netztransparenz import (
+    ENDPOINTS,
     NetztransparenzCrawler,
+    database_friendly,
     is_missing_credential,
     to_utc,
 )
@@ -22,6 +24,10 @@ def make_crawler(**credentials):
     config["db_uri"] = "sqlite://"
     config.update(credentials)
     return NetztransparenzCrawler("netztransparenz", config)
+
+
+def endpoint(table):
+    return next(e for e in ENDPOINTS if e.table == table)
 
 
 def utc_frame(start, periods, tz="UTC"):
@@ -109,7 +115,7 @@ def test_crawl_temporal_passes_aware_utc_and_refreshes_forecasts():
         prognose_wind = prognose_solar
 
         def __getattr__(self, name):
-            def fetch(begin, end, transform):
+            def fetch(begin, end, *args, **kwargs):
                 calls["ranges"].append((begin, end))
                 return pd.DataFrame()
 
@@ -145,7 +151,11 @@ def test_redispatch_localizes_naive_utc_like_the_client():
             )
 
     crawler.client = Client()
-    crawler.redispatch()
+    crawler.fetch(
+        endpoint("redispatch"),
+        pd.Timestamp("2024-01-01", tz="UTC"),
+        pd.Timestamp("2024-01-02", tz="UTC"),
+    )
     with crawler.engine.connect() as conn:
         beginn = conn.execute(text("SELECT beginn FROM redispatch")).scalar()
     assert beginn.startswith("2024-01-01 10:00")
@@ -166,7 +176,7 @@ def test_failing_table_does_not_abort_others():
             raise RuntimeError("boom")
 
         def __getattr__(self, name):
-            def fetch(begin, end, transform):
+            def fetch(begin, end, *args, **kwargs):
                 fetched.append(name)
                 return pd.DataFrame()
 
@@ -216,7 +226,7 @@ def _chunk_crawler(fetch):
         def __getattr__(self, name):
             if name == "hochrechnung_wind":
                 return fetch
-            return lambda begin, end, transform: pd.DataFrame()
+            return lambda begin, end, *args, **kwargs: pd.DataFrame()
 
     crawler.client = Client()
     crawler.create_hypertable_if_not_exists = lambda: None
@@ -256,3 +266,122 @@ def test_server_errors_are_retried(monkeypatch):
     crawler = _chunk_crawler(fetch)
     crawler.crawl_temporal(end=datetime(2011, 6, 1, tzinfo=UTC))
     assert failures == []
+
+
+def test_database_friendly_column_names():
+    assert database_friendly("TenneT TSO (MW)") == "tennet_tso_mw"
+    assert database_friendly("ID AEP in EUR/MWh") == "id_aep_in_eur_per_mwh"
+    assert database_friendly("AEP-Schätzer") == "aep_schaetzer"
+    assert database_friendly("Abruf-ÜNB") == "abruf_uenb"
+
+
+def test_every_table_has_one_endpoint():
+    tables = [e.table for e in ENDPOINTS]
+    assert len(tables) == len(set(tables))
+    assert all(e.first_data.tzinfo is UTC for e in ENDPOINTS)
+
+
+def test_resume_at_the_last_time_with_values():
+    crawler = make_crawler()
+    df = utc_frame("2024-01-01", 4).astype({"Wert": float})
+    # the API returns rows without values for times not published yet
+    df.loc[df.index[-2:], "Wert"] = None
+    crawler._store("rebap", df)
+    latest = crawler.find_latest("rebap", "von", None)
+    assert latest.startswith("2024-01-01 01:00")
+
+
+def test_no_data_before_moves_the_begin(monkeypatch):
+    monkeypatch.setattr(netztransparenz, "RETRY_WAIT", 0)
+    ranges = []
+
+    def fetch(begin, end, transform):
+        ranges.append(begin)
+        if begin < datetime(2012, 1, 1, tzinfo=UTC):
+            response = requests.Response()
+            response.status_code = 400
+            response._content = "Es können keine Daten vor dem 01.01.2012 00:00 abgerufen werden.".encode()
+            raise requests.HTTPError("400", response=response)
+        return utc_frame(begin.replace(tzinfo=None), 2)
+
+    crawler = _chunk_crawler(fetch)
+    crawler.crawl_temporal(end=datetime(2012, 2, 1, tzinfo=UTC))
+    assert ranges[1] == datetime(2012, 1, 1, tzinfo=UTC)
+    assert crawler.find_latest("hochrechnung_wind", "von", None).startswith(
+        "2012-01-01 01:00"
+    )
+
+
+def test_endpoints_missing_in_the_client_are_skipped(caplog):
+    crawler = make_crawler(ipnt_client_id="id", ipnt_client_secret="secret")
+
+    class Client:
+        def prognose_solar(self, transform_dates):
+            return pd.DataFrame()
+
+        prognose_wind = prognose_solar
+
+        def online_hochrechnung_solar(self, begin, end, transform_dates=False):
+            # the path of old client versions returns HTTP 404
+            raise AssertionError("must not be called")
+
+        def __getattr__(self, name):
+            if name.startswith(("anspruch_", "online_")):
+                raise AttributeError(name)
+            return lambda begin, end, *args, **kwargs: pd.DataFrame()
+
+    crawler.client = Client()
+    crawler.create_hypertable_if_not_exists = lambda: None
+    crawler.crawl_temporal(end=datetime(2011, 6, 1, tzinfo=UTC))
+    assert "skipping online_hochrechnung_solar" in caplog.text
+    assert "skipping anspruch_verguetung_eeg_1hour" in caplog.text
+
+
+def test_prepare_converts_flags_and_times():
+    negative = endpoint("negative_preise_15m").prepare(
+        pd.DataFrame(
+            {
+                "Datum": pd.to_datetime(["2025-10-01 00:00", "2025-10-01 00:15"]),
+                "Negativ": ["Ja", "Nein"],
+            }
+        )
+    )
+    assert negative["von"].dt.tz is not None
+    assert list(negative["Negativ"]) == [True, False]
+
+    premium = endpoint("marktpraemie").prepare(
+        pd.DataFrame({"Monat": ["1/2025"], "Negative Preise (1H)": ["Ja"]})
+    )
+    # the month in German time
+    assert premium["von"].iloc[0] == pd.Timestamp("2024-12-31 23:00", tz="UTC")
+    assert premium["Negative Preise (1H)"].iloc[0]
+
+    light = endpoint("traffic_light").prepare(
+        pd.DataFrame(
+            {
+                "From": ["2025-06-01T00:00:00Z"],
+                "To": ["2025-06-01T00:01:00Z"],
+                "Value": ["GREEN"],
+            }
+        )
+    )
+    assert list(light.columns) == ["von", "bis", "ampel"]
+    assert light["von"].iloc[0] == pd.Timestamp("2025-06-01", tz="UTC")
+
+
+def test_empty_frames_with_naive_columns_are_skipped():
+    crawler = make_crawler()
+
+    class Client:
+        def kapazitaetsreserve(self, begin, end, transform):
+            return pd.DataFrame(
+                {"BEGINN": pd.to_datetime([]), "ENDE": pd.to_datetime([])}
+            )
+
+    crawler.client = Client()
+    crawler.fetch(
+        endpoint("kapazitaetsreserve"),
+        pd.Timestamp("2024-01-01", tz="UTC"),
+        pd.Timestamp("2024-01-02", tz="UTC"),
+    )
+    assert not crawler.check_table_exists("kapazitaetsreserve")
