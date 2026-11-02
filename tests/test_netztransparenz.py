@@ -416,3 +416,25 @@ def test_ranges_failing_down_to_a_day_fail_the_table(monkeypatch):
     crawler = _chunk_crawler(fetch)
     with pytest.raises(RuntimeError, match="hochrechnung_wind"):
         crawler.crawl_temporal(end=datetime(2011, 6, 1, tzinfo=UTC))
+
+
+def test_begin_downloads_a_stored_range_again():
+    ranges = []
+
+    def fetch(begin, end, transform):
+        ranges.append(begin)
+        return utc_frame(begin.replace(tzinfo=None), 2)
+
+    crawler = _chunk_crawler(fetch)
+    crawler.crawl_temporal(end=datetime(2012, 1, 1, tzinfo=UTC))
+    ranges.clear()
+    crawler.crawl_temporal(
+        datetime(2011, 6, 1, tzinfo=UTC), datetime(2011, 7, 1, tzinfo=UTC)
+    )
+    assert ranges == [datetime(2011, 6, 1, tzinfo=UTC)]
+    ranges.clear()
+    # not before the first data
+    crawler.crawl_temporal(
+        datetime(2000, 1, 1, tzinfo=UTC), datetime(2011, 5, 1, tzinfo=UTC)
+    )
+    assert ranges == [datetime(2011, 3, 31, 22, tzinfo=UTC)]
