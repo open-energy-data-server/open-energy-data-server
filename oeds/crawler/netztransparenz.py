@@ -237,7 +237,8 @@ class NetztransparenzCrawler(ContinuousCrawler):
                 failed.append(forecast.__name__)
 
         temporal_funcs = [
-            # 0=function, 1=start of data, 2=crawling delay, 3=table name, 4=index name in table
+            # 0=function, 1=start of data (the API names it in the HTTP 400 for earlier requests),
+            # 2=crawling delay, 3=table name, 4=index name in table
             (
                 self.extrapolation_wind,
                 datetime(2011, 3, 31, 22, 0, tzinfo=UTC),
@@ -268,14 +269,14 @@ class NetztransparenzCrawler(ContinuousCrawler):
             ),
             (
                 self.activated_automatic_balancing_capacity,
-                datetime(2014, 2, 25, 23, 0, tzinfo=UTC),
+                datetime(2014, 4, 30, 22, 0, tzinfo=UTC),
                 timedelta(days=1),
                 "aktivierte_srl",
                 "von",
             ),
             (
                 self.activated_manual_balancing_capacity,
-                datetime(2011, 6, 26, 22, 0, tzinfo=UTC),
+                datetime(2013, 12, 31, 23, 0, tzinfo=UTC),
                 timedelta(days=1),
                 "aktivierte_mrl",
                 "von",
@@ -289,14 +290,14 @@ class NetztransparenzCrawler(ContinuousCrawler):
             ),
             (
                 self.gcc_balance,
-                datetime(2023, 11, 1, 0, 0, tzinfo=UTC),
+                datetime(2013, 12, 31, 23, 0, tzinfo=UTC),
                 timedelta(days=30),
                 "nrv_saldo",
                 "von",
             ),
             (
                 self.lfc_area_balance,
-                datetime(2023, 11, 1, 0, 0, tzinfo=UTC),
+                datetime(2014, 4, 30, 22, 0, tzinfo=UTC),
                 timedelta(days=30),
                 "rz_saldo",
                 "von",
