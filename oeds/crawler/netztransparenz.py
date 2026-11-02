@@ -66,6 +66,8 @@ def database_friendly(string):
 CHUNK = timedelta(days=365)
 RETRIES = 3
 RETRY_WAIT = 30  # seconds, times the attempt
+# the API answers some long ranges with HTTP 500 that work in shorter requests
+MIN_CHUNK = timedelta(days=1)
 # e.g. "Es können keine Daten vor dem 30.09.2025 22:00 abgerufen werden."
 NO_DATA_BEFORE = re.compile(r"keine Daten vor dem (\d{2}\.\d{2}\.\d{4} \d{2}:\d{2})")
 
@@ -527,10 +529,23 @@ class NetztransparenzCrawler(ContinuousCrawler):
         log.info(f"Crawling {endpoint.table} from {current_begin} to {current_end}")
         # stored per chunk, so a failure keeps the chunks before and the next run
         # resumes there
+        chunk = endpoint.chunk
         while current_begin < current_end:
-            chunk_end = min(current_begin + endpoint.chunk, current_end)
+            chunk_end = min(current_begin + chunk, current_end)
             try:
                 self._fetch(endpoint, current_begin, chunk_end)
+            except requests.RequestException as e:
+                response = getattr(e, "response", None)
+                if (response is not None and response.status_code < 500) or (
+                    chunk_end - current_begin <= MIN_CHUNK
+                ):
+                    raise
+                chunk = max((chunk_end - current_begin) / 2, MIN_CHUNK)
+                log.warning(
+                    f"{endpoint.table} {current_begin} - {chunk_end} failed, "
+                    f"requesting {chunk} at a time"
+                )
+                continue
             except NoDataBefore as e:
                 if e.first_data <= current_begin:
                     raise
