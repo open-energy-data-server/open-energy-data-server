@@ -518,13 +518,16 @@ class NetztransparenzCrawler(ContinuousCrawler):
     def crawl_endpoint(
         self, endpoint: Endpoint, begin: datetime | None, end: datetime | None
     ):
-        latest = to_utc(
-            self.find_latest(endpoint.table, endpoint.time_column, endpoint.first_data)
-        )
-        current_begin = to_utc(begin) if begin else None
-        # overlapping rows are replaced when written, so begin may equal latest
-        if current_begin is None or current_begin < latest:
-            current_begin = max(latest - endpoint.revision, to_utc(endpoint.first_data))
+        first_data = to_utc(endpoint.first_data)
+        if begin:
+            # download a range again, e.g. after a correction of the source
+            current_begin = max(to_utc(begin), first_data)
+        else:
+            latest = to_utc(
+                self.find_latest(endpoint.table, endpoint.time_column, first_data)
+            )
+            # overlapping rows are replaced when written, so begin may equal latest
+            current_begin = max(latest - endpoint.revision, first_data)
         current_end = to_utc(end) if end else as_utc(utcnow())
         log.info(f"Crawling {endpoint.table} from {current_begin} to {current_end}")
         # stored per chunk, so a failure keeps the chunks before and the next run
