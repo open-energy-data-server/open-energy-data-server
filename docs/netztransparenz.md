@@ -35,8 +35,10 @@ is installed ([PR #5](https://github.com/ma-lor/NetztransparenzClient/pull/5)).
   message ("Es können keine Daten vor dem 30.09.2025 22:00 abgerufen werden."). The crawler
   continues from that date and logs a warning.
 - Requests are made per year (31 days for per-minute data) and stored per request. After a
-  server error or timeout a request is tried up to 3 times; a failing table does not stop the
-  others, and the run exits with an error naming the failed tables.
+  server error or timeout a request is tried up to 3 times. If it still fails, the range is
+  requested in halves, down to one day: the API answers some long ranges with HTTP 500 that
+  work in shorter requests (e.g. operational `NRVSaldo` for 2024-02-23 to 2025-02-22). A failing
+  table does not stop the others, and the run exits with an error naming the failed tables.
 
 To download a range again, for example after a source correction, call the crawler with begin
 and end; it replaces the rows of that range in every table:
