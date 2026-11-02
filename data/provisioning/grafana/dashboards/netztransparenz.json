@@ -143,7 +143,7 @@
       "title": "",
       "options": {
         "mode": "markdown",
-        "content": "**Netztransparenz** (German TSO platform www.netztransparenz.de, crawler `netztransparenz`, schema `netztransparenz`).\n\n**No data yet.** The crawler needs API credentials (`ipnt_client_id` / `ipnt_client_secret`, see the module docstring of `oeds/crawler/netztransparenz.py`; the data is not\nopen license and may not be reshared). Without credentials it skips the run and creates no tables. All panels below are written against the tables and columns the crawler\ncreates (`prognose_solar`, `prognose_wind`, `hochrechnung_*`, `vermarktung_inanspruchnahme_ausgleichsenergie`, `nrv_saldo`, `rz_saldo`, `aktivierte_srl`, `aktivierte_mrl`,\n`value_of_avoided_activation`, `redispatch`); until the first crawl they show *relation does not exist* or *No data* - this is expected.\n\nColumn names follow the crawler: lower case, spaces replaced by `_`, brackets removed (e.g. `\"50hertz_mw\"`). Time column is `von` (start of the 15 min interval, UTC), for redispatch `beginn`."
+        "content": "**Netztransparenz** (German TSO platform www.netztransparenz.de, crawler `netztransparenz`, schema `netztransparenz`).\n\nThe crawler needs API credentials (`ipnt_client_id` / `ipnt_client_secret` in `config.yml`); the data is not open license and may not be reshared. Each time series of the API has its own table; tables, first data and resolution are listed in `docs/netztransparenz.md`.\n\nTimes are UTC (`von` = begin of the interval, `beginn` for measures). Quality-assured series (reBAP, NRV/RZ saldo, activated reserves, AEP modules, marketing) are published about monthly, so their latest weeks are empty; the operational series (per-minute NRV, traffic light, AEP estimate, mFRR) are near real time.\n\nColumn names: lower case, `_` for spaces and `-`, `_per_` for `/`, brackets removed (e.g. `\"50hertz_mw\"`, `id_aep_in_eur_per_mwh`). Panels of tables the installed client cannot download yet show *relation does not exist*."
       },
       "gridPos": {
         "x": 14,
@@ -2079,6 +2079,1921 @@
         "h": 9
       },
       "id": 32
+    },
+    {
+      "type": "row",
+      "title": "Prices: spot, imbalance price (reBAP) and its estimate",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 109,
+        "w": 24,
+        "h": 1
+      },
+      "id": 33,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Spot price vs imbalance price (EUR/MWh)",
+      "description": "Day-ahead spot price (netztransparenz, ct/kWh x 10), the index of the imbalance price ID-AEP and the quality-assured imbalance price reBAP (deficit side). reBAP is published about monthly.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(spotmarktpreis_in_ct_per_kwh*10) as \"spot price\" from netztransparenz.spotmarktpreise where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(id_aep_in_eur_per_mwh) as \"ID-AEP\" from netztransparenz.id_aep where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(rebap_unterdeckt) as \"reBAP (deficit)\" from netztransparenz.rebap where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MWh",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 110,
+        "w": 24,
+        "h": 9
+      },
+      "id": 34
+    },
+    {
+      "type": "timeseries",
+      "title": "AEP estimate vs reBAP",
+      "description": "Operational estimate of the imbalance price (AEP-Schaetzer, near real time) and the later quality-assured reBAP.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(aep_schaetzer) as \"AEP estimate\" from netztransparenz.aep_schaetzer where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(rebap_unterdeckt) as \"reBAP (deficit)\" from netztransparenz.rebap where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MWh",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 119,
+        "w": 12,
+        "h": 8
+      },
+      "id": 35
+    },
+    {
+      "type": "timeseries",
+      "title": "AEP modules",
+      "description": "The three modules of the imbalance price (AEP Modul 1-3), quality-assured.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(aep_modul_1) as \"module 1\" from netztransparenz.aep_module where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(aep_modul_2) as \"module 2\" from netztransparenz.aep_module where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(aep_modul_3) as \"module 3\" from netztransparenz.aep_module where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MWh",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 119,
+        "w": 12,
+        "h": 8
+      },
+      "id": 36
+    },
+    {
+      "type": "timeseries",
+      "title": "Monthly market values (Marktwerte)",
+      "description": "Monthly market values of the EEG (ct/kWh): exchange (MW-EPEX), wind onshore, wind offshore and solar. The point is the begin of the month.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select von as time, mw_epex_in_ct_per_kwh as \"MW-EPEX\", mw_wind_onshore_in_ct_per_kwh as \"wind onshore\", mw_wind_offshore_in_ct_per_kwh as \"wind offshore\", mw_solar_in_ct_per_kwh as \"solar\" from netztransparenz.marktpraemie where $__timeFilter(von) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 127,
+        "w": 24,
+        "h": 8
+      },
+      "id": 37,
+      "interval": "1M"
+    },
+    {
+      "type": "row",
+      "title": "Negative prices and entitlement to remuneration",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 135,
+        "w": 24,
+        "h": 1
+      },
+      "id": 38,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Hours per day without entitlement to remuneration",
+      "description": "Hours per day in which plants under the given rule have no entitlement to remuneration (anspruchverguetung = false), per EEG/KWKG rule. Each rule starts at its own date, see docs/netztransparenz.md.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"EEG 15minutes\" from netztransparenz.anspruch_verguetung_eeg_15minutes where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"EEG 1hour\" from netztransparenz.anspruch_verguetung_eeg_1hour where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"EEG 3hour\" from netztransparenz.anspruch_verguetung_eeg_3hour where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"EEG 4hour\" from netztransparenz.anspruch_verguetung_eeg_4hour where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "E",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"EEG 6hour\" from netztransparenz.anspruch_verguetung_eeg_6hour where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "F",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"EEG 2cent\" from netztransparenz.anspruch_verguetung_eeg_2cent where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "G",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when not anspruchverguetung then extract(epoch from bis - von) / 3600 else 0 end) as \"KWKG 1hour\" from netztransparenz.anspruch_verguetung_kwkg_1hour where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 136,
+        "w": 24,
+        "h": 9
+      },
+      "id": 39
+    },
+    {
+      "type": "timeseries",
+      "title": "Quarter hours with negative prices per day",
+      "description": "Count of quarter hours per day flagged negative in NegativePreise/15 (since 2025-10).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,1d), sum(case when negativ then 1 else 0 end) as \"negative quarter hours\" from netztransparenz.negative_preise_15m where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 145,
+        "w": 12,
+        "h": 8
+      },
+      "id": 40
+    },
+    {
+      "type": "timeseries",
+      "title": "Spot price (ct/kWh)",
+      "description": "Spot price of netztransparenz, for comparison with the flags. Below zero is negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(spotmarktpreis_in_ct_per_kwh) as \"spot price\" from netztransparenz.spotmarktpreise where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "fillOpacity": 0,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "transparent",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 145,
+        "w": 12,
+        "h": 8
+      },
+      "id": 41
+    },
+    {
+      "type": "row",
+      "title": "Online extrapolation and marketing of the EEG energy",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 153,
+        "w": 24,
+        "h": 1
+      },
+      "id": 42,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Online extrapolation, Germany",
+      "description": "Online extrapolation (Online-Hochrechnung, quality-assured) of the feed-in, sum of the four TSOs. Hourly, 15 min since 2025-10.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"solar\" from netztransparenz.online_hochrechnung_solar where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"wind onshore\" from netztransparenz.online_hochrechnung_windonshore where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"wind offshore\" from netztransparenz.online_hochrechnung_windoffshore where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 154,
+        "w": 12,
+        "h": 8
+      },
+      "id": 43
+    },
+    {
+      "type": "timeseries",
+      "title": "Marketed EEG energy by source, Germany",
+      "description": "EEG energy marketed by the TSOs (Vermarktung), sum of the four TSOs, by source.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"solar\" from netztransparenz.vermarktung_solar where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"wind\" from netztransparenz.vermarktung_wind where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"other\" from netztransparenz.vermarktung_sonstige where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 154,
+        "w": 12,
+        "h": 8
+      },
+      "id": 44
+    },
+    {
+      "type": "timeseries",
+      "title": "Marketing on the exchanges and intraday, Germany",
+      "description": "EEG energy marketed day-ahead on EPEX and EXAA, intraday quantities (untertaegige Strommengen) and the difference to the feed-in forecast.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"EPEX\" from netztransparenz.vermarktung_epex where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"EXAA\" from netztransparenz.vermarktung_exaa where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"intraday\" from netztransparenz.vermarktung_untertaegige_strommengen where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(\"50hertz_mw\",0)+coalesce(amprion_mw,0)+coalesce(tennet_tso_mw,0)+coalesce(transnetbw_mw,0)) as \"difference to forecast\" from netztransparenz.vermarktung_differenz_einspeiseprognose where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 162,
+        "w": 24,
+        "h": 8
+      },
+      "id": 45
+    },
+    {
+      "type": "row",
+      "title": "Balancing in near real time (operational)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 170,
+        "w": 24,
+        "h": 1
+      },
+      "id": 46,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "NRV balance per minute vs quarter hour",
+      "description": "Operational NRV balance of Germany per minute (since 2026-01-28) and per quarter hour; positive means the control block is short.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland) as \"per minute\" from netztransparenz.nrv_saldo_minute where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland) as \"per quarter hour\" from netztransparenz.nrv_saldo_betrieblich where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 171,
+        "w": 24,
+        "h": 8
+      },
+      "id": 47
+    },
+    {
+      "type": "state-timeline",
+      "title": "NRV traffic light (Ampel)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "description": "Traffic light of the NRV balance per minute (TrafficLight): GREEN/YELLOW/RED with the direction (POS/NEG), BLUE for a small balance.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select von as time, ampel from netztransparenz.traffic_light where $__timeFilter(von) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "BLUE": {
+                  "color": "blue",
+                  "index": 0
+                },
+                "GREEN_POS": {
+                  "color": "green",
+                  "index": 1
+                },
+                "GREEN_NEG": {
+                  "color": "semi-dark-green",
+                  "index": 2
+                },
+                "YELLOW_POS": {
+                  "color": "yellow",
+                  "index": 3
+                },
+                "YELLOW_NEG": {
+                  "color": "semi-dark-yellow",
+                  "index": 4
+                },
+                "RED_POS": {
+                  "color": "red",
+                  "index": 5
+                },
+                "RED_NEG": {
+                  "color": "semi-dark-red",
+                  "index": 6
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "maxDataPoints": 5000,
+      "gridPos": {
+        "x": 0,
+        "y": 179,
+        "w": 24,
+        "h": 5
+      },
+      "id": 48
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR satisfied demand, Germany",
+      "description": "Satisfied mFRR demand (mFRRSatisfiedDemand), positive and negative, since 2026-01-14.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.mfrr_satisfied_demand where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.mfrr_satisfied_demand where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 184,
+        "w": 12,
+        "h": 8
+      },
+      "id": 49
+    },
+    {
+      "type": "timeseries",
+      "title": "Merit order deviations",
+      "description": "Quarter hours with a reason for deviating from the mFRR merit order (MrlMolAbweichungen, count per interval) and aFRR merit order deviation events.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), sum(netzengpass) as \"mFRR: grid congestion\" from netztransparenz.mrl_mol_abweichungen where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), sum(technische_stoerung_abrufsystem + technische_stoerung_anbieter) as \"mFRR: technical fault\" from netztransparenz.mrl_mol_abweichungen where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), sum(test_aktivierung) as \"mFRR: test activation\" from netztransparenz.mrl_mol_abweichungen where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), count(*) as \"aFRR deviation events\" from netztransparenz.srl_mol_abweichungen where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 184,
+        "w": 12,
+        "h": 8
+      },
+      "id": 50
+    },
+    {
+      "type": "row",
+      "title": "Balancing details (quality-assured)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 192,
+        "w": 24,
+        "h": 1
+      },
+      "id": 51,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR optimisation (SRL-Optimierung), Germany",
+      "description": "Energy exchanged by the aFRR optimisation, positive and negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.srl_optimierung where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.srl_optimierung where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 193,
+        "w": 12,
+        "h": 8
+      },
+      "id": 52
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR optimisation (MRL-Optimierung), Germany",
+      "description": "Energy exchanged by the mFRR optimisation, positive and negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.mrl_optimierung where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.mrl_optimierung where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 193,
+        "w": 12,
+        "h": 8
+      },
+      "id": 53
+    },
+    {
+      "type": "timeseries",
+      "title": "FCR (PRL), Germany",
+      "description": "Activated frequency containment reserve, positive and negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.prl where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.prl where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 201,
+        "w": 12,
+        "h": 8
+      },
+      "id": 54
+    },
+    {
+      "type": "timeseries",
+      "title": "Additional measures (Zusatzmassnahmen), Germany",
+      "description": "Additional measures of the TSOs, positive and negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.zusatzmassnahmen where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.zusatzmassnahmen where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 201,
+        "w": 12,
+        "h": 8
+      },
+      "id": 55
+    },
+    {
+      "type": "timeseries",
+      "title": "Emergency assistance (Nothilfe), Germany",
+      "description": "Emergency assistance between TSOs, positive and negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.nothilfe where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.nothilfe where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 209,
+        "w": 12,
+        "h": 8
+      },
+      "id": 56
+    },
+    {
+      "type": "timeseries",
+      "title": "Difference, Germany",
+      "description": "Datatype Difference of the NRV balance, positive and negative.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.difference where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(-deutschland_negativ) as \"negative\" from netztransparenz.difference where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 209,
+        "w": 12,
+        "h": 8
+      },
+      "id": 57
+    },
+    {
+      "type": "timeseries",
+      "title": "Interruptible loads (Abschaltbare Lasten), Germany",
+      "description": "Activated interruptible loads, positive, since 2023-12.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(deutschland_positiv) as \"positive\" from netztransparenz.abschaltbare_lasten where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 217,
+        "w": 12,
+        "h": 8
+      },
+      "id": 58
+    },
+    {
+      "type": "timeseries",
+      "title": "Financial effect of the AEP modules",
+      "description": "Financial effect (EUR per quarter hour) of the three AEP modules.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), sum(aep_modul_1) as \"module 1\" from netztransparenz.finanzielle_wirkung_aep_module where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), sum(aep_modul_2) as \"module 2\" from netztransparenz.finanzielle_wirkung_aep_module where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), sum(aep_modul_3) as \"module 3\" from netztransparenz.finanzielle_wirkung_aep_module where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 217,
+        "w": 12,
+        "h": 8
+      },
+      "id": 59
+    },
+    {
+      "type": "row",
+      "title": "Curtailment, generation bans and reserves",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 225,
+        "w": 24,
+        "h": 1
+      },
+      "id": 60,
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Curtailment quantity (ABSM), all areas",
+      "description": "Designated (ausgewiesene) and allocated (zugeteilte) curtailment quantity, sum of the areas H1, H2 and T1-T6, since 2024-10.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(h1,0)+coalesce(h2,0)+coalesce(t1,0)+coalesce(t2,0)+coalesce(t3,0)+coalesce(t4,0)+coalesce(t5,0)+coalesce(t6,0)) as \"designated\" from netztransparenz.ausgewiesene_absm where $__timeFilter(von) group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), avg(coalesce(h1,0)+coalesce(h2,0)+coalesce(t1,0)+coalesce(t2,0)+coalesce(t3,0)+coalesce(t4,0)+coalesce(t5,0)+coalesce(t6,0)) as \"allocated\" from netztransparenz.zugeteilte_absm where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 226,
+        "w": 12,
+        "h": 8
+      },
+      "id": 61
+    },
+    {
+      "type": "timeseries",
+      "title": "Areas with a generation ban",
+      "description": "Number of the areas H1, H2, T1-T6 with a generation ban (Erzeugungsverbot) per interval.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(von,$__interval), max(coalesce(h1,0)+coalesce(h2,0)+coalesce(t1,0)+coalesce(t2,0)+coalesce(t3,0)+coalesce(t4,0)+coalesce(t5,0)+coalesce(t6,0)) as \"areas with ban\" from netztransparenz.erzeugungsverbot where $__timeFilter(von) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "drawStyle": "bars"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 226,
+        "w": 12,
+        "h": 8
+      },
+      "id": 62
+    },
+    {
+      "type": "table",
+      "title": "Capacity held for curative redispatch (Vorhaltung kRD)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "description": "Measures holding capacity for curative redispatch in the time range, since 2025-10.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select beginn as start, ende as \"end\", richtung as direction, betroffene_anlage as plant, primaerenergieart as source, maximale_leistung_mw as \"max MW\", gesamte_arbeit_mwh as \"MWh\", anweisender_uenb as tso from netztransparenz.vorhaltung_krd where $__timeFilter(beginn) order by beginn desc limit 500"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 234,
+        "w": 12,
+        "h": 9
+      },
+      "id": 63
+    },
+    {
+      "type": "table",
+      "title": "Use of the capacity reserve (Kapazitaetsreserve)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "description": "Measures of the capacity reserve in the time range. The API had none until 2026-10, then the table does not exist yet.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select beginn as start, ende as \"end\", richtung as direction, betroffene_anlage as plant, primaerenergieart as source, maximale_leistung_mw as \"max MW\", gesamte_arbeit_mwh as \"MWh\", anweisender_uenb as tso from netztransparenz.kapazitaetsreserve where $__timeFilter(beginn) order by beginn desc limit 500"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 234,
+        "w": 12,
+        "h": 9
+      },
+      "id": 64
     }
   ],
   "links": [
