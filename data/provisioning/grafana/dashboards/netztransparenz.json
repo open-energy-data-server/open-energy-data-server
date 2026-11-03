@@ -3966,7 +3966,7 @@
         "type": "grafana-postgresql-datasource",
         "uid": "${ds}"
       },
-      "description": "Measures of the capacity reserve in the time range. The API had none until 2026-10, then the table does not exist yet.",
+      "description": "Activations of the capacity reserve (Kapazitaetsreserve) in the time range. The reserve has not been activated so far: the API returns no measures since its first data (2017-06-02), and the crawler creates the table with the first one. Until then this panel shows *relation does not exist*.",
       "targets": [
         {
           "refId": "A",
