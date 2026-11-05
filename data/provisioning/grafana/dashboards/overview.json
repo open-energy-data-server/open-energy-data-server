@@ -472,7 +472,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select s as schema, sum(sz) as groesse from (\nselect hypertable_schema as s, hypertable_size(format('%I.%I', hypertable_schema, hypertable_name)::regclass) as sz from timescaledb_information.hypertables\nunion all select n.nspname, pg_total_relation_size(c.oid) from pg_class c join pg_namespace n on n.oid = c.relnamespace\nwhere c.relkind in ('r','m') and n.nspname not like 'pg\\_%' and n.nspname not like '\\_timescaledb%' and n.nspname <> 'information_schema') t\ngroup by 1 order by 2 desc limit 25",
+          "rawSql": "select s as schema, sum(sz) as groesse from (\nselect hypertable_schema as s, hypertable_size(format('%I.%I', hypertable_schema, hypertable_name)::regclass) as sz from timescaledb_information.hypertables\nunion all select n.nspname, pg_total_relation_size(c.oid) from pg_class c join pg_namespace n on n.oid = c.relnamespace\nwhere c.relkind in ('r','m') and n.nspname not like 'pg\\_%' and n.nspname not like '\\_timescaledb%' and n.nspname <> 'information_schema'\nand not exists (select 1 from timescaledb_information.hypertables h where h.hypertable_schema = n.nspname and h.hypertable_name = c.relname)) t\ngroup by 1 order by 2 desc limit 25",
           "refId": "A"
         }
       ],
