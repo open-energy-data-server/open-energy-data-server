@@ -14,10 +14,12 @@ with the credentials from the previous step.
 """
 
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 
 import netztransparenz as nt
 import pandas as pd
+import requests
 import sqlalchemy as sql
 
 from oeds.base_crawler import (
@@ -53,6 +55,10 @@ def database_friendly(string):
 
 
 TEMPORAL_START = datetime(2011, 3, 31, tzinfo=UTC)
+# the client splits longer ranges into requests of a year and concatenates them
+CHUNK = timedelta(days=365)
+RETRIES = 3
+RETRY_WAIT = 30  # seconds, times the attempt
 
 
 def to_utc(value) -> pd.Timestamp:
@@ -119,9 +125,18 @@ class NetztransparenzCrawler(ContinuousCrawler):
     def _store(self, table: str, df: pd.DataFrame):
         """Writes df as aware UTC and replaces rows of the same time range, so that
         fetching an overlapping range again does not create duplicates."""
+        time_column = self.TIME_COLUMNS[table]
+        if (
+            time_column in df.columns
+            and df[time_column].isna().all()
+            and isinstance(df.index, pd.DatetimeIndex)
+        ):
+            # the client returns a chunk without data as a frame with a time column;
+            # concatenated with the chunks indexed by time, the times are in the index
+            df = df.drop(columns=time_column).infer_objects()
+            df.index.name = time_column
         df = ensure_utc(df)
         df = df.rename(mapper=database_friendly, axis="columns")
-        time_column = self.TIME_COLUMNS[table]
         in_index = time_column not in df.columns
         times = df.index if in_index else df[time_column]
         if df.empty:
@@ -196,6 +211,21 @@ class NetztransparenzCrawler(ContinuousCrawler):
         df = self.client.nrvsaldo_voaa_qualitaetsgesichert(begin, end, True)
         self._store("value_of_avoided_activation", df)
 
+    def _fetch(self, func, begin: pd.Timestamp, end: pd.Timestamp):
+        """Calls func for [begin, end], again after server errors and timeouts."""
+        for attempt in range(1, RETRIES + 1):
+            try:
+                # the client interprets naive datetimes as local time, pass aware ones
+                return func(begin.to_pydatetime(), end.to_pydatetime())
+            except requests.RequestException as e:
+                response = getattr(e, "response", None)
+                if response is not None and response.status_code < 500:
+                    raise
+                if attempt == RETRIES:
+                    raise
+                log.warning(f"{func.__name__} {begin} - {end} failed ({e}), retrying")
+                time.sleep(RETRY_WAIT * attempt)
+
     def find_latest(self, tablename: str, column_name: str, default):
         try:
             with self.engine.begin() as conn:
@@ -228,7 +258,8 @@ class NetztransparenzCrawler(ContinuousCrawler):
                 failed.append(forecast.__name__)
 
         temporal_funcs = [
-            # 0=function, 1=start of data, 2=crawling delay, 3=table name, 4=index name in table
+            # 0=function, 1=start of data (the API names it in the HTTP 400 for earlier requests),
+            # 2=crawling delay, 3=table name, 4=index name in table
             (
                 self.extrapolation_wind,
                 datetime(2011, 3, 31, 22, 0, tzinfo=UTC),
@@ -252,21 +283,21 @@ class NetztransparenzCrawler(ContinuousCrawler):
             ),
             (
                 self.redispatch,
-                datetime(2021, 10, 1, 0, 0, tzinfo=UTC),
+                datetime(2020, 12, 31, 23, 0, tzinfo=UTC),
                 timedelta(days=1),
                 "redispatch",
                 "beginn",
             ),
             (
                 self.activated_automatic_balancing_capacity,
-                datetime(2014, 2, 25, 23, 0, tzinfo=UTC),
+                datetime(2014, 4, 30, 22, 0, tzinfo=UTC),
                 timedelta(days=1),
                 "aktivierte_srl",
                 "von",
             ),
             (
                 self.activated_manual_balancing_capacity,
-                datetime(2011, 6, 26, 22, 0, tzinfo=UTC),
+                datetime(2013, 12, 31, 23, 0, tzinfo=UTC),
                 timedelta(days=1),
                 "aktivierte_mrl",
                 "von",
@@ -280,14 +311,14 @@ class NetztransparenzCrawler(ContinuousCrawler):
             ),
             (
                 self.gcc_balance,
-                datetime(2023, 11, 1, 0, 0, tzinfo=UTC),
+                datetime(2013, 12, 31, 23, 0, tzinfo=UTC),
                 timedelta(days=30),
                 "nrv_saldo",
                 "von",
             ),
             (
                 self.lfc_area_balance,
-                datetime(2023, 11, 1, 0, 0, tzinfo=UTC),
+                datetime(2014, 4, 30, 22, 0, tzinfo=UTC),
                 timedelta(days=30),
                 "rz_saldo",
                 "von",
@@ -307,11 +338,13 @@ class NetztransparenzCrawler(ContinuousCrawler):
             if current_end is None or current_end > earliest:
                 current_end = earliest
             log.info(f"Crawling from {current_begin} to {current_end}")
-            # the client interprets naive datetimes as local time, pass aware ones
             try:
-                func_tuple[0](
-                    current_begin.to_pydatetime(), current_end.to_pydatetime()
-                )
+                # stored per chunk, so a failure keeps the chunks before and the
+                # next run resumes there
+                while current_begin < current_end:
+                    chunk_end = min(current_begin + CHUNK, current_end)
+                    self._fetch(func_tuple[0], current_begin, chunk_end)
+                    current_begin = chunk_end
             except Exception:
                 log.exception(f"Crawling {func_tuple[3]} failed")
                 failed.append(func_tuple[3])

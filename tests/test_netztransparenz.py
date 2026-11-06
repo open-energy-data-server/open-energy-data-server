@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pandas as pd
 import pytest
+import requests
 from oeds.base_crawler import empty_config
 from oeds.crawler import netztransparenz
 from oeds.crawler.netztransparenz import (
@@ -177,3 +178,81 @@ def test_failing_table_does_not_abort_others():
         crawler.crawl_temporal()
     assert "nrvsaldo_rzsaldo_qualitaetsgesichert" in fetched
     assert hypertables
+
+
+def test_store_keeps_the_times_of_chunks_concatenated_with_an_empty_chunk():
+    import io
+
+    from netztransparenz.constants import endpoints
+
+    crawler = make_crawler()
+    header = endpoints["/NrvSaldo/AktivierteMRL/Qualitaetsgesichert"]
+    empty = pd.read_csv(io.StringIO(header["transformed_header"]), sep=";")
+    data = utc_frame("2014-05-01", 2).rename(columns={"Wert": "Deutschland (Positiv)"})
+    crawler._store("aktivierte_mrl", pd.concat([empty, data]))
+    with crawler.engine.connect() as conn:
+        rows = conn.execute(
+            text("SELECT von, deutschland_positiv FROM aktivierte_mrl ORDER BY von")
+        ).all()
+    assert [r[0][:16] for r in rows] == ["2014-05-01 00:00", "2014-05-01 01:00"]
+    assert [r[1] for r in rows] == [0.0, 1.0]
+
+
+def _http_error(status):
+    response = requests.Response()
+    response.status_code = status
+    return requests.HTTPError(f"{status}", response=response)
+
+
+def _chunk_crawler(fetch):
+    crawler = make_crawler(ipnt_client_id="id", ipnt_client_secret="secret")
+
+    class Client:
+        def prognose_solar(self, transform_dates):
+            return pd.DataFrame()
+
+        prognose_wind = prognose_solar
+
+        def __getattr__(self, name):
+            if name == "hochrechnung_wind":
+                return fetch
+            return lambda begin, end, transform: pd.DataFrame()
+
+    crawler.client = Client()
+    crawler.create_hypertable_if_not_exists = lambda: None
+    return crawler
+
+
+def test_chunks_are_stored_so_a_failure_resumes_after_them(monkeypatch):
+    monkeypatch.setattr(netztransparenz, "RETRY_WAIT", 0)
+    ranges = []
+
+    def fetch(begin, end, transform):
+        ranges.append((begin, end))
+        if len(ranges) == 2:
+            raise _http_error(400)
+        return utc_frame(begin.replace(tzinfo=None), 2)
+
+    crawler = _chunk_crawler(fetch)
+    end = datetime(2013, 6, 1, tzinfo=UTC)
+    with pytest.raises(RuntimeError, match="hochrechnung_wind"):
+        crawler.crawl_temporal(end=end)
+    assert all(e - b <= netztransparenz.CHUNK for b, e in ranges)
+    assert ranges[1][0] == ranges[0][1]
+    assert crawler.find_latest("hochrechnung_wind", "von", None).startswith(
+        "2011-03-31 23:00"
+    )
+
+
+def test_server_errors_are_retried(monkeypatch):
+    monkeypatch.setattr(netztransparenz, "RETRY_WAIT", 0)
+    failures = [_http_error(500), requests.Timeout()]
+
+    def fetch(begin, end, transform):
+        if failures:
+            raise failures.pop(0)
+        return pd.DataFrame()
+
+    crawler = _chunk_crawler(fetch)
+    crawler.crawl_temporal(end=datetime(2011, 6, 1, tzinfo=UTC))
+    assert failures == []
