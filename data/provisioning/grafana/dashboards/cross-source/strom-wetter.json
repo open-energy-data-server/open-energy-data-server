@@ -1,0 +1,1896 @@
+{
+  "uid": "oeds-x-strom-wetter",
+  "title": "OEDS Strom & Wetter",
+  "tags": [
+    "oeds",
+    "cross-source",
+    "electricity",
+    "weather",
+    "wind",
+    "solar",
+    "entsoe",
+    "smard",
+    "mastr",
+    "ecmwf"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Wind and PV generation in Germany (ENTSO-E, SMARD) against ERA5 100 m wind speed and global horizontal irradiation, implied capacity factors from MaStR installed capacity, residual load and price. Default range 2019: ERA5 single levels (ecmwf.era5_eu) currently covers 2019-01..2020-09, the dashboard follows when the table is extended.",
+  "time": {
+    "from": "2019-01-01T00:00:00.000Z",
+    "to": "2020-01-01T00:00:00.000Z"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status of the sources used",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'ecmwf.era5_eu (ERA5 NUTS)' AS \"Table\", min(time) AS \"First\", max(time) AS \"Latest\", round((extract(epoch FROM now() - max(time))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('ecmwf.era5_eu'::regclass) AS \"Rows (approx.)\", NULL::numeric AS \"Expected max age (h)\", 'static' AS \"Status\" FROM ecmwf.era5_eu\nUNION ALL\nSELECT 'entsoe.query_generation' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_generation'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_generation\nUNION ALL\nSELECT 'entsoe.query_load' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_load'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_load\nUNION ALL\nSELECT 'entsoe.query_day_ahead_prices' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_day_ahead_prices'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_day_ahead_prices\nUNION ALL\nSELECT 'smard.generation' AS \"Table\", (min(datum_von) AT TIME ZONE 'UTC') AS \"First\", (max(datum_von) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(datum_von) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('smard.generation'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(datum_von) AT TIME ZONE 'UTC'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(datum_von) AT TIME ZONE 'UTC'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM smard.generation\nUNION ALL\nSELECT 'smard.consumption' AS \"Table\", (min(datum_von) AT TIME ZONE 'UTC') AS \"First\", (max(datum_von) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(datum_von) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('smard.consumption'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(datum_von) AT TIME ZONE 'UTC'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(datum_von) AT TIME ZONE 'UTC'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM smard.consumption"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 8
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Reading this dashboard",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "**Weather**: `ecmwf.era5_eu`, ERA5 single levels aggregated per NUTS region, hourly UTC. `wind_speed` is the **100 m** wind (from `100m_u/v`, m/s), `ghi` is the accumulated surface solar radiation in J/m2 of the hour *before* the valid time (shown as W/m2 = J/m2 / 3600), temperatures in K. Region **DE** is the country mean; the other regions are NUTS-1 states (variable *Weather region*). The table currently ends 2020-09-16 and is being extended.\n\n**Generation**: ENTSO-E actual generation of bidding zone DE_LU (15 min, MW) and SMARD (Germany, hourly MWh = MW). ERA5 values are paired with the generation of the matching hour: wind (instantaneous) with the mean over +/-30 min around the valid time, GHI with the mean of the hour before the valid time.\n\n**Capacity factors**: generation divided by the installed gross capacity from the MaStR (`mastr.\"EinheitenWind\"` split by `Seelage` into onshore/offshore, `mastr.\"EinheitenSolar\"`), built as commissioned minus finally decommissioned units per month. MaStR covers Germany, ENTSO-E DE_LU also Luxembourg (negligible); MaStR commissioning dates of old plants are partly incomplete, so absolute capacity factors have an uncertainty of several percent. The national ERA5 mean wind is a simple regional average and does not weigh by turbine location, so the power curve is blurred."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 8
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Mean wind speed 100 m (DE)",
+      "description": "Mean ERA5 100 m wind speed of Germany over the time range, m/s (ecmwf.era5_eu, NUTS 0).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(wind_speed) AS v FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "velocityms",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Mean irradiation GHI (DE)",
+      "description": "Mean global horizontal irradiance of Germany over the time range, W/m2 (ERA5 accumulation divided by 3600).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(ghi) / 3600 AS v FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "watt",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Wind generation share of load",
+      "description": "Wind onshore + offshore generation as share of the actual load, DE_LU, ENTSO-E, over the time range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 100 * (SELECT sum(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU') / nullif((SELECT sum(actual_load) FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU'), 0) AS v"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "PV generation share of load",
+      "description": "Solar generation as share of the actual load, DE_LU, ENTSO-E, over the time range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 100 * (SELECT sum(coalesce(solar,0)) FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU') / nullif((SELECT sum(actual_load) FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU'), 0) AS v"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Onshore wind capacity factor",
+      "description": "Mean wind onshore generation (ENTSO-E DE_LU) divided by the installed onshore capacity of the MaStR at the same time, over the time range. Typical annual German value 20-25 %.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x), g AS (SELECT date_trunc('hour', \"index\") AS t, avg(wind_onshore) AS onshore FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT 100 * avg(g.onshore / (c.on_kw / 1000)) AS v FROM g JOIN LATERAL (SELECT * FROM cap WHERE cap.m <= date_trunc('month', g.t) ORDER BY cap.m DESC LIMIT 1) c ON true"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "PV capacity factor",
+      "description": "Mean solar generation (ENTSO-E DE_LU) divided by the installed PV capacity of the MaStR (gross, AC/DC mix as registered), over the time range. Typical annual German value 10-11 %.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x), g AS (SELECT date_trunc('hour', \"index\") AS t, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT 100 * avg(g.pv / (c.pv_kw / 1000)) AS v FROM g JOIN LATERAL (SELECT * FROM cap WHERE cap.m <= date_trunc('month', g.t) ORDER BY cap.m DESC LIMIT 1) c ON true"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 10,
+        "w": 4,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "Wind: generation vs ERA5 100 m wind",
+      "collapsed": false,
+      "panels": [],
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Wind generation (ENTSO-E, SMARD) vs ERA5 100 m wind speed (DE)",
+      "description": "Wind generation of Germany in MW (left): ENTSO-E DE_LU onshore + offshore and SMARD onshore + offshore, mean per interval; ERA5 100 m wind speed of the country mean (right axis, m/s). Generation follows the cube of wind speed up to rated power, so spikes in wind speed give saturating generation. ERA5 is not turbine-weighted. Sources: entsoe.query_generation, smard.generation, ecmwf.era5_eu.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval), avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS \"ENTSO-E wind onshore + offshore MW\"\nFROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datum_von,$__interval), avg(\"wind_onshore_[mwh]_berechnete_auflösungen\" + \"wind_offshore_[mwh]_berechnete_auflösungen\") AS \"SMARD wind onshore + offshore MW\"\nFROM smard.generation WHERE $__timeFilter(datum_von) GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",$__interval), avg(wind_speed) AS \"ERA5 wind speed 100 m (m/s)\" FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ERA5 wind speed 100 m (m/s)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "velocityms"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "xychart",
+      "title": "Onshore wind: capacity factor vs ERA5 wind speed (hourly)",
+      "description": "Each point is one hour: ERA5 100 m wind speed (country mean, x) against the implied onshore wind capacity factor (ENTSO-E generation / MaStR capacity, y, %). The cloud approximates the power curve of the German fleet; the large spread comes from regional wind differences (see the regions below) that the single national mean wind cannot resolve.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x),\nw AS (SELECT \"time\" AS t, wind_speed AS ws, ghi / 3600.0 AS ghi, temp_air - 273.15 AS temp FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE'),\ngw AS (SELECT date_trunc('hour', \"index\" + interval '30 minutes') AS t, avg(wind_onshore) AS onshore, avg(wind_offshore) AS offshore FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngp AS (SELECT date_trunc('hour', \"index\") + interval '1 hour' AS t, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT w.ws AS \"wind speed 100 m (m/s)\", 100 * gw.onshore / (c.on_kw / 1000) AS \"onshore capacity factor %\"\nFROM w JOIN gw USING (t) JOIN gp USING (t) JOIN LATERAL (SELECT * FROM cap WHERE cap.m <= date_trunc('month', w.t) ORDER BY cap.m DESC LIMIT 1) c ON true"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 3
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "hours",
+            "x": "wind speed 100 m (m/s)",
+            "y": "onshore capacity factor %"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 10
+      },
+      "id": 13
+    },
+    {
+      "type": "barchart",
+      "title": "Binned power curve: mean capacity factor by wind speed",
+      "description": "Mean implied capacity factor (%) per 1 m/s ERA5 wind speed class (hours of the time range, DE national mean wind). Onshore (ENTSO-E / MaStR onshore), offshore (ENTSO-E / MaStR offshore). Offshore plants react to the same national mean wind, which is dominated by the land areas, so the curve is flatter than a real turbine curve.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x),\nw AS (SELECT \"time\" AS t, wind_speed AS ws, ghi / 3600.0 AS ghi, temp_air - 273.15 AS temp FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE'),\ngw AS (SELECT date_trunc('hour', \"index\" + interval '30 minutes') AS t, avg(wind_onshore) AS onshore, avg(wind_offshore) AS offshore FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngp AS (SELECT date_trunc('hour', \"index\") + interval '1 hour' AS t, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT floor(w.ws)::int AS \"wind speed class m/s\", 100 * avg(gw.onshore / (c.on_kw / 1000)) AS \"onshore %\", 100 * avg(gw.offshore / nullif(c.off_kw / 1000, 0)) AS \"offshore %\"\nFROM w JOIN gw USING (t) JOIN gp USING (t) JOIN LATERAL (SELECT * FROM cap WHERE cap.m <= date_trunc('month', w.t) ORDER BY cap.m DESC LIMIT 1) c ON true\nGROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "wind speed class m/s",
+        "orientation": "vertical",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 10
+      },
+      "id": 14
+    },
+    {
+      "type": "row",
+      "title": "Solar: generation vs ERA5 irradiation",
+      "collapsed": false,
+      "panels": [],
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "PV generation (ENTSO-E, SMARD) vs ERA5 irradiation GHI (DE)",
+      "description": "Solar generation of Germany in MW (left): ENTSO-E DE_LU and SMARD photovoltaics, mean per interval; ERA5 global horizontal irradiance of the country mean (W/m2, right axis; hourly values converted from J/m2). Generation tracks irradiance with a lower peak on very sunny days (inverter clipping, panel orientation, temperature). The ERA5 hour is the accumulation before its time stamp, so a shift of up to one hour against generation is visible at fine resolution. Sources: entsoe.query_generation, smard.generation, ecmwf.era5_eu.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval), avg(solar) AS \"ENTSO-E solar MW\" FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datum_von,$__interval), avg(\"photovoltaik_[mwh]_berechnete_auflösungen\") AS \"SMARD solar MW\" FROM smard.generation WHERE $__timeFilter(datum_von) GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\" - interval '30 minutes',$__interval), avg(ghi / 3600) AS \"ERA5 GHI (W/m2)\" FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ERA5 GHI (W/m2)"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "watt"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 24,
+        "h": 9
+      },
+      "id": 16
+    },
+    {
+      "type": "xychart",
+      "title": "PV: capacity factor vs ERA5 GHI (hourly)",
+      "description": "Each point is one hour: ERA5 global horizontal irradiance (country mean, x, W/m2) against the PV capacity factor (ENTSO-E solar / MaStR PV capacity, y, %). Slope = performance ratio of the fleet (capacity factor 100 % at 1000 W/m2 would be a ratio of 1); sub-linear at high irradiance because of clipping and temperature losses.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x),\nw AS (SELECT \"time\" AS t, wind_speed AS ws, ghi / 3600.0 AS ghi, temp_air - 273.15 AS temp FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE'),\ngw AS (SELECT date_trunc('hour', \"index\" + interval '30 minutes') AS t, avg(wind_onshore) AS onshore, avg(wind_offshore) AS offshore FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngp AS (SELECT date_trunc('hour', \"index\") + interval '1 hour' AS t, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT w.ghi AS \"GHI (W/m2)\", 100 * gp.pv / (c.pv_kw / 1000) AS \"PV capacity factor %\"\nFROM w JOIN gw USING (t) JOIN gp USING (t) JOIN LATERAL (SELECT * FROM cap WHERE cap.m <= date_trunc('month', w.t) ORDER BY cap.m DESC LIMIT 1) c ON true WHERE w.ghi > 20"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 3
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "hours",
+            "x": "GHI (W/m2)",
+            "y": "PV capacity factor %"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 12,
+        "h": 10
+      },
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "Implied capacity factors (daily mean)",
+      "description": "Daily mean capacity factors (%): onshore wind, offshore wind and PV = ENTSO-E DE_LU generation / installed gross capacity from the MaStR (commissioned minus decommissioned units, monthly). Together with the weather panels this shows seasonality: PV peaks in summer, wind in winter. Offshore is empty before the first MaStR offshore units were commissioned.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x), g AS (SELECT date_trunc('day', \"index\") AS t, avg(wind_onshore) AS onshore, avg(wind_offshore) AS offshore, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT g.t AS time, 100 * g.onshore / (c.on_kw / 1000) AS \"onshore wind %\", 100 * g.offshore / nullif(c.off_kw / 1000, 0) AS \"offshore wind %\", 100 * g.pv / (c.pv_kw / 1000) AS \"PV %\"\nFROM g JOIN LATERAL (SELECT * FROM cap WHERE cap.m <= date_trunc('month', g.t) ORDER BY cap.m DESC LIMIT 1) c ON true ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 44,
+        "w": 12,
+        "h": 10
+      },
+      "id": 18
+    },
+    {
+      "type": "timeseries",
+      "title": "Installed capacity (MaStR) at the end of each month",
+      "description": "Gross installed capacity in GW as used for the capacity factors, derived from the MaStR unit registers: units commissioned by that month minus finally decommissioned units. Onshore/offshore wind from mastr.\"EinheitenWind\" (Seelage empty = onshore), PV from mastr.\"EinheitenSolar\". Planned units are excluded.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH cap AS MATERIALIZED (\n  SELECT m, sum(don) OVER (ORDER BY m) AS on_kw, sum(doff) OVER (ORDER BY m) AS off_kw, sum(dpv) OVER (ORDER BY m) AS pv_kw FROM (\n    SELECT m, sum(don) AS don, sum(doff) AS doff, sum(dpv) AS dpv FROM (\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\") AS m, CASE WHEN \"Seelage\" IS NULL THEN \"Bruttoleistung\" ELSE 0 END AS don, CASE WHEN \"Seelage\" IS NOT NULL THEN \"Bruttoleistung\" ELSE 0 END AS doff, 0::float8 AS dpv\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), CASE WHEN \"Seelage\" IS NULL THEN -\"Bruttoleistung\" ELSE 0 END, CASE WHEN \"Seelage\" IS NOT NULL THEN -\"Bruttoleistung\" ELSE 0 END, 0\n        FROM mastr.\"EinheitenWind\" WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n      UNION ALL\n      SELECT date_trunc('month', \"Inbetriebnahmedatum\"), 0, 0, \"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" IN ('In Betrieb','Vorübergehend stillgelegt','Endgültig stillgelegt') AND \"Inbetriebnahmedatum\" <= $__timeTo()::date\n      UNION ALL\n      SELECT date_trunc('month', \"DatumEndgueltigeStilllegung\"), 0, 0, -\"Bruttoleistung\" FROM mastr.\"EinheitenSolar\"\n        WHERE \"EinheitBetriebsstatus\" = 'Endgültig stillgelegt' AND \"DatumEndgueltigeStilllegung\" <= $__timeTo()::date AND \"Inbetriebnahmedatum\" IS NOT NULL\n    ) u WHERE m IS NOT NULL GROUP BY m) x) SELECT m AS time, on_kw / 1e6 AS \"wind onshore GW\", off_kw / 1e6 AS \"wind offshore GW\", pv_kw / 1e6 AS \"PV GW\" FROM cap WHERE $__timeFilter(m) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 12,
+        "h": 8
+      },
+      "id": 19
+    },
+    {
+      "type": "row",
+      "title": "Residual load",
+      "collapsed": false,
+      "panels": [],
+      "id": 20,
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Load, wind + solar and residual load (DE_LU)",
+      "description": "Cross-source residual load: ENTSO-E actual load minus wind (onshore + offshore) minus solar generation of DE_LU (MW, mean per interval) next to the residual load published by SMARD (Bundesnetzagentur, grid load minus wind and PV). The two residual loads are defined slightly differently (SMARD uses its own grid load and generation figures), so small differences are expected.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT $__timeGroup(\"index\",$__interval) AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT $__timeGroup(\"index\",$__interval) AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT t AS time, l.load AS \"load\", g.wind AS \"wind\", g.pv AS \"solar\", l.load - g.wind - g.pv AS \"residual load (ENTSO-E)\" FROM l JOIN g USING (t) ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datum_von,$__interval), avg(\"residuallast_[mwh]_berechnete_auflösungen\") AS \"residual load (SMARD)\" FROM smard.consumption WHERE $__timeFilter(datum_von) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 24,
+        "h": 9
+      },
+      "id": 21
+    },
+    {
+      "type": "xychart",
+      "title": "Day-ahead price vs residual load (hourly)",
+      "description": "Each point is one hour: residual load (ENTSO-E load minus wind minus solar, x, GW) against the day-ahead price of DE_LU (ENTSO-E, y, EUR/MWh). Prices rise steeply with the residual load because gas and coal plants set the price; low or negative residual load coincides with price drops. Hourly means; the vertical spread comes from fuel and CO2 prices over the year.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0) + coalesce(solar,0)) AS vre FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\np AS (SELECT date_trunc('hour', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT (l.load - g.vre) / 1000 AS \"residual load GW\", p.price AS \"day-ahead price EUR/MWh\" FROM l JOIN g USING (t) JOIN p USING (t)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 3
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "hours",
+            "x": "residual load GW",
+            "y": "day-ahead price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 12,
+        "h": 10
+      },
+      "id": 22
+    },
+    {
+      "type": "xychart",
+      "title": "Day-ahead price vs wind + solar share of load (hourly)",
+      "description": "Each point is one hour: share of wind + solar generation in the actual load (x, %, ENTSO-E DE_LU) against the day-ahead price of DE_LU (y, EUR/MWh). A high renewable share pushes the price down and negative price hours become visible at the right edge. Hourly means. Sources: entsoe.query_generation, entsoe.query_load, entsoe.query_day_ahead_prices.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0) + coalesce(solar,0)) AS vre FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\np AS (SELECT date_trunc('hour', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1)\nSELECT 100 * g.vre / l.load AS \"wind + solar share of load %\", p.price AS \"day-ahead price EUR/MWh\" FROM l JOIN g USING (t) JOIN p USING (t)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 3
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "hours",
+            "x": "wind + solar share of load %",
+            "y": "day-ahead price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 72,
+        "w": 12,
+        "h": 10
+      },
+      "id": 23
+    },
+    {
+      "type": "row",
+      "title": "Regions (NUTS-1 states)",
+      "collapsed": false,
+      "panels": [],
+      "id": 24,
+      "gridPos": {
+        "x": 0,
+        "y": 82,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Mean ERA5 100 m wind speed by state",
+      "description": "Mean 100 m wind speed (m/s) of each German state (NUTS-1) over the time range, from ecmwf.era5_eu. Marker colour and size show the wind speed; the coast and the north (Schleswig-Holstein, Lower Saxony) are windiest. Positions are the region centres from the weather table.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS region, avg(wind_speed) AS \"wind speed m/s\", avg(latitude) AS lat, avg(longitude) AS lon FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id ~ '^DE[0-9A-Z]$' GROUP BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.3,
+          "zoom": 5,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "wind",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "wind speed m/s",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "wind speed m/s",
+                  "fixed": 5,
+                  "min": 6,
+                  "max": 22
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 83,
+        "w": 8,
+        "h": 11
+      },
+      "id": 25
+    },
+    {
+      "type": "geomap",
+      "title": "Mean ERA5 irradiation GHI by state",
+      "description": "Mean global horizontal irradiance (W/m2) of each German state (NUTS-1) over the time range, from ecmwf.era5_eu. The south (Bavaria, Baden-Wuerttemberg) is sunnier than the north.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS region, avg(ghi) / 3600 AS \"GHI W/m2\", avg(latitude) AS lat, avg(longitude) AS lon FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id ~ '^DE[0-9A-Z]$' GROUP BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-YlRd"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.3,
+          "zoom": 5,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "GHI",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "GHI W/m2",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "GHI W/m2",
+                  "fixed": 5,
+                  "min": 6,
+                  "max": 22
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 83,
+        "w": 8,
+        "h": 11
+      },
+      "id": 26
+    },
+    {
+      "type": "barchart",
+      "title": "States ranked by mean 100 m wind speed",
+      "description": "Mean ERA5 100 m wind speed (m/s) of the German states over the time range, ranked. NUTS codes: DE1 Baden-Wuerttemberg, DE2 Bavaria, DE3 Berlin, DE4 Brandenburg, DE6 Hamburg, DE7 Hesse, DE8 Mecklenburg-Vorpommern, DE9 Lower Saxony, DEA North Rhine-Westphalia, DEB Rhineland-Palatinate, DEC Saarland, DED Saxony, DEE Saxony-Anhalt, DEF Schleswig-Holstein, DEG Thuringia.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS state, avg(wind_speed) AS \"wind speed m/s\" FROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id ~ '^DE[0-9A-Z]$' GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "hue",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "unit": "velocityms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 83,
+        "w": 8,
+        "h": 11
+      },
+      "id": 27
+    },
+    {
+      "type": "timeseries",
+      "title": "Weather of region $nuts",
+      "description": "Hourly (interval mean) ERA5 100 m wind speed (m/s), global horizontal irradiance (W/m2) and 2 m air temperature (degC) of the selected NUTS region; use the variable to switch between the country mean DE and the states. Source: ecmwf.era5_eu.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",$__interval), avg(wind_speed) AS \"wind speed 100 m (m/s)\", avg(ghi / 3600) AS \"GHI (W/m2)\", avg(temp_air - 273.15) AS \"temperature (degC)\"\nFROM ecmwf.era5_eu WHERE $__timeFilter(\"time\") AND nuts_id = '${nuts}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/GHI|temperature/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 94,
+        "w": 24,
+        "h": 8
+      },
+      "id": 28
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "external link"
+    },
+    {
+      "title": "Cross-source",
+      "type": "dashboards",
+      "tags": [
+        "oeds",
+        "cross-source"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "dashboard"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      },
+      {
+        "type": "query",
+        "name": "nuts",
+        "label": "Weather region (NUTS)",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT unnest(ARRAY['DE','DE1','DE2','DE3','DE4','DE6','DE7','DE8','DE9','DEA','DEB','DEC','DED','DEE','DEF','DEG'])",
+        "definition": "SELECT unnest(ARRAY['DE','DE1','DE2','DE3','DE4','DE6','DE7','DE8','DE9','DEA','DEB','DEC','DED','DEE','DEF','DEG'])",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "options": []
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

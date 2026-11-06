@@ -1,0 +1,1694 @@
+{
+  "uid": "oeds-x-brennstoffe-strompreis",
+  "title": "OEDS Brennstoffe & Strompreis",
+  "tags": [
+    "oeds",
+    "cross-source",
+    "electricity",
+    "gas",
+    "coal",
+    "carbon",
+    "oil",
+    "instrat_pl",
+    "opec",
+    "entsoe"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Day-ahead electricity prices (ENTSO-E) against gas (TGE), coal (PSCMI1), CO2 (EU ETS) and oil prices; clean spark and clean dark spreads. Default range 2024-01..2026-01: the instrat_pl coal series and the OPEC oil series end in early 2026.",
+  "time": {
+    "from": "2024-01-01T00:00:00.000Z",
+    "to": "2026-02-01T00:00:00.000Z"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status of the sources used",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'instrat_pl.gas_price (TGE day-ahead gas)' AS \"Table\", (min(date) AT TIME ZONE 'UTC') AS \"First\", (max(date) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('instrat_pl.gas_price'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM instrat_pl.gas_price\nUNION ALL\nSELECT 'instrat_pl.eu_ets (EUA)' AS \"Table\", (min(date) AT TIME ZONE 'UTC') AS \"First\", (max(date) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('instrat_pl.eu_ets'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM instrat_pl.eu_ets\nUNION ALL\nSELECT 'instrat_pl.coal_price (PSCMI1, monthly)' AS \"Table\", (min(date) AT TIME ZONE 'UTC') AS \"First\", (max(date) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('instrat_pl.coal_price'::regclass) AS \"Rows (approx.)\", 1080 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 1080 THEN 'OK' WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 3240 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM instrat_pl.coal_price\nUNION ALL\nSELECT 'opec.opec (crude oil)' AS \"Table\", (min(date) AT TIME ZONE 'UTC') AS \"First\", (max(date) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('opec.opec'::regclass) AS \"Rows (approx.)\", 168 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 168 THEN 'OK' WHEN extract(epoch FROM now() - (max(date) AT TIME ZONE 'UTC'))/3600 <= 504 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM opec.opec\nUNION ALL\nSELECT 'entsoe.query_day_ahead_prices' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_day_ahead_prices'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_day_ahead_prices"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 7
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Assumptions",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "**Fuel prices**: gas = Polish TGE day-ahead gas (`instrat_pl.gas_price`, index `tgegasda`, PLN converted to EUR by the crawler, EUR/MWh, gross calorific basis). It is a Polish price, not TTF or THE; the level is typically a few EUR/MWh above TTF. Coal = Polish steam coal index PSCMI1 (`instrat_pl.coal_price`, monthly, EUR/GJ x 3.6 = EUR/MWh thermal). CO2 = EUA price (`instrat_pl.eu_ets`, index `t3pa`, EUR/t). Oil = crude oil (`opec.opec`, EUR per kWh x 1000). Each day uses the last known value (gas, CO2, oil up to 7 days old, coal up to 45 days old, i.e. the monthly value applies for the whole month).\n\n**Electricity price**: ENTSO-E day-ahead price of the selected zone, daily baseload mean.\n\n**Clean spark spread** = power price - gas price / efficiency - emission factor / efficiency x EUA, with a gas plant efficiency of the variable (default 50 %, CCGT, LHV) and an emission factor of 0.202 t CO2 per MWh thermal.\n**Clean dark spread** = power price - coal price / efficiency - emission factor / efficiency x EUA, with coal plant efficiency from the variable (default 38 %) and 0.341 t CO2 per MWh thermal (hard coal).\nGas prices on gross calorific basis are used as if net (LHV), which overstates the gas cost by about 10 %; variable costs other than fuel and CO2 (O&M, grid fees) are not included. Default zone is PL (the fuel prices are Polish); with DE_LU the Polish fuel prices are only a proxy for German fuel costs. Default range 2024-01..2026-01."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 7
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Averages over the time range",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Day-ahead price",
+      "description": "Mean day-ahead price of the selected zone over the time range, EUR/MWh (ENTSO-E).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(da) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Gas price (TGE)",
+      "description": "Mean TGE day-ahead gas price, EUR/MWh (instrat_pl.gas_price).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(gas) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 3,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "CO2 price (EUA)",
+      "description": "Mean EU ETS allowance price, EUR/t CO2 (instrat_pl.eu_ets).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(eua) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Coal price",
+      "description": "Mean steam coal price PSCMI1, EUR/MWh thermal (instrat_pl.coal_price).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(coal) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 9,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Oil price",
+      "description": "Mean crude oil price, EUR/MWh thermal (opec.opec, EUR per kWh x 1000).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(oil) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "Clean spark spread",
+      "description": "Mean clean spark spread over the range, EUR/MWh electric (efficiency from the variable). Negative means a new gas plant would not cover fuel and CO2 cost at baseload prices.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(spark) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "stat",
+      "title": "Clean dark spread",
+      "description": "Mean clean dark spread over the range, EUR/MWh electric (efficiency from the variable).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT avg(dark) AS v FROM f"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 11
+    },
+    {
+      "type": "stat",
+      "title": "Hours with positive spark spread",
+      "description": "Share of hours (hourly mean day-ahead price vs the daily gas plant short-run marginal cost) in the range in which a gas plant of the selected efficiency would have covered fuel and CO2 cost.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days')),\nh AS (SELECT date_trunc('hour', \"index\") AS t, avg(value) AS p FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1)\nSELECT 100 * avg((h.p > f.srmc_gas)::int) AS v FROM h JOIN f ON f.t = date_trunc('day', h.t)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 21,
+        "y": 9,
+        "w": 3,
+        "h": 4
+      },
+      "id": 12
+    },
+    {
+      "type": "row",
+      "title": "Prices",
+      "collapsed": false,
+      "panels": [],
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Fuel and CO2 prices",
+      "description": "Left axis (EUR/MWh thermal): gas (TGE day-ahead), steam coal (PSCMI1, monthly steps) and crude oil. Right axis: EU ETS allowance price (EUR/t CO2). Coal and CO2 converted as described in the text panel. Daily values; oil from opec.opec, gas and CO2 and coal from instrat_pl.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT t AS time, gas AS \"gas TGE EUR/MWh\", coal AS \"coal EUR/MWh_th\", oil AS \"crude oil EUR/MWh_th\", eua AS \"EUA EUR/t CO2\" FROM f ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "EUA EUR/t CO2"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 9
+      },
+      "id": 14
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead price vs short-run marginal cost of gas and coal plants",
+      "description": "Daily mean day-ahead price (ENTSO-E, selected zone) against the short-run marginal cost (fuel + CO2, EUR/MWh electric) of a gas plant (efficiency from the variable) and a coal plant. When the price is above a line, that technology earns a margin. Fuel prices as in the text panel; no variable O&M cost.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT t AS time, da AS \"day-ahead price\", srmc_gas AS \"SRMC gas plant\", srmc_coal AS \"SRMC coal plant\" FROM f ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 9
+      },
+      "id": 15
+    },
+    {
+      "type": "timeseries",
+      "title": "Clean spark spread and clean dark spread",
+      "description": "Daily clean spark (gas) and clean dark (coal) spread in EUR/MWh electric: day-ahead price minus fuel and CO2 cost with the plant efficiencies from the variables. Positive values mean the plant covers its fuel and CO2 cost; the difference between the two lines shows which fuel is cheaper to burn for electricity at that price level (fuel switching).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT t AS time, spark AS \"clean spark spread\", dark AS \"clean dark spread\" FROM f ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 15,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 16,
+        "h": 9
+      },
+      "id": 16
+    },
+    {
+      "type": "timeseries",
+      "title": "Spark spread: share of profitable hours per month",
+      "description": "Per month: share of hours in which the hourly day-ahead price exceeded the daily short-run marginal cost of the gas plant (spark) or of the coal plant (dark) - the hours in which the plants earn a margin. Based on the hourly mean of the day-ahead price and the daily fuel costs.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days')),\nh AS (SELECT date_trunc('hour', \"index\") AS t, avg(value) AS p FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1)\nSELECT date_trunc('month', h.t) AS time, 100 * avg((h.p > f.srmc_gas)::int) AS \"gas plant profitable hours %\", 100 * avg((h.p > f.srmc_coal)::int) AS \"coal plant profitable hours %\"\nFROM h JOIN f ON f.t = date_trunc('day', h.t) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 80,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 32,
+        "w": 8,
+        "h": 9
+      },
+      "id": 17
+    },
+    {
+      "type": "row",
+      "title": "Relations",
+      "collapsed": false,
+      "panels": [],
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "xychart",
+      "title": "Day-ahead price vs gas price (daily)",
+      "description": "Each point is one day: TGE day-ahead gas price (x, EUR/MWh) against the day-ahead electricity price of the zone (y, EUR/MWh). Gas sets the marginal price in many hours, so the points follow the gas cost; the spread above the line is the contribution of coal, CO2 and scarcity.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT gas AS \"gas price EUR/MWh\", da AS \"day-ahead price EUR/MWh\" FROM f WHERE gas IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "days",
+            "x": "gas price EUR/MWh",
+            "y": "day-ahead price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 8,
+        "h": 9
+      },
+      "id": 19
+    },
+    {
+      "type": "xychart",
+      "title": "Day-ahead price vs CO2 price (daily)",
+      "description": "Each point is one day: EUA price (x, EUR/t) against the zone's day-ahead price (y, EUR/MWh). With a coal-heavy mix (Poland) CO2 is passed through to the power price at about 0.8-1 t/MWh.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT eua AS \"EUA price EUR/t\", da AS \"day-ahead price EUR/MWh\" FROM f WHERE eua IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "days",
+            "x": "EUA price EUR/t",
+            "y": "day-ahead price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 42,
+        "w": 8,
+        "h": 9
+      },
+      "id": 20
+    },
+    {
+      "type": "xychart",
+      "title": "Gas vs oil price (daily)",
+      "description": "Each point is one day: crude oil price (x, EUR/MWh thermal, opec.opec) against the TGE gas price (y, EUR/MWh); oil-indexed gas contracts and the common energy price cycle show as a positive relation. Gas is a Polish spot price.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT oil AS \"oil EUR/MWh_th\", gas AS \"gas price EUR/MWh\" FROM f WHERE oil IS NOT NULL AND gas IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "days",
+            "x": "oil EUR/MWh_th",
+            "y": "gas price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 42,
+        "w": 8,
+        "h": 9
+      },
+      "id": 21
+    },
+    {
+      "type": "timeseries",
+      "title": "Clean spark spread by zone (weekly mean)",
+      "description": "Weekly mean clean spark spread (EUR/MWh electric) for the zones chosen in the variable, all with the SAME fuel and CO2 prices (Polish TGE gas and EUA) and the plant efficiency of the variable. Differences between lines are therefore only differences in the day-ahead electricity price.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.zone, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, country AS zone, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country IN ($cmp_zones) GROUP BY 1, 2) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT date_trunc('week', t) AS time, zone AS metric, avg(spark) AS \"clean spark spread\" FROM f GROUP BY 1, 2 ORDER BY 1, 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 16,
+        "h": 9
+      },
+      "id": 22
+    },
+    {
+      "type": "barchart",
+      "title": "Zones ranked by mean clean spark spread",
+      "description": "Mean clean spark spread over the time range for the zones chosen in the variable 'Zones to compare', ranked (EUR/MWh electric, same fuel and CO2 prices for all zones).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.zone, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, country AS zone, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country IN ($cmp_zones) GROUP BY 1, 2) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT zone, avg(spark) AS \"clean spark spread EUR/MWh\" FROM f GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "hue",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 51,
+        "w": 8,
+        "h": 9
+      },
+      "id": 23
+    },
+    {
+      "type": "row",
+      "title": "Monthly table",
+      "collapsed": false,
+      "panels": [],
+      "id": 24,
+      "gridPos": {
+        "x": 0,
+        "y": 60,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Monthly averages",
+      "description": "Monthly mean of the daily values (selected zone): day-ahead price, gas, coal, CO2 and oil prices, short-run marginal costs of the gas and coal plant, clean spark and dark spreads. EUR/MWh (CO2 in EUR/t).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH gv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, price_eur_per_mwh AS v FROM instrat_pl.gas_price WHERE indeks = 'tgegasda') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nev AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, eur_per_tco2 AS v FROM instrat_pl.eu_ets WHERE indeks = 't3pa') x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\ncv AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, steam_coal_eur_per_gj * 3.6 AS v FROM instrat_pl.coal_price) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nov AS (SELECT * FROM (SELECT date AS d0, coalesce(lead(date) OVER (ORDER BY date), 'infinity') AS d1, euro_per_kwh * 1000 AS v FROM opec.opec) x WHERE d0 >= $__timeFrom()::timestamptz - interval '60 days' AND d0 <= $__timeTo()::timestamptz),\nf AS (\n  SELECT d.t, d.price AS da, g.v AS gas, e.v AS eua, c.v AS coal, o.v AS oil,\n    d.price - g.v / ${eff_gas} - 0.202 / ${eff_gas} * e.v AS spark,\n    d.price - c.v / ${eff_coal} - 0.341 / ${eff_coal} * e.v AS dark,\n    g.v / ${eff_gas} + 0.202 / ${eff_gas} * e.v AS srmc_gas, c.v / ${eff_coal} + 0.341 / ${eff_coal} * e.v AS srmc_coal\n  FROM (SELECT date_trunc('day', \"index\") AS t, avg(value) AS price FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(\"index\") AND country = '${zone}' GROUP BY 1) d\n  LEFT JOIN gv g ON d.t::timestamp >= g.d0 AND d.t::timestamp < least(g.d1, g.d0 + interval '7 days')\n  LEFT JOIN ev e ON d.t::timestamp >= e.d0 AND d.t::timestamp < least(e.d1, e.d0 + interval '7 days')\n  LEFT JOIN cv c ON d.t::timestamp >= c.d0 AND d.t::timestamp < least(c.d1, c.d0 + interval '45 days')\n  LEFT JOIN ov o ON d.t::timestamp >= o.d0 AND d.t::timestamp < least(o.d1, o.d0 + interval '7 days'))\nSELECT to_char(date_trunc('month', t), 'YYYY-MM') AS \"Month\", round(avg(da)::numeric, 1) AS \"Day-ahead\", round(avg(gas)::numeric, 1) AS \"Gas\", round(avg(coal)::numeric, 1) AS \"Coal (th)\",\n  round(avg(eua)::numeric, 1) AS \"CO2 EUR/t\", round(avg(oil)::numeric, 1) AS \"Oil (th)\", round(avg(srmc_gas)::numeric, 1) AS \"SRMC gas\", round(avg(srmc_coal)::numeric, 1) AS \"SRMC coal\",\n  round(avg(spark)::numeric, 1) AS \"Spark spread\", round(avg(dark)::numeric, 1) AS \"Dark spread\"\nFROM f GROUP BY 1 ORDER BY 1 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Day-ahead"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 24,
+        "h": 10
+      },
+      "id": 25
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "external link"
+    },
+    {
+      "title": "Cross-source",
+      "type": "dashboards",
+      "tags": [
+        "oeds",
+        "cross-source"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "dashboard"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      },
+      {
+        "type": "custom",
+        "name": "zone",
+        "label": "Price zone",
+        "query": "PL,DE_LU,CZ,SK,LT,FR,NL,AT,HU",
+        "current": {
+          "text": "PL",
+          "value": "PL"
+        },
+        "options": [
+          {
+            "text": "PL",
+            "value": "PL",
+            "selected": true
+          },
+          {
+            "text": "DE_LU",
+            "value": "DE_LU",
+            "selected": false
+          },
+          {
+            "text": "CZ",
+            "value": "CZ",
+            "selected": false
+          },
+          {
+            "text": "SK",
+            "value": "SK",
+            "selected": false
+          },
+          {
+            "text": "LT",
+            "value": "LT",
+            "selected": false
+          },
+          {
+            "text": "FR",
+            "value": "FR",
+            "selected": false
+          },
+          {
+            "text": "NL",
+            "value": "NL",
+            "selected": false
+          },
+          {
+            "text": "AT",
+            "value": "AT",
+            "selected": false
+          },
+          {
+            "text": "HU",
+            "value": "HU",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "custom",
+        "name": "eff_gas",
+        "label": "Gas plant efficiency (LHV)",
+        "query": "0.40,0.45,0.50,0.55,0.60",
+        "current": {
+          "text": "0.50",
+          "value": "0.50"
+        },
+        "options": [
+          {
+            "text": "0.40",
+            "value": "0.40",
+            "selected": false
+          },
+          {
+            "text": "0.45",
+            "value": "0.45",
+            "selected": false
+          },
+          {
+            "text": "0.50",
+            "value": "0.50",
+            "selected": true
+          },
+          {
+            "text": "0.55",
+            "value": "0.55",
+            "selected": false
+          },
+          {
+            "text": "0.60",
+            "value": "0.60",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "custom",
+        "name": "eff_coal",
+        "label": "Coal plant efficiency (LHV)",
+        "query": "0.33,0.36,0.38,0.42,0.45",
+        "current": {
+          "text": "0.38",
+          "value": "0.38"
+        },
+        "options": [
+          {
+            "text": "0.33",
+            "value": "0.33",
+            "selected": false
+          },
+          {
+            "text": "0.36",
+            "value": "0.36",
+            "selected": false
+          },
+          {
+            "text": "0.38",
+            "value": "0.38",
+            "selected": true
+          },
+          {
+            "text": "0.42",
+            "value": "0.42",
+            "selected": false
+          },
+          {
+            "text": "0.45",
+            "value": "0.45",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "custom",
+        "name": "cmp_zones",
+        "label": "Zones to compare",
+        "multi": true,
+        "includeAll": false,
+        "query": "PL,DE_LU,CZ,SK,LT,FR,NL,AT,HU",
+        "current": {
+          "text": [
+            "PL",
+            "DE_LU",
+            "CZ",
+            "FR",
+            "NL"
+          ],
+          "value": [
+            "PL",
+            "DE_LU",
+            "CZ",
+            "FR",
+            "NL"
+          ]
+        },
+        "options": [
+          {
+            "text": "PL",
+            "value": "PL",
+            "selected": true
+          },
+          {
+            "text": "DE_LU",
+            "value": "DE_LU",
+            "selected": true
+          },
+          {
+            "text": "CZ",
+            "value": "CZ",
+            "selected": true
+          },
+          {
+            "text": "SK",
+            "value": "SK",
+            "selected": false
+          },
+          {
+            "text": "LT",
+            "value": "LT",
+            "selected": false
+          },
+          {
+            "text": "FR",
+            "value": "FR",
+            "selected": true
+          },
+          {
+            "text": "NL",
+            "value": "NL",
+            "selected": true
+          },
+          {
+            "text": "AT",
+            "value": "AT",
+            "selected": false
+          },
+          {
+            "text": "HU",
+            "value": "HU",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

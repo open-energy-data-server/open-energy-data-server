@@ -1,152 +1,1053 @@
 {
+  "uid": "oeds-refit",
+  "title": "OEDS REFIT Household Electricity",
+  "tags": [
+    "oeds",
+    "household",
+    "load",
+    "uk",
+    "nilm"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "2014-04-01T00:00:00.000Z",
+    "to": "2014-05-01T00:00:00.000Z"
+  },
+  "description": "REFIT electrical load measurements of 20 UK households (Loughborough area), aggregate and 9 appliance channels, about 8 s resolution, 2013-09 to 2015-07.",
   "annotations": {
+    "list": []
+  },
+  "templating": {
     "list": [
       {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
         },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "house",
+        "label": "House",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT 'House ' || regexp_replace(house, '\\D', '', 'g') AS __text, house AS __value FROM (SELECT DISTINCT house FROM refit.refit WHERE \"Time\" >= '2014-07-01' AND \"Time\" < '2014-07-02') x ORDER BY regexp_replace(house, '\\D', '', 'g')::int",
+        "definition": "SELECT 'House ' || regexp_replace(house, '\\D', '', 'g') AS __text, house AS __value FROM (SELECT DISTINCT house FROM refit.refit WHERE \"Time\" >= '2014-07-01' AND \"Time\" < '2014-07-02') x ORDER BY regexp_replace(house, '\\D', '', 'g')::int",
+        "current": {
+          "text": "House 1",
+          "value": "House_1.csv"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": "REFIT household. The value is stored by the crawler as the csv file name (House_1.csv); house 14 does not exist in the dataset."
       }
     ]
   },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 72,
-  "links": [],
   "panels": [
     {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "refit.refit",
+      "description": "First and latest timestamp and approximate rows (about 8 s samples, 20 houses, 120 million rows). Static dataset without live updates. Keep the time range to a few weeks.",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 15,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "uid": "${ds}"
       },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  time_bucket('1 hour', \"DateTime\") AS hourly_timestamp,\r\n  AVG(\"power\") AS average_power\r\nFROM\r\n  londondatastore.consumption\r\nWHERE\r\n  EXTRACT(YEAR FROM \"DateTime\") = 2012 AND \"tariff\" = 'Std'\r\nGROUP BY\r\n  hourly_timestamp;\r\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "SELECT (extract(epoch from min(\"Time\"))*1000)::bigint as \"First\", (extract(epoch from max(\"Time\"))*1000)::bigint as \"Latest\", approximate_row_count('refit.refit'::regclass) as \"Rows (approx.)\"\nFROM refit.refit"
         }
       ],
-      "title": "Panel Title",
-      "type": "timeseries"
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "$house in the selected range",
+      "description": "Mean aggregate power, the energy extrapolated to a day (mean power x 24 h; gaps in the recording are ignored), base load (5th percentile of the aggregate power) and the peak. Appliance names (fridge, washing machine, ...) differ per house and are not stored in the database, only Appliance1..9. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(\"Aggregate\") AS \"Mean power\", avg(\"Aggregate\")*24/1000 AS \"Energy per day\", percentile_cont(0.05) WITHIN GROUP (ORDER BY \"Aggregate\") AS \"Base load\", max(\"Aggregate\") AS \"Peak\", count(*) AS \"Samples\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mean power"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy per day"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh/d"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Base load"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Samples"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 12,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "All houses",
+      "collapsed": false,
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Energy per day by house",
+      "description": "Mean aggregate power x 24 h per house in the selected range, split into base load (5th percentile power x 24 h) and the remainder. Houses with recording gaps are not corrected.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'House ' || regexp_replace(house, '\\D', '', 'g') AS \"House\", least(percentile_cont(0.05) WITHIN GROUP (ORDER BY \"Aggregate\"), avg(\"Aggregate\"))*24/1000 AS \"Base load\", greatest(avg(\"Aggregate\") - percentile_cont(0.05) WITHIN GROUP (ORDER BY \"Aggregate\"), 0)*24/1000 AS \"Above base load\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") GROUP BY house ORDER BY regexp_replace(house, '\\D', '', 'g')::int"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "suffix: kWh/d"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "House",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "normal",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "table",
+      "title": "Houses: recording coverage",
+      "description": "Samples, first and last sample in the selected range, and coverage = samples x 8 s / range length (the nominal sampling interval is 8 s). Values below ~80 % indicate recording gaps; very low standard deviation indicates a stuck meter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'House ' || regexp_replace(house, '\\D', '', 'g') AS \"House\", count(*) AS \"Samples\", 100.0*count(*)*8/GREATEST(1, extract(epoch from ($__timeTo()::timestamptz - $__timeFrom()::timestamptz))) AS \"Coverage (%)\", (extract(epoch from min(\"Time\"))*1000)::bigint AS \"First\", (extract(epoch from max(\"Time\"))*1000)::bigint AS \"Last\", avg(\"Aggregate\") AS \"Mean (W)\", stddev(\"Aggregate\") AS \"Std. dev. (W)\", max(\"Aggregate\") AS \"Peak (W)\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") GROUP BY house ORDER BY regexp_replace(house, '\\D', '', 'g')::int"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Samples"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Coverage (%)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mean (W)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Std. dev. (W)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak (W)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "watt"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Mean daily profile of all houses",
+      "description": "Mean aggregate power by hour of the day (Europe/London local time) over all houses and the range, weekdays and weekends. Evening peak between 18 and 20 h, a smaller morning peak, and on weekends a later and flatter morning.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from \"Time\" AT TIME ZONE 'Europe/London')::int AS \"Hour\", avg(\"Aggregate\") FILTER (WHERE extract(isodow from \"Time\" AT TIME ZONE 'Europe/London') < 6) AS \"Weekday\", avg(\"Aggregate\") FILTER (WHERE extract(isodow from \"Time\" AT TIME ZONE 'Europe/London') >= 6) AS \"Weekend\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "type": "row",
+      "title": "House $house",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Aggregate power",
+      "description": "Whole-house power (mean and maximum per time bin, W). Gaps are missing recordings. Sampling is irregular (about 8 s).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"Time\",$__interval), avg(\"Aggregate\") AS \"Mean\", max(\"Aggregate\") AS \"Maximum\" FROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Appliance power",
+      "description": "Mean power of the 9 monitored appliance channels plus the unmonitored remainder (aggregate minus the sum of the channels, at least 0), stacked. Appliance names (fridge, washing machine, ...) differ per house and are not stored in the database, only Appliance1..9. ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"Time\",$__interval), avg(\"Appliance1\") AS \"Appliance1\", avg(\"Appliance2\") AS \"Appliance2\", avg(\"Appliance3\") AS \"Appliance3\", avg(\"Appliance4\") AS \"Appliance4\", avg(\"Appliance5\") AS \"Appliance5\", avg(\"Appliance6\") AS \"Appliance6\", avg(\"Appliance7\") AS \"Appliance7\", avg(\"Appliance8\") AS \"Appliance8\", avg(\"Appliance9\") AS \"Appliance9\", avg(greatest(\"Aggregate\" - (coalesce(\"Appliance1\",0) + coalesce(\"Appliance2\",0) + coalesce(\"Appliance3\",0) + coalesce(\"Appliance4\",0) + coalesce(\"Appliance5\",0) + coalesce(\"Appliance6\",0) + coalesce(\"Appliance7\",0) + coalesce(\"Appliance8\",0) + coalesce(\"Appliance9\",0)), 0)) AS \"Unmonitored\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Energy share by channel",
+      "description": "Mean energy per day of each appliance channel and the unmonitored remainder in the selected range (kWh/day).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ch AS \"Channel\", v*24/1000 AS \"Energy (kWh/day)\" FROM (SELECT avg(\"Appliance1\") AS a1, avg(\"Appliance2\") AS a2, avg(\"Appliance3\") AS a3, avg(\"Appliance4\") AS a4, avg(\"Appliance5\") AS a5, avg(\"Appliance6\") AS a6, avg(\"Appliance7\") AS a7, avg(\"Appliance8\") AS a8, avg(\"Appliance9\") AS a9, avg(greatest(\"Aggregate\" - (coalesce(\"Appliance1\",0) + coalesce(\"Appliance2\",0) + coalesce(\"Appliance3\",0) + coalesce(\"Appliance4\",0) + coalesce(\"Appliance5\",0) + coalesce(\"Appliance6\",0) + coalesce(\"Appliance7\",0) + coalesce(\"Appliance8\",0) + coalesce(\"Appliance9\",0)), 0)) AS unmon FROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house') s, LATERAL (VALUES ('Appliance 1', a1), ('Appliance 2', a2), ('Appliance 3', a3), ('Appliance 4', a4), ('Appliance 5', a5), ('Appliance 6', a6), ('Appliance 7', a7), ('Appliance 8', a8), ('Appliance 9', a9), ('Unmonitored', unmon)) AS u(ch, v) ORDER BY ch"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "suffix: kWh/d"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Channel",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Typical day by weekday / weekend",
+      "description": "Mean aggregate power of the selected house by hour of the day (Europe/London) on weekdays and weekends.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from \"Time\" AT TIME ZONE 'Europe/London')::int AS \"Hour\", avg(\"Aggregate\") FILTER (WHERE extract(isodow from \"Time\" AT TIME ZONE 'Europe/London') < 6) AS \"Weekday\", avg(\"Aggregate\") FILTER (WHERE extract(isodow from \"Time\" AT TIME ZONE 'Europe/London') >= 6) AS \"Weekend\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 8,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Appliance usage by hour of the day",
+      "description": "Mean power of each appliance channel by hour of the day (Europe/London) for the selected house. Reveals when cooking, washing and the fridge cycles happen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from \"Time\" AT TIME ZONE 'Europe/London')::int AS \"Hour\", avg(\"Appliance1\") AS \"Appliance1\", avg(\"Appliance2\") AS \"Appliance2\", avg(\"Appliance3\") AS \"Appliance3\", avg(\"Appliance4\") AS \"Appliance4\", avg(\"Appliance5\") AS \"Appliance5\", avg(\"Appliance6\") AS \"Appliance6\", avg(\"Appliance7\") AS \"Appliance7\", avg(\"Appliance8\") AS \"Appliance8\", avg(\"Appliance9\") AS \"Appliance9\"\nFROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "watt",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 16,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Distribution of the aggregate power of $house",
+      "description": "Share of samples per power class, selected house and range. Most of the time the households consume only a few hundred watts; short peaks come from kettles, ovens and showers.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT c.label AS \"Power class\", 100.0*count(*)/sum(count(*)) OVER () AS \"Share of samples (%)\" FROM (SELECT CASE WHEN \"Aggregate\" < 100 THEN '1: <100 W' WHEN \"Aggregate\" < 200 THEN '2: 100-200 W' WHEN \"Aggregate\" < 300 THEN '3: 200-300 W' WHEN \"Aggregate\" < 500 THEN '4: 300-500 W' WHEN \"Aggregate\" < 1000 THEN '5: 0.5-1 kW' WHEN \"Aggregate\" < 2000 THEN '6: 1-2 kW' WHEN \"Aggregate\" < 3000 THEN '7: 2-3 kW' WHEN \"Aggregate\" < 5000 THEN '8: 3-5 kW' ELSE '9: >5 kW' END AS label FROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house') c GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Power class",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily energy",
+      "description": "Mean power x 24 h per day for the selected house (kWh/day). Days with gaps are under- or overestimated, see the coverage table.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"Time\",'1d'), avg(\"Aggregate\")*24/1000 AS \"Energy per day\", count(*)*8/3600.0 AS \"Recorded hours (approx.)\" FROM refit.refit WHERE $__timeFilter(\"Time\") AND house = '$house' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "suffix: kWh/d",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Recorded hours (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: h"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 26
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 24,
+        "h": 7
+      }
     }
   ],
-  "refresh": "",
-  "schemaVersion": 39,
-  "tags": [],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "2012-01-01T00:00:00.000Z",
-    "to": "2012-12-31T23:00:00.000Z"
-  },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "REFIT load profile",
-  "uid": "edn5t9gi0wyrke",
-  "version": 1,
-  "weekStart": ""
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
 }

@@ -1,0 +1,1238 @@
+{
+  "uid": "oeds-x-regelenergie-prognosefehler",
+  "title": "OEDS Regelenergie & Prognosefehler",
+  "tags": [
+    "oeds",
+    "cross-source",
+    "electricity",
+    "balancing",
+    "forecast",
+    "regelleistung",
+    "entsoe"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Balancing markets (regelleistung.net aFRR) against the day-ahead forecast errors of load, wind and solar (ENTSO-E, DE_LU) and the day-ahead price.",
+  "time": {
+    "from": "2025-01-01T00:00:00.000Z",
+    "to": "2025-04-01T00:00:00.000Z"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status of the sources used",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'entsoe.query_load_forecast' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_load_forecast'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_load_forecast\nUNION ALL\nSELECT 'entsoe.query_wind_and_solar_forecast' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_wind_and_solar_forecast'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_wind_and_solar_forecast\nUNION ALL\nSELECT 'entsoe.query_generation' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_generation'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_generation\nUNION ALL\nSELECT 'regelleistung afrr results (energy)' AS \"Table\", min(delivery_date)::timestamptz AS \"First\", max(delivery_date)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(delivery_date)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('regelleistung.afrr_ergebnisse_regelarbeit'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(delivery_date)::timestamptz + interval '1 day'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(delivery_date)::timestamptz + interval '1 day'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM regelleistung.afrr_ergebnisse_regelarbeit\nUNION ALL\nSELECT 'regelleistung afrr results (capacity)' AS \"Table\", min(date_from) AS \"First\", max(date_from) AS \"Latest\", round((extract(epoch FROM now() - max(date_from))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('regelleistung.afrr_ergebnisse_regelleistung'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(date_from))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(date_from))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM regelleistung.afrr_ergebnisse_regelleistung\nUNION ALL\nSELECT 'entsoe.query_day_ahead_prices' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_day_ahead_prices'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_day_ahead_prices"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 8
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Reading this dashboard",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "**Forecast error** = actual minus ENTSO-E day-ahead forecast for the bidding zone DE_LU (hourly means of the 15 min values). Load error positive = more load than forecast; wind/PV error positive = more generation than forecast. The **residual load error** = load error - wind error - PV error: positive means more residual load than forecast, i.e. a shortage that balancing energy or intraday trading must cover (POS demand), negative a surplus (NEG).\n\n**Balancing**: regelleistung.net aFRR energy market (Regelarbeit, 15 min products, area DE) averaged per hour. The published *average* energy price is the average over the complete merit order list (all offers, not only activated ones) and *min* is the cheapest offer; activation volumes and activation prices are not in the data, so the relation to the error is indicative only. Many offers sit at the +/-15000 EUR/MWh cap, which makes averages large. Capacity prices are the aFRR capacity auction results (4 h products).\n\nThe default range is Q1 2025; all sources used here are available continuously."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 8
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Mean absolute residual load error",
+      "description": "Mean absolute hourly forecast error of the residual load (load - wind - solar) of DE_LU over the time range, MW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT avg(abs(res_err)) AS v FROM e"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MW",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Largest shortage vs forecast",
+      "description": "Maximum hourly residual load error (more residual load than forecast), MW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT max(res_err) AS v FROM e"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MW",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Largest surplus vs forecast",
+      "description": "Minimum hourly residual load error (less residual load than forecast), MW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT min(res_err) AS v FROM e"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MW",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Mean aFRR demand (energy)",
+      "description": "Mean aFRR energy demand (POS + NEG, total area) of the regelleistung.net energy market over the time range, MW.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(demand_mw) AS v FROM regelleistung.afrr_bedarfe_regelarbeit WHERE $__timeFilter(delivery_date) AND area = 'TOTAL'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MW",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "row",
+      "title": "Forecast vs actual",
+      "collapsed": false,
+      "panels": [],
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Wind and solar: day-ahead forecast vs actual",
+      "description": "ENTSO-E day-ahead forecast and actual generation of wind (onshore + offshore) and solar for DE_LU, hourly mean (MW). The difference is the forecast error plotted below. Sources: entsoe.query_wind_and_solar_forecast, entsoe.query_generation.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT t AS time, wind AS \"wind actual\", wind_fc AS \"wind forecast\", pv AS \"solar actual\", pv_fc AS \"solar forecast\" FROM e ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 9
+      },
+      "id": 10
+    },
+    {
+      "type": "timeseries",
+      "title": "Load: day-ahead forecast vs actual",
+      "description": "ENTSO-E day-ahead load forecast and actual load for DE_LU, hourly mean (MW). Sources: entsoe.query_load_forecast, entsoe.query_load.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT t AS time, load AS \"actual load\", load_fc AS \"forecast load\" FROM e ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 9
+      },
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "Forecast errors (actual - forecast)",
+      "description": "Hourly forecast errors in MW for DE_LU: load, wind, solar, and the resulting residual load error (load error - wind error - solar error). Positive residual load error = shortage compared with the day-ahead schedule.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT t AS time, load_err AS \"load error\", wind_err AS \"wind error\", pv_err AS \"solar error\", res_err AS \"residual load error\" FROM e ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 5,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "row",
+      "title": "Balancing prices vs forecast error",
+      "collapsed": false,
+      "panels": [],
+      "id": 13,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR energy prices vs residual load error",
+      "description": "Hourly aFRR energy market (Germany): average energy price of the bid list for POS and NEG products (EUR/MWh, left; capped bids make it large) against the residual load error (MW, right axis). Large positive errors (shortage) are expected to coincide with high POS prices and large negative errors (surplus) with low NEG prices. Sources: regelleistung.afrr_ergebnisse_regelarbeit, entsoe.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH ar AS (SELECT date_trunc('hour', (delivery_date::timestamp AT TIME ZONE 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') AS t,\n    avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS pos_avg, avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS neg_avg,\n    avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS pos_min, avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS neg_max,\n    avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS pos_off, avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS neg_off\n  FROM regelleistung.afrr_ergebnisse_regelarbeit WHERE $__timeFilter(delivery_date) AND area = 'DE' GROUP BY 1)\nSELECT $__timeGroupAlias(t,$__interval), avg(pos_avg) AS \"POS average price EUR/MWh\", avg(neg_avg) AS \"NEG average price EUR/MWh\", avg(pos_min) AS \"POS cheapest offer EUR/MWh\" FROM ar GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT $__timeGroupAlias(t,$__interval), avg(res_err) AS \"residual load error MW\" FROM e GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "residual load error MW"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 24,
+        "h": 9
+      },
+      "id": 14
+    },
+    {
+      "type": "xychart",
+      "title": "POS cheapest offer vs residual load error (hourly)",
+      "description": "Each point is one hour: residual load error (x, MW) against the cheapest POS aFRR energy offer of the hour (y, EUR/MWh). The cheapest offer is the first bid activated; a positive relation means a shortage pushes activation into more expensive offers. Hourly means of quarter hour values.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t)),\nar AS (SELECT date_trunc('hour', (delivery_date::timestamp AT TIME ZONE 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') AS t,\n    avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS pos_avg, avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS neg_avg,\n    avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS pos_min, avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS neg_max,\n    avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS pos_off, avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS neg_off\n  FROM regelleistung.afrr_ergebnisse_regelarbeit WHERE $__timeFilter(delivery_date) AND area = 'DE' GROUP BY 1)\nSELECT e.res_err AS \"residual load error MW\", ar.pos_min AS \"POS cheapest offer EUR/MWh\" FROM e JOIN ar USING (t) WHERE ar.pos_min IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 3
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "hours",
+            "x": "residual load error MW",
+            "y": "POS cheapest offer EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 12,
+        "h": 10
+      },
+      "id": 15
+    },
+    {
+      "type": "xychart",
+      "title": "NEG cheapest offer vs residual load error (hourly)",
+      "description": "Each point is one hour: residual load error (x, MW) against the minimum NEG aFRR energy offer price of the hour (y, EUR/MWh, as published; positive values mean the provider pays for absorbing energy). A surplus (negative error) is expected to come with lower NEG prices; the relation is weak because the offer list is only a proxy for activation.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t)),\nar AS (SELECT date_trunc('hour', (delivery_date::timestamp AT TIME ZONE 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') AS t,\n    avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS pos_avg, avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS neg_avg,\n    avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS pos_min, avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS neg_max,\n    avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS pos_off, avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS neg_off\n  FROM regelleistung.afrr_ergebnisse_regelarbeit WHERE $__timeFilter(delivery_date) AND area = 'DE' GROUP BY 1)\nSELECT e.res_err AS \"residual load error MW\", ar.neg_max AS \"NEG min price EUR/MWh\" FROM e JOIN ar USING (t) WHERE ar.neg_max IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 3
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "hours",
+            "x": "residual load error MW",
+            "y": "NEG min price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 43,
+        "w": 12,
+        "h": 10
+      },
+      "id": 16
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR capacity price vs forecast error volatility (daily)",
+      "description": "Daily mean marginal aFRR capacity price for POS and NEG products (EUR/MW, left, area DE) against the daily mean absolute residual load error (MW, right axis). Days with larger forecast errors need more reserve; the capacity price follows the system need only loosely because reserve is procured the day before.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,'1d'), avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS marginal capacity price EUR/MW\", avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG marginal capacity price EUR/MW\"\nFROM regelleistung.afrr_ergebnisse_regelleistung WHERE $__timeFilter(date_from) AND area = 'DE' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT $__timeGroupAlias(t,'1d'), avg(abs(res_err)) AS \"mean |residual load error| MW\" FROM e GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/error/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 8
+      },
+      "id": 17
+    },
+    {
+      "type": "barchart",
+      "title": "Forecast error by hour of the day (local time)",
+      "description": "Mean absolute forecast error (MW) of load, wind, solar and residual load by local hour of the day over the time range. Solar errors peak around noon, residual load errors are largest in the morning and evening ramps. Source: entsoe.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT extract(hour FROM t AT TIME ZONE 'Europe/Berlin')::int AS \"hour\", avg(abs(load_err)) AS \"load\", avg(abs(wind_err)) AS \"wind\", avg(abs(pv_err)) AS \"solar\", avg(abs(res_err)) AS \"residual load\" FROM e GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "hour",
+        "orientation": "vertical",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 12,
+        "h": 9
+      },
+      "id": 18
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead price vs residual load error",
+      "description": "Daily mean day-ahead price of DE_LU (EUR/MWh, left, ENTSO-E) and the daily mean residual load error (MW, right axis). Forecast errors are the reason for intraday and balancing energy trading; large errors on days with high price spreads are costly.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,'1d'), avg(value) AS \"day-ahead price EUR/MWh\" FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(index) AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH l AS (SELECT date_trunc('hour', \"index\") AS t, avg(actual_load) AS load FROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\nlf AS (SELECT date_trunc('hour', \"index\") AS t, avg(forecasted_load) AS load_fc FROM entsoe.query_load_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ng AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind, avg(solar) AS pv FROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ngf AS (SELECT date_trunc('hour', \"index\") AS t, avg(coalesce(wind_onshore,0) + coalesce(wind_offshore,0)) AS wind_fc, avg(solar) AS pv_fc FROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1),\ne AS (SELECT t, l.load - lf.load_fc AS load_err, g.wind - gf.wind_fc AS wind_err, g.pv - gf.pv_fc AS pv_err,\n  (l.load - lf.load_fc) - (g.wind - gf.wind_fc) - (g.pv - gf.pv_fc) AS res_err, l.load, lf.load_fc, g.wind, gf.wind_fc, g.pv, gf.pv_fc\n  FROM l JOIN lf USING (t) JOIN g USING (t) JOIN gf USING (t))\nSELECT $__timeGroupAlias(t,'1d'), avg(res_err) AS \"mean residual load error MW\" FROM e GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mean residual load error MW"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 61,
+        "w": 12,
+        "h": 9
+      },
+      "id": 19
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "external link"
+    },
+    {
+      "title": "Cross-source",
+      "type": "dashboards",
+      "tags": [
+        "oeds",
+        "cross-source"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "dashboard"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

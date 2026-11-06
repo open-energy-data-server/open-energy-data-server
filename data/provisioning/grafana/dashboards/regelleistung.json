@@ -1,0 +1,2360 @@
+{
+  "uid": "oeds-regelleistung",
+  "title": "OEDS Regelleistung",
+  "tags": [
+    "oeds",
+    "electricity",
+    "balancing"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 41,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "area",
+        "label": "aFRR area",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "select distinct area from regelleistung.afrr_ergebnisse_regelleistung where date_from > now() - interval '30 days' order by 1",
+        "definition": "select distinct area from regelleistung.afrr_ergebnisse_regelleistung where date_from > now() - interval '30 days' order by 1",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "options": [],
+        "hide": 0,
+        "description": "Control area / country of the aFRR capacity tender results: DE, AT, CZ or TOTAL."
+      },
+      {
+        "type": "custom",
+        "name": "dir",
+        "label": "direction",
+        "query": "POS,NEG",
+        "current": {
+          "text": "POS",
+          "value": "POS"
+        },
+        "options": [],
+        "multi": false,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "fcr_area",
+        "label": "FCR area",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "select distinct area from regelleistung.fcr_ergebnisse where date_from > now() - interval '30 days' order by 1",
+        "definition": "select distinct area from regelleistung.fcr_ergebnisse where date_from > now() - interval '30 days' order by 1",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "id": 1
+    },
+    {
+      "type": "table",
+      "title": "Data status",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 'fcr_bedarfe' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"fcr_bedarfe\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"fcr_bedarfe\"\nunion all\nselect 'fcr_ergebnisse' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"fcr_ergebnisse\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"fcr_ergebnisse\"\nunion all\nselect 'fcr_anonyme_ergebnisse' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"fcr_anonyme_ergebnisse\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"fcr_anonyme_ergebnisse\"\nunion all\nselect 'afrr_bedarfe_regelleistung' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"afrr_bedarfe_regelleistung\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"afrr_bedarfe_regelleistung\"\nunion all\nselect 'afrr_ergebnisse_regelleistung' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"afrr_ergebnisse_regelleistung\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"afrr_ergebnisse_regelleistung\"\nunion all\nselect 'afrr_anonyme_ergebnisse_regelleistung' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"afrr_anonyme_ergebnisse_regelleistung\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"afrr_anonyme_ergebnisse_regelleistung\"\nunion all\nselect 'mfrr_bedarfe_regelleistung' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"mfrr_bedarfe_regelleistung\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"mfrr_bedarfe_regelleistung\"\nunion all\nselect 'mfrr_ergebnisse_regelleistung' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"mfrr_ergebnisse_regelleistung\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"mfrr_ergebnisse_regelleistung\"\nunion all\nselect 'mfrr_anonyme_ergebnisse_regelleistung' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"mfrr_anonyme_ergebnisse_regelleistung\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"mfrr_anonyme_ergebnisse_regelleistung\"\nunion all\nselect 'abla_bedarfe' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"abla_bedarfe\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"abla_bedarfe\"\nunion all\nselect 'abla_ergebnisse' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"abla_ergebnisse\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"abla_ergebnisse\"\nunion all\nselect 'abla_anonyme_ergebnisse' as \"table\", min(\"date_from\") as first, max(\"date_from\") as latest, extract(epoch from now() - max(\"date_from\")) as age, approximate_row_count('\"regelleistung\".\"abla_anonyme_ergebnisse\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"abla_anonyme_ergebnisse\"\nunion all\nselect 'afrr_bedarfe_regelarbeit' as \"table\", min(\"delivery_date\")::timestamptz as first, max(\"delivery_date\")::timestamptz as latest, extract(epoch from now() - max(\"delivery_date\")::timestamptz) as age, approximate_row_count('\"regelleistung\".\"afrr_bedarfe_regelarbeit\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"afrr_bedarfe_regelarbeit\"\nunion all\nselect 'afrr_ergebnisse_regelarbeit' as \"table\", min(\"delivery_date\")::timestamptz as first, max(\"delivery_date\")::timestamptz as latest, extract(epoch from now() - max(\"delivery_date\")::timestamptz) as age, approximate_row_count('\"regelleistung\".\"afrr_ergebnisse_regelarbeit\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"afrr_ergebnisse_regelarbeit\"\nunion all\nselect 'afrr_anonyme_ergebnisse_regelarbeit' as \"table\", min(\"delivery_date\")::timestamptz as first, max(\"delivery_date\")::timestamptz as latest, extract(epoch from now() - max(\"delivery_date\")::timestamptz) as age, approximate_row_count('\"regelleistung\".\"afrr_anonyme_ergebnisse_regelarbeit\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"afrr_anonyme_ergebnisse_regelarbeit\"\nunion all\nselect 'mfrr_bedarfe_regelarbeit' as \"table\", min(\"delivery_date\")::timestamptz as first, max(\"delivery_date\")::timestamptz as latest, extract(epoch from now() - max(\"delivery_date\")::timestamptz) as age, approximate_row_count('\"regelleistung\".\"mfrr_bedarfe_regelarbeit\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"mfrr_bedarfe_regelarbeit\"\nunion all\nselect 'mfrr_ergebnisse_regelarbeit' as \"table\", min(\"delivery_date\")::timestamptz as first, max(\"delivery_date\")::timestamptz as latest, extract(epoch from now() - max(\"delivery_date\")::timestamptz) as age, approximate_row_count('\"regelleistung\".\"mfrr_ergebnisse_regelarbeit\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"mfrr_ergebnisse_regelarbeit\"\nunion all\nselect 'mfrr_anonyme_ergebnisse_regelarbeit' as \"table\", min(\"delivery_date\")::timestamptz as first, max(\"delivery_date\")::timestamptz as latest, extract(epoch from now() - max(\"delivery_date\")::timestamptz) as age, approximate_row_count('\"regelleistung\".\"mfrr_anonyme_ergebnisse_regelarbeit\"'::regclass) as \"rows (approx)\" from \"regelleistung\".\"mfrr_anonyme_ergebnisse_regelarbeit\"\norder by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 172800
+                    },
+                    {
+                      "color": "red",
+                      "value": 604800
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rows (approx)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "First and latest timestamp per table, age of the latest value (green < 48 h, orange < 168 h, red older) and approximate row count (TimescaleDB approximate_row_count).",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 15
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "",
+      "options": {
+        "mode": "markdown",
+        "content": "**Regelleistung.net** (German balancing market platform, crawler `regelleistung`, schema `regelleistung`). Tender data of the four reserve products:\n\n* **FCR** frequency containment reserve (joint auction DE/AT/NL/BE/FR/CH/DK/SI/CZ, 4 h blocks, price EUR/MW)\n* **aFRR / mFRR** automatic / manual frequency restoration reserve. `*_regelleistung` = capacity tender (blocks `POS_08_12`, ...), `*_regelarbeit` = energy market (15 min products `POS_001` ... `POS_096`)\n* **ABLA** interruptible loads\n* Per product three table kinds: `bedarfe` (demand), `ergebnisse` (aggregated results), `anonyme_ergebnisse` (every bid anonymised).\n\nTimes are UTC; `delivery_date` columns are local calendar days. Capacity prices are as published (EUR/MW resp. EUR/MWh per MW and hour). The anonymised tables are huge (up to 175 M rows) and are always filtered by time."
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 15
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 1
+      },
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "FCR price (DE)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(settlementcapacity_price_eur_mw) as v from regelleistung.fcr_ergebnisse where $__timeFilter(date_from) and area='DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MW",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean FCR settlement capacity price per 4 h block (uniform across the joint auction).",
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "FCR demand (DE)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(demand_mw) as v from regelleistung.fcr_ergebnisse where $__timeFilter(date_from) and area='DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean FCR demand for Germany.",
+      "gridPos": {
+        "x": 4,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "aFRR capacity price POS (DE)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(average_capacity_price_eur_mwh) as v from regelleistung.afrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like 'POS%'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MW",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean average capacity price of positive aFRR products in Germany.",
+      "gridPos": {
+        "x": 8,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "aFRR capacity price NEG (DE)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(average_capacity_price_eur_mwh) as v from regelleistung.afrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like 'NEG%'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MW",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean average capacity price of negative aFRR products in Germany.",
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "mFRR capacity price POS (DE)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(average_capacity_price_eur_mwh) as v from regelleistung.mfrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like 'POS%'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MW",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean average capacity price of positive mFRR products in Germany.",
+      "gridPos": {
+        "x": 16,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "ABLA price",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(average_capacity_price_eur_mwh) as v from regelleistung.abla_ergebnisse where $__timeFilter(date_from)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: EUR/MW",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean capacity price of the interruptible loads tender (ABLA).",
+      "gridPos": {
+        "x": 20,
+        "y": 17,
+        "w": 4,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "FCR - frequency containment reserve",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 24,
+        "h": 1
+      },
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "FCR capacity price ($fcr_area)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, product as metric, settlementcapacity_price_eur_mw as \"EUR/MW\" from regelleistung.fcr_ergebnisse where $__timeFilter(date_from) and area='$fcr_area' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Settlement price of the FCR auction (EUR/MW) per 4 h block (NEGPOS = symmetric product), one line per block of the day. Block names are in local time.",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "timeseries",
+      "title": "FCR demand by country",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), area as metric, avg(demand_mw) as \"MW\" from regelleistung.fcr_ergebnisse where $__timeFilter(date_from) and area <> 'CROSSBORDER' group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Share of the FCR demand per participating country (mean over the interval). Area CROSSBORDER (volume traded across borders) is left out.",
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "id": 13
+    },
+    {
+      "type": "timeseries",
+      "title": "FCR deficit / surplus in country ($fcr_area)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, deficit_surplus_mw as \"deficit (-) / surplus (+) MW\", demand_mw as \"demand MW\" from regelleistung.fcr_ergebnisse where $__timeFilter(date_from) and area='$fcr_area' order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Difference between demand and domestically procured volume: the part of the demand that is covered from (or sold to) other countries (column deficit_surplus_mw).",
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 12,
+        "h": 8
+      },
+      "id": 14
+    },
+    {
+      "type": "timeseries",
+      "title": "FCR allocated capacity by country (from all bids)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), area as metric, sum(allocated_capacity_mw)/nullif(count(distinct date_from),0) as \"MW\" from regelleistung.fcr_anonyme_ergebnisse where $__timeFilter(date_from) group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Allocated FCR volume per country of the provider (area of the bid), taken from the anonymised bid lists. Mean over the 4 h blocks of the interval.",
+      "gridPos": {
+        "x": 12,
+        "y": 31,
+        "w": 12,
+        "h": 8
+      },
+      "id": 15
+    },
+    {
+      "type": "barchart",
+      "title": "FCR price by block of day ($fcr_area)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select product as block, avg(settlementcapacity_price_eur_mw) as \"EUR/MW\" from regelleistung.fcr_ergebnisse where $__timeFilter(date_from) and area='$fcr_area' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Mean settlement price by 4 h block (NEGPOS_00_04 = 00:00-04:00 local time).",
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 8,
+        "h": 8
+      },
+      "id": 16
+    },
+    {
+      "type": "row",
+      "title": "aFRR - capacity tender (Regelleistung)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 47,
+        "w": 24,
+        "h": 1
+      },
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR capacity price $area - $dir products",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, product as metric, average_capacity_price_eur_mwh as \"average price\" from regelleistung.afrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='$area' and product like '$dir%' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Average capacity price of the aFRR tender per 4 h block (EUR/MW as published) for direction POS (upward) or NEG (downward) selected in the variable 'direction'. One line per block of the day.",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 12,
+        "h": 9
+      },
+      "id": 18
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR price level: min / average / marginal ($area, $dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(min_capacity_price_eur_mwh) as \"min\", avg(average_capacity_price_eur_mwh) as \"average\", avg(marginal_capacity_price_eur_mwh) as \"marginal\" from regelleistung.afrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='$area' and product like '$dir%' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Lowest accepted, volume-weighted average and marginal (highest accepted) capacity price, averaged over all blocks of the interval. A big gap between average and marginal price indicates a steep merit order.",
+      "gridPos": {
+        "x": 12,
+        "y": 48,
+        "w": 12,
+        "h": 9
+      },
+      "id": 19
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR demand vs offered capacity ($area, $dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(demand_mw) as \"demand\" from regelleistung.afrr_bedarfe_regelleistung where $__timeFilter(date_from) and area='$area' and product like '$dir%' group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(sum_of_offered_capacity_mw) as \"offered\" from regelleistung.afrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='$area' and product like '$dir%' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Demand to be procured against the total capacity offered by the bidders (mean over blocks). The ratio shows how competitive the tender was.",
+      "gridPos": {
+        "x": 0,
+        "y": 57,
+        "w": 12,
+        "h": 8
+      },
+      "id": 20
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR allocated volume by providing country ($dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(germany_allocated_volume_mw) as \"Germany\", avg(austria_allocated_volume_mw) as \"Austria\", avg(czech_republic_allocated_volume_mw) as \"Czech Republic\" from regelleistung.afrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='TOTAL' and product like '$dir%' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Allocated aFRR capacity by the country where it is provided (cooperation of DE, AT and CZ), mean over blocks.",
+      "gridPos": {
+        "x": 12,
+        "y": 57,
+        "w": 12,
+        "h": 8
+      },
+      "id": 21
+    },
+    {
+      "type": "barchart",
+      "title": "aFRR accepted capacity by capacity price ($area, $dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select (floor(capacity_price_eur_mwh/2)*2)::int as \"price from (EUR)\", sum(allocated_capacity_mw)/count(distinct date_from) as \"MW per block\" from regelleistung.afrr_anonyme_ergebnisse_regelleistung where $__timeFilter(date_from) and area='$area' and product like '$dir%' and capacity_price_eur_mwh >= 0 and capacity_price_eur_mwh < 60 group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Accepted capacity per 2 EUR price class (anonymised bid lists, prices below 60 EUR), averaged per block. Shows how much capacity is awarded at which price level.",
+      "gridPos": {
+        "x": 0,
+        "y": 65,
+        "w": 12,
+        "h": 8
+      },
+      "id": 22
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR allocated capacity by country (bid lists)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), area as metric, sum(allocated_capacity_mw)/nullif(count(distinct date_from),0) as \"MW\" from regelleistung.afrr_anonyme_ergebnisse_regelleistung where $__timeFilter(date_from) and product like '$dir%' group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Allocated capacity of the selected direction by country of the bidder, from the anonymised bid lists.",
+      "gridPos": {
+        "x": 12,
+        "y": 65,
+        "w": 12,
+        "h": 8
+      },
+      "id": 23
+    },
+    {
+      "type": "row",
+      "title": "aFRR - energy market (Regelarbeit, 15 min products)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 73,
+        "w": 24,
+        "h": 1
+      },
+      "id": 24
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR energy demand (15 min)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as time, left(product,3) as metric, demand_mw as \"MW\" from regelleistung.afrr_bedarfe_regelarbeit where $__timeFilter(delivery_date) and area='TOTAL' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Demand for balancing energy per quarter hour product (POS = upward, NEG = downward). Time axis derived from delivery_date and the product number (DST days are approximate).",
+      "gridPos": {
+        "x": 0,
+        "y": 74,
+        "w": 12,
+        "h": 8
+      },
+      "id": 25
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR offered energy bids (15 min)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as time, left(product,3) as metric, sum_of_offered_capacity_mw as \"MW\" from regelleistung.afrr_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Total volume of the energy bids on the merit order list per quarter hour in Germany.",
+      "gridPos": {
+        "x": 12,
+        "y": 74,
+        "w": 12,
+        "h": 8
+      },
+      "id": 26
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR energy price: lowest and average offer",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(t,$__interval), metric, avg(p) as \"EUR/MWh\" from (select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as t, left(product,3) || ' min' as metric, min_energy_price_eur_mwh as p from regelleistung.afrr_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE') x group by 1,2 order by 1,2"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(t,$__interval), metric, avg(p) as \"EUR/MWh\" from (select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as t, left(product,3) || ' average' as metric, average_energy_price_eur_mwh as p from regelleistung.afrr_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE') x group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Mean of the published minimum and average energy price of the merit order list. Note: the 'average' covers the whole offered list, not only activated energy, and NEG prices are mostly negative; marginal prices sit at the +/-15000 EUR/MWh price limit in nearly all rows and are therefore not shown.",
+      "gridPos": {
+        "x": 0,
+        "y": 82,
+        "w": 12,
+        "h": 8
+      },
+      "id": 27
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR bid prices by payment direction (volume weighted)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select delivery_date::timestamptz as time, left(product,3) || ' ' || energy_price_payment_direction as metric, sum(energy_price_eur_mwh*allocated_capacity_mw)/nullif(sum(allocated_capacity_mw),0) as \"EUR/MWh\"\nfrom regelleistung.afrr_anonyme_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE' group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Volume weighted daily mean of the bid energy prices from the anonymised lists, by product direction and payment direction (GRID_TO_PROVIDER = TSO pays provider, PROVIDER_TO_GRID = provider pays). Based on the bid list; how much of it was actually activated is not part of the data.",
+      "gridPos": {
+        "x": 12,
+        "y": 82,
+        "w": 12,
+        "h": 8
+      },
+      "id": 28
+    },
+    {
+      "type": "row",
+      "title": "mFRR - capacity tender (Regelleistung)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 90,
+        "w": 24,
+        "h": 1
+      },
+      "id": 29
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR capacity price DE - $dir products",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, product as metric, average_capacity_price_eur_mwh as \"average price\" from regelleistung.mfrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like '$dir%' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Average capacity price of the mFRR tender per 4 h block (EUR/MW as published) for direction POS (upward) or NEG (downward) selected in the variable 'direction'. One line per block of the day.",
+      "gridPos": {
+        "x": 0,
+        "y": 91,
+        "w": 12,
+        "h": 9
+      },
+      "id": 30
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR price level: min / average / marginal (DE, $dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(min_capacity_price_eur_mwh) as \"min\", avg(average_capacity_price_eur_mwh) as \"average\", avg(marginal_capacity_price_eur_mwh) as \"marginal\" from regelleistung.mfrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like '$dir%' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Lowest accepted, volume-weighted average and marginal (highest accepted) capacity price, averaged over all blocks of the interval. A big gap between average and marginal price indicates a steep merit order.",
+      "gridPos": {
+        "x": 12,
+        "y": 91,
+        "w": 12,
+        "h": 9
+      },
+      "id": 31
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR demand vs offered capacity (DE, $dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(demand_mw) as \"demand\" from regelleistung.mfrr_bedarfe_regelleistung where $__timeFilter(date_from) and area='DE' and product like '$dir%' group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(sum_of_offered_capacity_mw) as \"offered\" from regelleistung.mfrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like '$dir%' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Demand to be procured against the total capacity offered by the bidders (mean over blocks). The ratio shows how competitive the tender was.",
+      "gridPos": {
+        "x": 0,
+        "y": 100,
+        "w": 12,
+        "h": 8
+      },
+      "id": 32
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR allocated volume (DE) and import/export",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), avg(germany_allocated_volume_mw) as \"Germany allocated\", avg(import_export_mw) as \"import (-) / export (+)\" from regelleistung.mfrr_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like '$dir%' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "mFRR capacity allocated to German providers and the net import/export of mFRR capacity, mean over blocks of direction $dir.",
+      "gridPos": {
+        "x": 12,
+        "y": 100,
+        "w": 12,
+        "h": 8
+      },
+      "id": 33
+    },
+    {
+      "type": "barchart",
+      "title": "mFRR accepted capacity by capacity price (DE, $dir)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select (floor(capacity_price_eur_mwh/2)*2)::int as \"price from (EUR)\", sum(allocated_capacity_mw)/count(distinct date_from) as \"MW per block\" from regelleistung.mfrr_anonyme_ergebnisse_regelleistung where $__timeFilter(date_from) and area='DE' and product like '$dir%' and capacity_price_eur_mwh >= 0 and capacity_price_eur_mwh < 60 group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Accepted capacity per 2 EUR price class (anonymised bid lists, prices below 60 EUR), averaged per block. Shows how much capacity is awarded at which price level.",
+      "gridPos": {
+        "x": 0,
+        "y": 108,
+        "w": 12,
+        "h": 8
+      },
+      "id": 34
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR allocated capacity by country (bid lists)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(date_from,$__interval), area as metric, sum(allocated_capacity_mw)/nullif(count(distinct date_from),0) as \"MW\" from regelleistung.mfrr_anonyme_ergebnisse_regelleistung where $__timeFilter(date_from) and product like '$dir%' group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "line",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Allocated capacity of the selected direction by country of the bidder, from the anonymised bid lists.",
+      "gridPos": {
+        "x": 12,
+        "y": 108,
+        "w": 12,
+        "h": 8
+      },
+      "id": 35
+    },
+    {
+      "type": "row",
+      "title": "mFRR - energy market (Regelarbeit, 15 min products)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 116,
+        "w": 24,
+        "h": 1
+      },
+      "id": 36
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR energy demand (15 min)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as time, left(product,3) as metric, demand_mw as \"MW\" from regelleistung.mfrr_bedarfe_regelarbeit where $__timeFilter(delivery_date) and area='TOTAL' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Demand for balancing energy per quarter hour product (POS = upward, NEG = downward). Time axis derived from delivery_date and the product number (DST days are approximate).",
+      "gridPos": {
+        "x": 0,
+        "y": 117,
+        "w": 12,
+        "h": 8
+      },
+      "id": 37
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR offered energy bids (15 min)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as time, left(product,3) as metric, sum_of_offered_capacity_mw as \"MW\" from regelleistung.mfrr_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE' order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Total volume of the energy bids on the merit order list per quarter hour in Germany.",
+      "gridPos": {
+        "x": 12,
+        "y": 117,
+        "w": 12,
+        "h": 8
+      },
+      "id": 38
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR energy price: lowest and average offer",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(t,$__interval), metric, avg(p) as \"EUR/MWh\" from (select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as t, left(product,3) || ' min' as metric, min_energy_price_eur_mwh as p from regelleistung.mfrr_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE') x group by 1,2 order by 1,2"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(t,$__interval), metric, avg(p) as \"EUR/MWh\" from (select ((delivery_date::timestamp at time zone 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes') as t, left(product,3) || ' average' as metric, average_energy_price_eur_mwh as p from regelleistung.mfrr_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE') x group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Mean of the published minimum and average energy price of the merit order list. Note: the 'average' covers the whole offered list, not only activated energy, and NEG prices are mostly negative; marginal prices sit at the +/-15000 EUR/MWh price limit in nearly all rows and are therefore not shown.",
+      "gridPos": {
+        "x": 0,
+        "y": 125,
+        "w": 12,
+        "h": 8
+      },
+      "id": 39
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR bid prices by payment direction (volume weighted)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select delivery_date::timestamptz as time, left(product,3) || ' ' || energy_price_payment_direction as metric, sum(energy_price_eur_mwh*allocated_capacity_mw)/nullif(sum(allocated_capacity_mw),0) as \"EUR/MWh\"\nfrom regelleistung.mfrr_anonyme_ergebnisse_regelarbeit where $__timeFilter(delivery_date) and area='DE' group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Volume weighted daily mean of the bid energy prices from the anonymised lists, by product direction and payment direction (GRID_TO_PROVIDER = TSO pays provider, PROVIDER_TO_GRID = provider pays). Based on the bid list; how much of it was actually activated is not part of the data.",
+      "gridPos": {
+        "x": 12,
+        "y": 125,
+        "w": 12,
+        "h": 8
+      },
+      "id": 40
+    },
+    {
+      "type": "row",
+      "title": "ABLA - interruptible loads",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 133,
+        "w": 24,
+        "h": 1
+      },
+      "id": 41
+    },
+    {
+      "type": "timeseries",
+      "title": "ABLA demand and offered capacity",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, demand_mw as \"demand\" from regelleistung.abla_bedarfe where $__timeFilter(date_from) order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, sum_of_offered_capacity_mw as \"offered\" from regelleistung.abla_ergebnisse where $__timeFilter(date_from) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Tendered interruptible load (daily product POS_00_24) and offers received. Tender exists since 2024.",
+      "gridPos": {
+        "x": 0,
+        "y": 134,
+        "w": 12,
+        "h": 8
+      },
+      "id": 42
+    },
+    {
+      "type": "timeseries",
+      "title": "ABLA capacity price",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, min_capacity_price_eur_mwh as \"min\", average_capacity_price_eur_mwh as \"average\", marginal_capacity_price_eur_mwh as \"marginal\" from regelleistung.abla_ergebnisse where $__timeFilter(date_from) order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Minimum, average and marginal accepted capacity price of the daily ABLA tender.",
+      "gridPos": {
+        "x": 12,
+        "y": 134,
+        "w": 12,
+        "h": 8
+      },
+      "id": 43
+    },
+    {
+      "type": "timeseries",
+      "title": "ABLA allocated capacity (bid list)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_from as time, sum(allocated_capacity_mw) as \"allocated\", sum(offered_capacity_mw) as \"offered\" from regelleistung.abla_anonyme_ergebnisse where $__timeFilter(date_from) group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Sum of allocated and offered capacity over all bids of the daily ABLA tender.",
+      "gridPos": {
+        "x": 0,
+        "y": 142,
+        "w": 24,
+        "h": 7
+      },
+      "id": 44
+    }
+  ],
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}

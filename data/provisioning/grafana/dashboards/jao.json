@@ -1,251 +1,495 @@
 {
-  "annotations": {
+  "uid": "oeds-jao",
+  "title": "OEDS JAO",
+  "tags": [
+    "oeds",
+    "electricity",
+    "auctions"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 41,
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
     "list": [
       {
-        "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
+        "type": "datasource",
+        "name": "ds",
+        "label": "data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
         },
-        "enable": true,
-        "hide": true,
-        "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "Annotations & Alerts",
-        "type": "dashboard"
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "corridor",
+        "label": "corridor (direction)",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "select distinct \"corridorCode\" from jao.auction_results where date > now() - interval '90 days' and \"corridorCode\" not like '%-%-%' order by 1",
+        "definition": "select distinct \"corridorCode\" from jao.auction_results where date > now() - interval '90 days' and \"corridorCode\" not like '%-%-%' order by 1",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {
+          "text": "DE-CH",
+          "value": "DE-CH"
+        },
+        "options": [],
+        "hide": 0,
+        "description": "Border direction of the daily auction, e.g. DE-CH = capacity from Germany to Switzerland."
+      },
+      {
+        "type": "query",
+        "name": "corridors",
+        "label": "corridors to compare",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "select distinct \"corridorCode\" from jao.auction_results where date > now() - interval '90 days' order by 1",
+        "definition": "select distinct \"corridorCode\" from jao.auction_results where date > now() - interval '90 days' order by 1",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": false,
+        "current": {
+          "text": [
+            "DE-CH",
+            "CH-DE",
+            "FR-CH",
+            "CH-FR",
+            "AT-CH",
+            "CH-AT",
+            "IT-CH",
+            "CH-IT"
+          ],
+          "value": [
+            "DE-CH",
+            "CH-DE",
+            "FR-CH",
+            "CH-FR",
+            "AT-CH",
+            "CH-AT",
+            "IT-CH",
+            "CH-IT"
+          ]
+        },
+        "options": [],
+        "hide": 0
       }
     ]
   },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 64,
-  "links": [],
   "panels": [
     {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "id": 1
+    },
+    {
+      "type": "table",
+      "title": "Data status",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 'auctions' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"auctions\"'::regclass) as \"rows (approx)\" from \"jao\".\"auctions\"\nunion all\nselect 'auction_results' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"auction_results\"'::regclass) as \"rows (approx)\" from \"jao\".\"auction_results\"\nunion all\nselect 'bids_daily' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"bids_daily\"'::regclass) as \"rows (approx)\" from \"jao\".\"bids_daily\"\nunion all\nselect 'bids_weekly' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"bids_weekly\"'::regclass) as \"rows (approx)\" from \"jao\".\"bids_weekly\"\nunion all\nselect 'bids_monthly' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"bids_monthly\"'::regclass) as \"rows (approx)\" from \"jao\".\"bids_monthly\"\nunion all\nselect 'bids_quarterly' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"bids_quarterly\"'::regclass) as \"rows (approx)\" from \"jao\".\"bids_quarterly\"\nunion all\nselect 'bids_seasonal' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"bids_seasonal\"'::regclass) as \"rows (approx)\" from \"jao\".\"bids_seasonal\"\nunion all\nselect 'bids_yearly' as \"table\", min(\"date\") as first, max(\"date\") as latest, extract(epoch from now() - max(\"date\")) as age, approximate_row_count('\"jao\".\"bids_yearly\"'::regclass) as \"rows (approx)\" from \"jao\".\"bids_yearly\"\norder by 1"
+        }
+      ],
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "ENTSO-E day-ahead price",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "smooth",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "€/MWh"
-        },
+        "defaults": {},
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/.*capacity/"
+              "id": "byName",
+              "options": "age"
             },
             "properties": [
               {
                 "id": "unit",
-                "value": "megwatt"
+                "value": "s"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 172800
+                    },
+                    {
+                      "color": "red",
+                      "value": 604800
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
+              "id": "byName",
+              "options": "rows (approx)"
             },
             "properties": [
               {
-                "id": "custom.axisPlacement",
-                "value": "right"
-              },
-              {
-                "id": "custom.axisLabel",
-                "value": "JAO auction price"
+                "id": "unit",
+                "value": "short"
               }
             ]
           }
         ]
       },
-      "gridPos": {
-        "h": 14,
-        "w": 18,
-        "x": 0,
-        "y": 0
-      },
-      "id": 4,
-      "interval": "4d",
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "description": "First and latest timestamp per table, age of the latest value (green < 48 h, orange < 168 h, red older) and approximate row count (TimescaleDB approximate_row_count).",
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 9
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "",
+      "options": {
+        "mode": "markdown",
+        "content": "**JAO** (Joint Allocation Office, crawler `jao`, schema `jao`): explicit capacity auctions on borders that are *not* in flow-based market coupling\n(mainly Switzerland, Great Britain interconnectors, Balkan, Ukraine borders; Germany only borders CH via explicit auctions). Prices are **EUR/MW** per product hour (about EUR/MWh of capacity), capacity in MW.\n\n* `date` is the start of the delivery period (local midnight, stored as UTC), `corridorCode` is the direction `FROM-TO`.\n* Daily auction results have one product per hour (`B01` = 00-01 h); long-term products (weekly ... yearly) are `BASE` or `PEAK` for the whole period.\n* `bids_*` contain every submitted bid (bids_daily has > 150 M rows, so dashboard queries always filter by time and corridor).\n* Day-ahead auctions on a DST change day have 23 or 25 products; the hour-based time axis is approximate on these days."
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 9
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Daily auctions: prices and capacity",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 1
+      },
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "Average auction price",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
       },
       "targets": [
         {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [
-            {
-              "params": [
-                "$__interval",
-                "none"
-              ],
-              "type": "time"
-            }
-          ],
-          "hide": false,
-          "metricColumn": "country",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(index,$__interval),\n  country AS metric,\n  avg(\"0\") AS \"Day-Ahead price\"\nFROM entsoe.query_day_ahead_prices\nWHERE\n  $__timeFilter(index)\n  and country = 'CH'\nGROUP BY 1,2\nORDER BY 1,2",
           "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "\"0\""
-                ],
-                "type": "column"
-              },
-              {
-                "params": [
-                  "avg"
-                ],
-                "type": "aggregate"
-              },
-              {
-                "params": [
-                  "\"0\""
-                ],
-                "type": "alias"
-              }
-            ]
-          ],
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "query_day_ahead_prices",
-          "timeColumn": "index",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
-        },
-        {
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
           },
           "editorMode": "code",
-          "format": "time_series",
-          "hide": false,
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  $__timeGroupAlias(date,$__interval),\n  corridor,\n  --avg(\"offeredCapacity\") AS \"offered_capacity\",\n  avg(\"auctionPrice\") AS \"JAO auction price\"\n  \n  \nFROM \"jao\".auctions\nWHERE\n  $__timeFilter(date)\n  and corridor like '%DE-CH%' \nGROUP BY 1, corridor\nORDER BY 1, corridor",
-          "refId": "B",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "rawSql": "select avg(\"auctionPrice\") as v from jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-'"
         }
       ],
-      "title": "ENTSOE Day-Ahead-Prices and JAO (average over ${__interval})",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
-      },
       "fieldConfig": {
         "defaults": {
+          "unit": "suffix: EUR/MW",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "color": {
             "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean daily-auction price on the selected corridor.",
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Average offered capacity",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
-          "mappings": [],
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(\"offeredCapacity\") as v from jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Mean capacity offered per hour in the daily auction.",
+      "gridPos": {
+        "x": 4,
+        "y": 11,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Capacity allocated",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select 100*sum(\"allocatedCapacity\")/nullif(sum(\"offeredCapacity\"),0) as v from jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Allocated capacity as share of the offered capacity.",
+      "gridPos": {
+        "x": 8,
+        "y": 11,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Oversubscription",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select sum(\"requestedCapacity\")/nullif(sum(\"offeredCapacity\"),0) as v from jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: x",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Requested capacity divided by offered capacity. Values above 1 mean the auction was congested.",
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 4,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Cancelled auctions",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as v from jao.auctions where $__timeFilter(date) and cancelled"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -254,25 +498,18 @@
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "orange",
+                "value": 1
               }
             ]
+          },
+          "color": {
+            "mode": "thresholds"
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 21,
-        "y": 0
-      },
-      "id": 3,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -280,85 +517,58 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
       },
-      "pluginVersion": "10.4.4",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "WITH total_query AS (\nSELECT * FROM jao.bids_daily \nUNION \nSELECT * FROM jao.bids_monthly\n)\nSELECT COUNT(*) FROM total_query WHERE \"resoldQuantity\" != 0;\n",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
-        }
-      ],
-      "title": "Resold quantity",
-      "type": "gauge"
+      "description": "Number of cancelled auctions (all horizons and corridors) with delivery in the range.",
+      "gridPos": {
+        "x": 16,
+        "y": 11,
+        "w": 4,
+        "h": 4
+      },
+      "id": 9
     },
     {
+      "type": "stat",
+      "title": "Corridors with daily auction",
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "P6EAA63344BCC9F38"
+        "uid": "${ds}"
       },
-      "description": "for monthly bids",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"corridorCode\") as v from jao.auction_results where $__timeFilter(date)"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 18,
-        "y": 4
-      },
-      "id": 1,
       "options": {
-        "displayLabels": [
-          "percent"
-        ],
-        "legend": {
-          "calcs": [],
-          "displayMode": "hidden",
-          "placement": "right",
-          "showLegend": false,
-          "values": []
-        },
-        "pieType": "pie",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -366,83 +576,980 @@
           "fields": "",
           "values": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
       },
-      "pluginVersion": "10.4.0",
+      "description": "Number of corridor directions with results in the range.",
+      "gridPos": {
+        "x": 20,
+        "y": 11,
+        "w": 4,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "timeseries",
+      "title": "Auction price and day-ahead spread: $corridor",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
       "targets": [
         {
+          "refId": "A",
           "datasource": {
             "type": "grafana-postgresql-datasource",
-            "uid": "P6EAA63344BCC9F38"
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with z as (select case split_part('$corridor','-',1) when 'DE' then 'DE_LU' when 'IT' then 'IT_NORD' else split_part('$corridor','-',1) end as f,\n case split_part('$corridor','-',2) when 'DE' then 'DE_LU' when 'IT' then 'IT_NORD' else split_part('$corridor','-',2) end as t),\nr as (select (date + (substring(\"productIdentification\" from 2 for 2)::int - 1) * interval '1 hour') as t, \"auctionPrice\" as p from jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-'),\npf as (select time_bucket('1 hour', index) as h, avg(value) as v from entsoe.query_day_ahead_prices where $__timeFilter(index) and country=(select f from z) group by 1),\npt as (select time_bucket('1 hour', index) as h, avg(value) as v from entsoe.query_day_ahead_prices where $__timeFilter(index) and country=(select t from z) group by 1)\nselect $__timeGroupAlias(r.t,$__interval), avg(r.p) as \"JAO auction price (EUR/MW)\", avg(pt.v - pf.v) as \"day-ahead spread to-from (EUR/MWh)\"\nfrom r left join pf on pf.h = r.t left join pt on pt.h = r.t group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "min",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Price of the daily explicit capacity auction against the day-ahead price spread of the two zones (ENTSO-E). Rational bidders pay roughly the expected spread TO minus FROM (positive spread = value of the capacity). The zones are derived from the corridor code (DE = DE_LU, IT = IT_NORD); borders to GB or Ukraine have no ENTSO-E prices.",
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 14,
+        "h": 10
+      },
+      "id": 11
+    },
+    {
+      "type": "timeseries",
+      "title": "Offered, requested and allocated capacity: $corridor",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(t,$__interval), avg(o) as \"offered\", avg(rq) as \"requested\", avg(al) as \"allocated\"\nfrom (select (date + (substring(\"productIdentification\" from 2 for 2)::int - 1) * interval '1 hour') as t, \"offeredCapacity\" o, \"requestedCapacity\" rq, \"allocatedCapacity\" al from jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-') x group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Capacity per hour in the daily auction: offered by the TSOs (= ATC), requested by market participants and allocated.",
+      "gridPos": {
+        "x": 14,
+        "y": 15,
+        "w": 10,
+        "h": 10
+      },
+      "id": 12
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily average auction price per corridor",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, \"corridorCode\" as metric, avg(\"auctionPrice\") as \"EUR/MW\" from jao.auction_results\nwhere $__timeFilter(date) and \"corridorCode\" in ($corridors) and \"productIdentification\" ~ '^B[0-9]{2}-' group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Daily mean of the hourly auction prices for the corridors chosen in the variable 'corridors to compare'.",
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 14,
+        "h": 9
+      },
+      "id": 13
+    },
+    {
+      "type": "barchart",
+      "title": "Mean auction price by corridor",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \"productMinutesDelivered\"/60/24 as \"days\",COUNT(\"productMinutesDelivered\") as \"value\"\nFROM jao.bids_monthly\nGROUP BY \"days\";",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "name": "AVG",
-                "parameters": [
-                  {
-                    "name": "currency",
-                    "type": "functionParameter"
-                  }
-                ],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          },
-          "table": "bids_daily"
+          "rawSql": "select \"corridorCode\" as corridor, avg(\"auctionPrice\") as \"EUR/MW\" from jao.auction_results\nwhere $__timeFilter(date) and \"productIdentification\" ~ '^B[0-9]{2}-' group by 1 order by 2 desc limit 25"
         }
       ],
-      "title": "delivered days",
-      "transformations": [
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "The 25 corridor directions with the highest mean daily-auction price in the range.",
+      "gridPos": {
+        "x": 14,
+        "y": 25,
+        "w": 10,
+        "h": 9
+      },
+      "id": 14
+    },
+    {
+      "type": "barchart",
+      "title": "Auction price by hour of day: $corridor",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
         {
-          "id": "rowsToFields",
-          "options": {
-            "mappings": [
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select substring(\"productIdentification\" from 2 for 2)::int as \"hour\", avg(\"auctionPrice\") as \"EUR/MW\" from jao.auction_results\nwhere $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Average price per delivery hour (B01 = 00:00-01:00 local time). Shows the daily scarcity pattern of the border.",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      },
+      "id": 15
+    },
+    {
+      "type": "timeseries",
+      "title": "Competition: bidders per auction and oversubscription",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, avg(\"bidderPartyCount\") as \"bidders\", avg(\"winnerPartyCount\") as \"winners\", avg(\"requestedCapacity\"/nullif(\"offeredCapacity\",0)) as \"requested / offered\"\nfrom jao.auction_results where $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "requested / offered"
+            },
+            "properties": [
               {
-                "fieldName": "days",
-                "handlerKey": "field.name"
-              },
-              {
-                "fieldName": "value",
-                "handlerKey": "field.value"
+                "id": "custom.axisPlacement",
+                "value": "right"
               }
             ]
           }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Daily means of the number of bidding and winning parties and of the ratio of requested to offered capacity.",
+      "gridPos": {
+        "x": 8,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      },
+      "id": 16
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead prices of both zones and auction price",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "with z as (select case split_part('$corridor','-',1) when 'DE' then 'DE_LU' when 'IT' then 'IT_NORD' else split_part('$corridor','-',1) end as f,\n case split_part('$corridor','-',2) when 'DE' then 'DE_LU' when 'IT' then 'IT_NORD' else split_part('$corridor','-',2) end as t)\nselect $__timeGroupAlias(index,$__interval), country as metric, avg(value) as \"price\" from entsoe.query_day_ahead_prices\nwhere $__timeFilter(index) and country in ((select f from z),(select t from z)) group by 1,2 order by 1,2"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(t,$__interval), avg(p) as \"JAO auction price $corridor\" from (select (date + (substring(\"productIdentification\" from 2 for 2)::int - 1) * interval '1 hour') as t, \"auctionPrice\" p from jao.auction_results\nwhere $__timeFilter(date) and \"corridorCode\"='$corridor' and \"productIdentification\" ~ '^B[0-9]{2}-') x group by 1 order by 1"
         }
       ],
-      "type": "piechart"
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "ENTSO-E day-ahead prices of the two zones of the selected corridor and the JAO auction price of that corridor (EUR/MWh vs EUR/MW).",
+      "gridPos": {
+        "x": 16,
+        "y": 34,
+        "w": 8,
+        "h": 8
+      },
+      "id": 17
+    },
+    {
+      "type": "row",
+      "title": "Long-term auctions (week, month, quarter, season, year)",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 42,
+        "w": 24,
+        "h": 1
+      },
+      "id": 18
+    },
+    {
+      "type": "timeseries",
+      "title": "Long-term auction prices: $corridor (last 3 years)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select r.date as time, a.horizon || ' ' || r.\"productIdentification\" as metric, avg(r.\"auctionPrice\") as \"EUR/MW\"\nfrom jao.auction_results r join jao.auctions a on a.id = r.\"auctionId\" and a.date = r.date\nwhere r.date > now() - interval '3 years' and r.\"corridorCode\"='$corridor' and a.horizon in ('Weekly','Monthly','Quarterly','Seasonal','Yearly') and r.\"auctionPrice\" is not null\ngroup by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Prices of the long-term products on the selected corridor (period start on the time axis), independent of the dashboard time range. Base and peak products. Empty if the corridor has no long-term auctions.",
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 12,
+        "h": 9
+      },
+      "id": 19
+    },
+    {
+      "type": "timeseries",
+      "title": "Auctions per horizon",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('month', date) as time, horizon as metric, count(*) as \"auctions\" from jao.auctions\nwhere $__timeFilter(date) group by 1,2 order by 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 70,
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "sum"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Number of auctions per product horizon by month of delivery start (all corridors). Most auctions are daily.",
+      "gridPos": {
+        "x": 12,
+        "y": 43,
+        "w": 12,
+        "h": 9
+      },
+      "id": 20
+    },
+    {
+      "type": "barchart",
+      "title": "Auctions per corridor and share cancelled",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select corridor, count(*) filter (where not cancelled) as \"held\", count(*) filter (where cancelled) as \"cancelled\" from jao.auctions\nwhere $__timeFilter(date) and horizon = 'Daily' group by 1 order by count(*) desc limit 25"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "normal",
+        "xField": "corridor"
+      },
+      "description": "Daily auctions per corridor in the range, stacked into held and cancelled auctions.",
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 8
+      },
+      "id": 21
+    },
+    {
+      "type": "row",
+      "title": "Bids",
+      "collapsed": false,
+      "panels": [],
+      "gridPos": {
+        "x": 0,
+        "y": 60,
+        "w": 24,
+        "h": 1
+      },
+      "id": 22
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily bids: bid price vs awarded price ($corridor)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, avg(price) as \"mean bid price\", avg(\"awardedPrice\") as \"auction (clearing) price\", max(price) as \"highest bid\"\nfrom jao.bids_daily where $__timeFilter(date) and \"corridorCode\"='$corridor' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Bids of the daily auction (table bids_daily): mean and highest submitted bid price against the resulting auction price. A large gap means bidders submit far above the clearing price.",
+      "gridPos": {
+        "x": 0,
+        "y": 61,
+        "w": 12,
+        "h": 8
+      },
+      "id": 23
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily bids: quantity bid vs awarded ($corridor)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, sum(quantity) as \"bid quantity\", sum(\"awardedQuantity\") as \"awarded quantity\", sum(\"resoldQuantity\") as \"resold quantity\"\nfrom jao.bids_daily where $__timeFilter(date) and \"corridorCode\"='$corridor' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Sum of bid quantities (MW over all hourly products of the day) versus awarded quantities. Awarded quantity is much smaller since most bids lose.",
+      "gridPos": {
+        "x": 12,
+        "y": 61,
+        "w": 12,
+        "h": 8
+      },
+      "id": 24
+    },
+    {
+      "type": "barchart",
+      "title": "Monthly bids by delivery length",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select (round(\"productMinutesDelivered\"/60.0/24))::int || ' days' as delivered, count(*) as bids from jao.bids_monthly\nwhere date > now() - interval '12 months' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "stacking": "none"
+      },
+      "description": "Last 12 months (independent of time range): number of bids in monthly auctions grouped by the number of delivered days of the product (28-31 days, shorter at partial months).",
+      "gridPos": {
+        "x": 0,
+        "y": 69,
+        "w": 8,
+        "h": 8
+      },
+      "id": 25
+    },
+    {
+      "type": "stat",
+      "title": "Resold capacity (range)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(sum(\"resoldCapacity\"),0) as v from jao.auction_results where $__timeFilter(date) and \"resoldCapacity\" > 0"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megwatt",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      },
+      "description": "Sum of capacity re-sold by long-term holders (auction_results.resoldCapacity) in the range. Note: bids_*.resoldQuantity is zero in all rows of the data, so it is not used.",
+      "gridPos": {
+        "x": 8,
+        "y": 69,
+        "w": 4,
+        "h": 8
+      },
+      "id": 26
+    },
+    {
+      "type": "timeseries",
+      "title": "Awarded price of long-term bids over time (all corridors)",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, 'monthly' as metric, avg(\"awardedPrice\") as \"price\" from jao.bids_monthly where date > now() - interval '3 years' group by 1 order by 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, 'yearly' as metric, avg(\"awardedPrice\") as \"price\" from jao.bids_yearly where date > now() - interval '3 years' group by 1 order by 1"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date as time, 'quarterly' as metric, avg(\"awardedPrice\") as \"price\" from jao.bids_quarterly where date > now() - interval '3 years' group by 1 order by 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 0,
+            "drawStyle": "line"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Average awarded price of bids per auction in the long-term bid tables over the last 3 years (independent of time range, all corridors mixed).",
+      "gridPos": {
+        "x": 12,
+        "y": 69,
+        "w": 12,
+        "h": 8
+      },
+      "id": 27
     }
   ],
-  "schemaVersion": 39,
-  "tags": [],
-  "templating": {
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ],
+  "annotations": {
     "list": []
-  },
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "JAO-Dashboard",
-  "uid": "cdi794ptudibkd",
-  "version": 7,
-  "weekStart": ""
+  }
 }

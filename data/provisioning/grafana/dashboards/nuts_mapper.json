@@ -1,0 +1,1029 @@
+{
+  "uid": "oeds-nuts-mapper",
+  "title": "OEDS NUTS Regions",
+  "tags": [
+    "oeds",
+    "geo",
+    "nuts_mapper"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "NUTS 0-3 administrative regions (Eurostat 2021, PostGIS) used to assign weather and energy data to regions.",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Overview",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "NUTS 0",
+      "description": "Number of NUTS level 0 units: countries (NUTS 0).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"countries (NUTS 0)\" FROM public.nuts WHERE levl_code = 0"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 2
+    },
+    {
+      "type": "stat",
+      "title": "NUTS 1",
+      "description": "Number of NUTS level 1 units: major regions (NUTS 1).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"major regions (NUTS 1)\" FROM public.nuts WHERE levl_code = 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 3
+    },
+    {
+      "type": "stat",
+      "title": "NUTS 2",
+      "description": "Number of NUTS level 2 units: regions (NUTS 2).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"regions (NUTS 2)\" FROM public.nuts WHERE levl_code = 2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 4
+    },
+    {
+      "type": "stat",
+      "title": "NUTS 3",
+      "description": "Number of NUTS level 3 units: districts (NUTS 3).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"districts (NUTS 3)\" FROM public.nuts WHERE levl_code = 3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "table",
+      "title": "Table check",
+      "description": "public.nuts is a static reference table without time column; checks that every region has geometry, coordinates and valid geometry.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'public.nuts' AS \"Table\", approximate_row_count('public.nuts'::regclass) AS \"Rows (approx.)\", count(*) AS \"Rows\",\n  count(*) FILTER (WHERE geometry IS NULL) AS \"No geometry\", count(*) FILTER (WHERE NOT st_isvalid(geometry)) AS \"Invalid geometry\",\n  count(*) FILTER (WHERE longitude IS NULL OR latitude IS NULL) AS \"No lon/lat\", count(DISTINCT cntr_code) AS \"Countries\", 'static' AS \"Status\"\nFROM public.nuts"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 0
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 8,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "text",
+      "title": "About",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "Reference regions (Eurostat NUTS 2021, EPSG:4326). Other OEDS data (ECMWF weather, energy statistics) is joined to regions through `nuts_id`. Map markers are placed at the centroid of the largest polygon of each region, because the stored `longitude/latitude` of countries with overseas territories (for example France) is pulled into the ocean by the small remote parts."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 3
+      },
+      "id": 7
+    },
+    {
+      "type": "row",
+      "title": "Map",
+      "collapsed": false,
+      "panels": [],
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "NUTS level $level regions",
+      "description": "Centroid of every region of the chosen NUTS level; marker size shows the area (km2, geodesic), colour the area as well. Choose the level with the variable above.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id, nuts_name AS region, cntr_code AS country, st_area(geometry::geography) / 1e6 AS \"area (km2)\",\n  st_y((SELECT st_centroid(g.geom) FROM st_dump(geometry) g ORDER BY st_area(g.geom) DESC LIMIT 1)) AS lat, st_x((SELECT st_centroid(g.geom) FROM st_dump(geometry) g ORDER BY st_area(g.geom) DESC LIMIT 1)) AS lon\nFROM public.nuts WHERE levl_code = ${level}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 52,
+          "lon": 12,
+          "zoom": 4,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "regions",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "area (km2)",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "area (km2)",
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 24
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 14,
+        "h": 13
+      },
+      "id": 9
+    },
+    {
+      "type": "barchart",
+      "title": "Area by country",
+      "description": "Country area in km2 (geodesic, includes overseas territories and islands as in the shapefile).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT cntr_code AS country, st_area(geometry::geography) / 1e6 AS \"area (km2)\" FROM public.nuts WHERE levl_code = 0 ORDER BY 2 DESC LIMIT 20"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: km²"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "country",
+        "orientation": "auto",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 9,
+        "w": 10,
+        "h": 13
+      },
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "Country $country",
+      "collapsed": false,
+      "panels": [],
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "NUTS 3 districts of $country, coloured by degree of urbanisation",
+      "description": "NUTS 3 districts of the selected country. Marker size = area, colour = degree of urbanisation (1 city, 2 town/suburb, 3 rural).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id, nuts_name AS district, urbn_type AS urbanisation, coast_type AS coast, mount_type AS mountain,\n  st_area(geometry::geography) / 1e6 AS \"area (km2)\", st_y((SELECT st_centroid(g.geom) FROM st_dump(geometry) g ORDER BY st_area(g.geom) DESC LIMIT 1)) AS lat, st_x((SELECT st_centroid(g.geom) FROM st_dump(geometry) g ORDER BY st_area(g.geom) DESC LIMIT 1)) AS lon\nFROM public.nuts WHERE levl_code = 3 AND cntr_code = '${country}'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51,
+          "lon": 10,
+          "zoom": 5,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "NUTS 3",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "urbanisation",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.8,
+                "size": {
+                  "field": "area (km2)",
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 14
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 12,
+        "h": 11
+      },
+      "id": 12
+    },
+    {
+      "type": "table",
+      "title": "Regions of $country",
+      "description": "All NUTS 1-3 regions of the selected country with area and Eurostat typology (urbanisation: 1 city, 2 town/suburb, 3 rural; coast: 1 coastal, 2 coastal by population, 3 non-coastal; mountain: 4 = non-mountain).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS \"NUTS id\", levl_code AS \"Level\", nuts_name AS \"Name\", round((st_area(geometry::geography) / 1e6)::numeric, 0) AS \"Area (km2)\",\n  urbn_type AS \"Urbanisation\", coast_type AS \"Coast\", mount_type AS \"Mountain\"\nFROM public.nuts WHERE cntr_code = '${country}' AND levl_code BETWEEN 1 AND 3 ORDER BY nuts_id"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "NUTS id",
+            "desc": false
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 23,
+        "w": 12,
+        "h": 11
+      },
+      "id": 13
+    },
+    {
+      "type": "barchart",
+      "title": "Districts by degree of urbanisation (NUTS 3, $country)",
+      "description": "Number of NUTS 3 districts per urbanisation class.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE urbn_type WHEN 1 THEN '1 city' WHEN 2 THEN '2 town/suburb' WHEN 3 THEN '3 rural' ELSE 'unknown' END AS class, count(*) AS districts\nFROM public.nuts WHERE levl_code = 3 AND cntr_code = '${country}' GROUP BY urbn_type ORDER BY urbn_type"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "class",
+        "orientation": "auto",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 8,
+        "h": 7
+      },
+      "id": 14
+    },
+    {
+      "type": "barchart",
+      "title": "Regions per level and country",
+      "description": "Number of regions per NUTS level for the largest countries by district count.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT cntr_code AS country, count(*) FILTER (WHERE levl_code = 1) AS \"NUTS 1\", count(*) FILTER (WHERE levl_code = 2) AS \"NUTS 2\",\n  count(*) FILTER (WHERE levl_code = 3) AS \"NUTS 3\" FROM public.nuts WHERE levl_code > 0 GROUP BY 1 ORDER BY 4 DESC LIMIT 15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "country",
+        "orientation": "auto",
+        "stacking": "none",
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 0,
+        "showValue": "never",
+        "barWidth": 0.9,
+        "groupWidth": 0.8
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 34,
+        "w": 8,
+        "h": 7
+      },
+      "id": 15
+    },
+    {
+      "type": "table",
+      "title": "Regions without ECMWF weather data",
+      "description": "Cross-source check: NUTS regions that have no row in ecmwf.ecmwf_eu at the latest hour. These are overseas and island regions outside the ECMWF grid (Canary Islands, Azores, Madeira, French overseas, Ceuta, Melilla, Svalbard...).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS \"NUTS id\", levl_code AS \"Level\", nuts_name AS \"Name\", cntr_code AS \"Country\" FROM public.nuts\nWHERE nuts_id NOT IN (SELECT nuts_id FROM ecmwf.ecmwf_eu WHERE \"time\" = (SELECT max(\"time\") FROM ecmwf.ecmwf_eu)) ORDER BY levl_code, nuts_id"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Level",
+            "desc": false
+          }
+        ]
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 34,
+        "w": 8,
+        "h": 7
+      },
+      "id": 16
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      },
+      {
+        "type": "custom",
+        "name": "level",
+        "label": "NUTS level (map)",
+        "query": "0,1,2,3",
+        "current": {
+          "text": "2",
+          "value": "2"
+        },
+        "options": [
+          {
+            "text": "0",
+            "value": "0",
+            "selected": false
+          },
+          {
+            "text": "1",
+            "value": "1",
+            "selected": false
+          },
+          {
+            "text": "2",
+            "value": "2",
+            "selected": true
+          },
+          {
+            "text": "3",
+            "value": "3",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "query",
+        "name": "country",
+        "label": "Country",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT DISTINCT nuts_name AS __text, cntr_code AS __value FROM public.nuts WHERE levl_code = 0 ORDER BY 1",
+        "definition": "SELECT DISTINCT nuts_name AS __text, cntr_code AS __value FROM public.nuts WHERE levl_code = 0 ORDER BY 1",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Deutschland",
+          "value": "DE"
+        },
+        "options": []
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

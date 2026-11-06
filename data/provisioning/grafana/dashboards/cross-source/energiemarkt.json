@@ -1,0 +1,2696 @@
+{
+  "uid": "oeds-x-energiemarkt",
+  "title": "OEDS Energiemarkt-Übersicht",
+  "tags": [
+    "oeds",
+    "cross-source",
+    "electricity",
+    "balancing",
+    "gas",
+    "regelleistung",
+    "entsoe"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Balancing capacity auctions and energy market (regelleistung.net), ENTSO-E flows, load and prices, JAO capacity auctions, weather and gas storage in one view. The merit orders show the 4 h slot (capacity) or the quarter hours (energy) that contain the END of the selected time range.",
+  "time": {
+    "from": "2024-02-01T20:00:00.000Z",
+    "to": "2024-04-27T00:00:00.000Z"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status of the sources used",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'regelleistung afrr results (capacity)' AS \"Table\", min(date_from) AS \"First\", max(date_from) AS \"Latest\", round((extract(epoch FROM now() - max(date_from))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('regelleistung.afrr_ergebnisse_regelleistung'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(date_from))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - max(date_from))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM regelleistung.afrr_ergebnisse_regelleistung\nUNION ALL\nSELECT 'regelleistung mfrr results (capacity)' AS \"Table\", min(date_from) AS \"First\", max(date_from) AS \"Latest\", round((extract(epoch FROM now() - max(date_from))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('regelleistung.mfrr_ergebnisse_regelleistung'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(date_from))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - max(date_from))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM regelleistung.mfrr_ergebnisse_regelleistung\nUNION ALL\nSELECT 'regelleistung fcr results' AS \"Table\", min(date_from) AS \"First\", max(date_from) AS \"Latest\", round((extract(epoch FROM now() - max(date_from))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('regelleistung.fcr_ergebnisse'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(date_from))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - max(date_from))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM regelleistung.fcr_ergebnisse\nUNION ALL\nSELECT 'regelleistung afrr results (energy)' AS \"Table\", min(delivery_date)::timestamptz AS \"First\", max(delivery_date)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(delivery_date)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('regelleistung.afrr_ergebnisse_regelarbeit'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(delivery_date)::timestamptz + interval '1 day'))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - (max(delivery_date)::timestamptz + interval '1 day'))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM regelleistung.afrr_ergebnisse_regelarbeit\nUNION ALL\nSELECT 'entsoe load' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_load'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_load\nUNION ALL\nSELECT 'entsoe day-ahead prices' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_day_ahead_prices'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_day_ahead_prices\nUNION ALL\nSELECT 'entsoe crossborder flows' AS \"Table\", min(index) AS \"First\", max(index) AS \"Latest\", round((extract(epoch FROM now() - max(index))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsoe.query_crossborder_flows'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(index))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - max(index))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsoe.query_crossborder_flows\nUNION ALL\nSELECT 'jao auction results' AS \"Table\", min(date) AS \"First\", max(date) AS \"Latest\", round((extract(epoch FROM now() - max(date))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('jao.auction_results'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(date))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - max(date))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM jao.auction_results\nUNION ALL\nSELECT 'gie agsi country' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_agsi_country'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_agsi_country"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 9
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Reading this dashboard",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "Port and repair of the nowum *Energiemarkt-Uebersicht*. All queries target the current OEDS tables (time columns are `timestamptz` in UTC, `delivery_date` is a local calendar day).\n\n**Merit orders**: set the END of the time range to the moment of interest (default 2024-04-27 00:00 UTC). The capacity merit orders show the 4 h slot (local time blocks 00-04, 04-08, ...) containing that moment, the energy merit orders the mean over the 16 quarter hours of the same local 4 h block.\n\n**Variables**: *Regelleistung area* selects the country of the aFRR/mFRR price time series (DE, AT, CZ or the cooperation TOTAL), *Direction* POS/NEG the product direction of the series with one line per direction group.\n\n**Data issues**: aFRR/mFRR energy marginal prices sit at the +/-15000 EUR/MWh price cap in many quarter hours (genuine, the merit order contains bids at the cap). The JAO bids table has `resoldQuantity` always 0 and is not used here; JAO prices come from `jao.auction_results`. ENTSO-E price/flow tables are queried by zone/country."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 9
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Regelleistung - merit orders of the capacity auction (4 h slot at the end of the time range)",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "xychart",
+      "title": "NEG - aFRR capacity merit order ${__to:date}",
+      "description": "Merit order of the aFRR capacity auction for NEG products in the 4 h slot that contains the end of the time range (${__to:date}), Germany/Austria/Czechia bidders together. Source: regelleistung.net anonymised results (every awarded bid, capacity price in EUR/MW per product period) and the aggregated results table. Blue: cumulated accepted capacity (MW) against the bid price; red: total offered capacity (MW) against the marginal (highest accepted) price of the German area. The 'total offered' point lies to the right of the accepted curve because not all offers are accepted. The slot must be a 4 h product period, otherwise the panel is empty.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(sum(allocated_capacity_mw)) OVER (ORDER BY capacity_price_eur_mwh) AS \"cumulated accepted capacity MW\",\n  capacity_price_eur_mwh AS \"capacity price EUR/MW\"\nFROM regelleistung.afrr_anonyme_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'NEG\\_%'\nGROUP BY capacity_price_eur_mwh ORDER BY capacity_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum_of_offered_capacity_mw AS \"total offered MW\", marginal_capacity_price_eur_mwh AS \"marginal price EUR/MW\"\nFROM regelleistung.afrr_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'NEG\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "accepted offers",
+            "x": "cumulated accepted capacity MW",
+            "y": "capacity price EUR/MW"
+          },
+          {
+            "frame": 1,
+            "name": "total offered / marginal price",
+            "x": "total offered MW",
+            "y": "marginal price EUR/MW"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 9
+      },
+      "id": 5
+    },
+    {
+      "type": "xychart",
+      "title": "NEG - mFRR capacity merit order ${__to:date}",
+      "description": "Merit order of the mFRR capacity auction for NEG products in the 4 h slot that contains the end of the time range (${__to:date}), Germany/Austria/Czechia bidders together. Source: regelleistung.net anonymised results (every awarded bid, capacity price in EUR/MW per product period) and the aggregated results table. Blue: cumulated accepted capacity (MW) against the bid price; red: total offered capacity (MW) against the marginal (highest accepted) price of the German area. The 'total offered' point lies to the right of the accepted curve because not all offers are accepted. The slot must be a 4 h product period, otherwise the panel is empty.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(sum(allocated_capacity_mw)) OVER (ORDER BY capacity_price_eur_mwh) AS \"cumulated accepted capacity MW\",\n  capacity_price_eur_mwh AS \"capacity price EUR/MW\"\nFROM regelleistung.mfrr_anonyme_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'NEG\\_%'\nGROUP BY capacity_price_eur_mwh ORDER BY capacity_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum_of_offered_capacity_mw AS \"total offered MW\", marginal_capacity_price_eur_mwh AS \"marginal price EUR/MW\"\nFROM regelleistung.mfrr_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'NEG\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "accepted offers",
+            "x": "cumulated accepted capacity MW",
+            "y": "capacity price EUR/MW"
+          },
+          {
+            "frame": 1,
+            "name": "total offered / marginal price",
+            "x": "total offered MW",
+            "y": "marginal price EUR/MW"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 9
+      },
+      "id": 6
+    },
+    {
+      "type": "xychart",
+      "title": "POS - aFRR capacity merit order ${__to:date}",
+      "description": "Merit order of the aFRR capacity auction for POS products in the 4 h slot that contains the end of the time range (${__to:date}), Germany/Austria/Czechia bidders together. Source: regelleistung.net anonymised results (every awarded bid, capacity price in EUR/MW per product period) and the aggregated results table. Blue: cumulated accepted capacity (MW) against the bid price; red: total offered capacity (MW) against the marginal (highest accepted) price of the German area. The 'total offered' point lies to the right of the accepted curve because not all offers are accepted. The slot must be a 4 h product period, otherwise the panel is empty.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(sum(allocated_capacity_mw)) OVER (ORDER BY capacity_price_eur_mwh) AS \"cumulated accepted capacity MW\",\n  capacity_price_eur_mwh AS \"capacity price EUR/MW\"\nFROM regelleistung.afrr_anonyme_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'POS\\_%'\nGROUP BY capacity_price_eur_mwh ORDER BY capacity_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum_of_offered_capacity_mw AS \"total offered MW\", marginal_capacity_price_eur_mwh AS \"marginal price EUR/MW\"\nFROM regelleistung.afrr_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'POS\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "accepted offers",
+            "x": "cumulated accepted capacity MW",
+            "y": "capacity price EUR/MW"
+          },
+          {
+            "frame": 1,
+            "name": "total offered / marginal price",
+            "x": "total offered MW",
+            "y": "marginal price EUR/MW"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 9
+      },
+      "id": 7
+    },
+    {
+      "type": "xychart",
+      "title": "POS - mFRR capacity merit order ${__to:date}",
+      "description": "Merit order of the mFRR capacity auction for POS products in the 4 h slot that contains the end of the time range (${__to:date}), Germany/Austria/Czechia bidders together. Source: regelleistung.net anonymised results (every awarded bid, capacity price in EUR/MW per product period) and the aggregated results table. Blue: cumulated accepted capacity (MW) against the bid price; red: total offered capacity (MW) against the marginal (highest accepted) price of the German area. The 'total offered' point lies to the right of the accepted curve because not all offers are accepted. The slot must be a 4 h product period, otherwise the panel is empty.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(sum(allocated_capacity_mw)) OVER (ORDER BY capacity_price_eur_mwh) AS \"cumulated accepted capacity MW\",\n  capacity_price_eur_mwh AS \"capacity price EUR/MW\"\nFROM regelleistung.mfrr_anonyme_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'POS\\_%'\nGROUP BY capacity_price_eur_mwh ORDER BY capacity_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum_of_offered_capacity_mw AS \"total offered MW\", marginal_capacity_price_eur_mwh AS \"marginal price EUR/MW\"\nFROM regelleistung.mfrr_ergebnisse_regelleistung WHERE date_from > $__timeTo()::timestamptz - interval '5 hours' AND date_from <= $__timeTo()::timestamptz AND date_to > $__timeTo()::timestamptz AND product LIKE 'POS\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "accepted offers",
+            "x": "cumulated accepted capacity MW",
+            "y": "capacity price EUR/MW"
+          },
+          {
+            "frame": 1,
+            "name": "total offered / marginal price",
+            "x": "total offered MW",
+            "y": "marginal price EUR/MW"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 9
+      },
+      "id": 8
+    },
+    {
+      "type": "row",
+      "title": "Regelarbeit - merit orders of the energy market (16 quarter hours of the local 4 h block)",
+      "collapsed": false,
+      "panels": [],
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "xychart",
+      "title": "RAM NEG - aFRR energy merit order ${__to:date}",
+      "description": "Merit order of the aFRR energy market (Regelarbeit) for NEG products. Source: regelleistung.net anonymised bids and aggregated results, area DE. The 16 quarter hour products of the local 4 h block that contains the end of the time range are combined: the curve is the cumulated offered power (mean per quarter hour, MW) over the bid price (EUR/MWh); the red point is the mean offered volume against the mean of the published average energy price. Many bids sit at the +/-15000 EUR/MWh price cap (genuine merit order, shown as a steep end of the curve). The time is converted to Europe/Berlin local time; on DST days the block is approximate.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT sum(sum(offered_capacity_mw) / 16.0) OVER (ORDER BY energy_price_eur_mwh) AS \"cumulated offered MW (mean per quarter hour)\",\n  energy_price_eur_mwh AS \"energy price EUR/MWh\"\nFROM regelleistung.afrr_anonyme_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'NEG\\_%'\nGROUP BY energy_price_eur_mwh ORDER BY energy_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT avg(sum_of_offered_capacity_mw) AS \"mean offered MW\", avg(average_energy_price_eur_mwh) AS \"mean average price EUR/MWh\"\nFROM regelleistung.afrr_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'NEG\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "offered bids",
+            "x": "cumulated offered MW (mean per quarter hour)",
+            "y": "energy price EUR/MWh"
+          },
+          {
+            "frame": 1,
+            "name": "mean offered / mean average price",
+            "x": "mean offered MW",
+            "y": "mean average price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 9
+      },
+      "id": 10
+    },
+    {
+      "type": "xychart",
+      "title": "RAM POS - aFRR energy merit order ${__to:date}",
+      "description": "Merit order of the aFRR energy market (Regelarbeit) for POS products. Source: regelleistung.net anonymised bids and aggregated results, area DE. The 16 quarter hour products of the local 4 h block that contains the end of the time range are combined: the curve is the cumulated offered power (mean per quarter hour, MW) over the bid price (EUR/MWh); the red point is the mean offered volume against the mean of the published average energy price. Many bids sit at the +/-15000 EUR/MWh price cap (genuine merit order, shown as a steep end of the curve). The time is converted to Europe/Berlin local time; on DST days the block is approximate.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT sum(sum(offered_capacity_mw) / 16.0) OVER (ORDER BY energy_price_eur_mwh) AS \"cumulated offered MW (mean per quarter hour)\",\n  energy_price_eur_mwh AS \"energy price EUR/MWh\"\nFROM regelleistung.afrr_anonyme_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'POS\\_%'\nGROUP BY energy_price_eur_mwh ORDER BY energy_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT avg(sum_of_offered_capacity_mw) AS \"mean offered MW\", avg(average_energy_price_eur_mwh) AS \"mean average price EUR/MWh\"\nFROM regelleistung.afrr_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'POS\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "offered bids",
+            "x": "cumulated offered MW (mean per quarter hour)",
+            "y": "energy price EUR/MWh"
+          },
+          {
+            "frame": 1,
+            "name": "mean offered / mean average price",
+            "x": "mean offered MW",
+            "y": "mean average price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 9
+      },
+      "id": 11
+    },
+    {
+      "type": "xychart",
+      "title": "RAM NEG - mFRR energy merit order ${__to:date}",
+      "description": "Merit order of the mFRR energy market (Regelarbeit) for NEG products. Source: regelleistung.net anonymised bids and aggregated results, area DE. The 16 quarter hour products of the local 4 h block that contains the end of the time range are combined: the curve is the cumulated offered power (mean per quarter hour, MW) over the bid price (EUR/MWh); the red point is the mean offered volume against the mean of the published average energy price. Many bids sit at the +/-15000 EUR/MWh price cap (genuine merit order, shown as a steep end of the curve). The time is converted to Europe/Berlin local time; on DST days the block is approximate.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT sum(sum(offered_capacity_mw) / 16.0) OVER (ORDER BY energy_price_eur_mwh) AS \"cumulated offered MW (mean per quarter hour)\",\n  energy_price_eur_mwh AS \"energy price EUR/MWh\"\nFROM regelleistung.mfrr_anonyme_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'NEG\\_%'\nGROUP BY energy_price_eur_mwh ORDER BY energy_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT avg(sum_of_offered_capacity_mw) AS \"mean offered MW\", avg(average_energy_price_eur_mwh) AS \"mean average price EUR/MWh\"\nFROM regelleistung.mfrr_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'NEG\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "offered bids",
+            "x": "cumulated offered MW (mean per quarter hour)",
+            "y": "energy price EUR/MWh"
+          },
+          {
+            "frame": 1,
+            "name": "mean offered / mean average price",
+            "x": "mean offered MW",
+            "y": "mean average price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 12,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "xychart",
+      "title": "RAM POS - mFRR energy merit order ${__to:date}",
+      "description": "Merit order of the mFRR energy market (Regelarbeit) for POS products. Source: regelleistung.net anonymised bids and aggregated results, area DE. The 16 quarter hour products of the local 4 h block that contains the end of the time range are combined: the curve is the cumulated offered power (mean per quarter hour, MW) over the bid price (EUR/MWh); the red point is the mean offered volume against the mean of the published average energy price. Many bids sit at the +/-15000 EUR/MWh price cap (genuine merit order, shown as a steep end of the curve). The time is converted to Europe/Berlin local time; on DST days the block is approximate.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT sum(sum(offered_capacity_mw) / 16.0) OVER (ORDER BY energy_price_eur_mwh) AS \"cumulated offered MW (mean per quarter hour)\",\n  energy_price_eur_mwh AS \"energy price EUR/MWh\"\nFROM regelleistung.mfrr_anonyme_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'POS\\_%'\nGROUP BY energy_price_eur_mwh ORDER BY energy_price_eur_mwh"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT ($__timeTo()::timestamptz AT TIME ZONE 'Europe/Berlin') AS l)\nSELECT avg(sum_of_offered_capacity_mw) AS \"mean offered MW\", avg(average_energy_price_eur_mwh) AS \"mean average price EUR/MWh\"\nFROM regelleistung.mfrr_ergebnisse_regelarbeit, s WHERE delivery_date = s.l::date AND substring(product from 5)::int BETWEEN (extract(hour FROM s.l)::int / 4) * 16 + 1 AND (extract(hour FROM s.l)::int / 4) * 16 + 16 AND product LIKE 'POS\\_%' AND area = 'DE'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points+lines",
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "custom.pointSize",
+                "value": {
+                  "fixed": 12
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "offered bids",
+            "x": "cumulated offered MW (mean per quarter hour)",
+            "y": "energy price EUR/MWh"
+          },
+          {
+            "frame": 1,
+            "name": "mean offered / mean average price",
+            "x": "mean offered MW",
+            "y": "mean average price EUR/MWh"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 39,
+        "w": 12,
+        "h": 9
+      },
+      "id": 13
+    },
+    {
+      "type": "row",
+      "title": "Marginal prices (Regelleistung)",
+      "collapsed": false,
+      "panels": [],
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "FCR settlement price and demand, Germany",
+      "description": "FCR (frequency containment reserve) capacity auction, German area: uniform settlement price (EUR/MW, left) and demand (MW, right) per 4 h product, mean over the interval. The FCR auction is a pay-as-cleared joint auction of several countries, so the settlement price equals the marginal price and the average price of accepted bids. Source: regelleistung.fcr_ergebnisse.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,$__interval), avg(settlementcapacity_price_eur_mw) AS \"FCR settlement price EUR/MW\", avg(demand_mw) AS \"demand MW\"\nFROM regelleistung.fcr_ergebnisse WHERE $__timeFilter(date_from) AND area = 'DE' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "demand MW"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "grey"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 24,
+        "h": 7
+      },
+      "id": 15
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR marginal capacity price ($area)",
+      "description": "aFRR capacity auction, area ${area}: marginal (highest accepted) price, mean over the interval of the 4 h products, separately for POS (upward) and NEG (downward) products (left: EUR/MW), total offered capacity of the German area on the right axis (MW, empty for other areas because the table only has it for DE). Source: regelleistung.afrr_ergebnisse_regelleistung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,$__interval),\n  avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS price EUR/MW\", avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG price EUR/MW\",\n  avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS \"POS offered MW\", avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS \"NEG offered MW\"\nFROM regelleistung.afrr_ergebnisse_regelleistung WHERE $__timeFilter(date_from) AND area = '${area}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/offered MW/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      },
+      "id": 16
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR marginal capacity price ($area)",
+      "description": "mFRR capacity auction, area ${area}: marginal (highest accepted) price, mean over the interval of the 4 h products, separately for POS (upward) and NEG (downward) products (left: EUR/MW), total offered capacity of the German area on the right axis (MW, empty for other areas because the table only has it for DE). Source: regelleistung.mfrr_ergebnisse_regelleistung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,$__interval),\n  avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS price EUR/MW\", avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG price EUR/MW\",\n  avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS \"POS offered MW\", avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS \"NEG offered MW\"\nFROM regelleistung.mfrr_ergebnisse_regelleistung WHERE $__timeFilter(date_from) AND area = '${area}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/offered MW/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      },
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR energy price (RAM), Germany: min and average",
+      "description": "aFRR energy market (Regelarbeit), area DE, quarter hour products. Lines: mean of the published minimum and the average energy price of the bid list per direction (EUR/MWh). The marginal energy price is at the +/-15000 EUR/MWh cap in most quarter hours and is therefore not plotted (see the merit orders above for the genuine curve). The time axis is derived from delivery_date (local day) and the product number.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH r AS (SELECT (delivery_date::timestamp AT TIME ZONE 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes' AS t, product, min_energy_price_eur_mwh, average_energy_price_eur_mwh\n  FROM regelleistung.afrr_ergebnisse_regelarbeit WHERE $__timeFilter(delivery_date) AND area = 'DE')\nSELECT $__timeGroupAlias(t,$__interval),\n  avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS average\", avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS min\",\n  avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG average\", avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG min\"\nFROM r GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 64,
+        "w": 12,
+        "h": 8
+      },
+      "id": 18
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR energy price (RAM), Germany: min and average",
+      "description": "mFRR energy market (Regelarbeit), area DE, quarter hour products. Lines: mean of the published minimum and the average energy price of the bid list per direction (EUR/MWh). The marginal energy price is at the +/-15000 EUR/MWh cap in most quarter hours and is therefore not plotted (see the merit orders above for the genuine curve). The time axis is derived from delivery_date (local day) and the product number.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH r AS (SELECT (delivery_date::timestamp AT TIME ZONE 'Europe/Berlin') + (substring(product from 5)::int - 1) * interval '15 minutes' AS t, product, min_energy_price_eur_mwh, average_energy_price_eur_mwh\n  FROM regelleistung.mfrr_ergebnisse_regelarbeit WHERE $__timeFilter(delivery_date) AND area = 'DE')\nSELECT $__timeGroupAlias(t,$__interval),\n  avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS average\", avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS min\",\n  avg(average_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG average\", avg(min_energy_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG min\"\nFROM r GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 64,
+        "w": 12,
+        "h": 8
+      },
+      "id": 19
+    },
+    {
+      "type": "row",
+      "title": "Average prices (Regelleistung)",
+      "collapsed": false,
+      "panels": [],
+      "id": 20,
+      "gridPos": {
+        "x": 0,
+        "y": 72,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "aFRR average capacity price ($area)",
+      "description": "aFRR capacity auction, area ${area}: volume weighted average price of the accepted offers, mean over the interval of the 4 h products, separately for POS (upward) and NEG (downward) products (left: EUR/MW), total offered capacity of the German area on the right axis (MW, empty for other areas because the table only has it for DE). Source: regelleistung.afrr_ergebnisse_regelleistung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,$__interval),\n  avg(average_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS price EUR/MW\", avg(average_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG price EUR/MW\",\n  avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS \"POS offered MW\", avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS \"NEG offered MW\"\nFROM regelleistung.afrr_ergebnisse_regelleistung WHERE $__timeFilter(date_from) AND area = '${area}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/offered MW/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 73,
+        "w": 12,
+        "h": 8
+      },
+      "id": 21
+    },
+    {
+      "type": "timeseries",
+      "title": "mFRR average capacity price ($area)",
+      "description": "mFRR capacity auction, area ${area}: volume weighted average price of the accepted offers, mean over the interval of the 4 h products, separately for POS (upward) and NEG (downward) products (left: EUR/MW), total offered capacity of the German area on the right axis (MW, empty for other areas because the table only has it for DE). Source: regelleistung.mfrr_ergebnisse_regelleistung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,$__interval),\n  avg(average_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"POS price EUR/MW\", avg(average_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"NEG price EUR/MW\",\n  avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'POS%') AS \"POS offered MW\", avg(sum_of_offered_capacity_mw) FILTER (WHERE product LIKE 'NEG%') AS \"NEG offered MW\"\nFROM regelleistung.mfrr_ergebnisse_regelleistung WHERE $__timeFilter(date_from) AND area = '${area}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/offered MW/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "MW"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 73,
+        "w": 12,
+        "h": 8
+      },
+      "id": 22
+    },
+    {
+      "type": "timeseries",
+      "title": "Balancing capacity price vs day-ahead price spread (Germany)",
+      "description": "Cross-source view: do balancing capacity prices follow the day-ahead market? Left axis (EUR/MW): marginal aFRR capacity price for POS and NEG products (area DE). Right axis (EUR/MWh): day-ahead price DE_LU (ENTSO-E) as daily mean, and the daily spread between the maximum and minimum hourly price, a proxy for the opportunity cost of flexible plants. Daily values; capacity prices are the mean over the six 4 h products of the day.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date_from,'1d'), avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'POS%') AS \"aFRR POS marginal EUR/MW\", avg(marginal_capacity_price_eur_mwh) FILTER (WHERE product LIKE 'NEG%') AS \"aFRR NEG marginal EUR/MW\"\nFROM regelleistung.afrr_ergebnisse_regelleistung WHERE $__timeFilter(date_from) AND area = 'DE' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,'1d'), avg(value) AS \"day-ahead DE_LU daily mean EUR/MWh\", max(value) - min(value) AS \"day-ahead daily spread EUR/MWh\"\nFROM entsoe.query_day_ahead_prices WHERE $__timeFilter(index) AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/day-ahead/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 81,
+        "w": 24,
+        "h": 8
+      },
+      "id": 23
+    },
+    {
+      "type": "row",
+      "title": "Market overview (ENTSO-E, JAO, weather)",
+      "collapsed": false,
+      "panels": [],
+      "id": 24,
+      "gridPos": {
+        "x": 0,
+        "y": 89,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Renewable generation and load, Germany (DE_LU)",
+      "description": "Mean power per interval (MW). Renewable = biomass + hydro + solar + wind onshore + offshore + geothermal + other renewable from ENTSO-E actual generation per type for bidding zone DE_LU; actual load of the same zone. Source: entsoe.query_generation, entsoe.query_load.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval),\n  avg(coalesce(biomass,0) + coalesce(hydro_water_reservoir,0) + coalesce(\"hydro_run-of-river_and_pondage\",0) + coalesce(solar,0) + coalesce(wind_offshore,0) + coalesce(wind_onshore,0) + coalesce(geothermal,0) + coalesce(other_renewable,0)) AS \"renewable generation\"\nFROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval), avg(actual_load) AS \"actual load\"\nFROM entsoe.query_load WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 90,
+        "w": 12,
+        "h": 8
+      },
+      "id": 25
+    },
+    {
+      "type": "timeseries",
+      "title": "Cross-border physical flows DE_LU (net, + = import)",
+      "description": "Net physical flow between DE_LU and each neighbour, ENTSO-E (mean MW per interval): flow into DE_LU minus flow out of DE_LU, so positive means net import. Missing values of a border count as 0. Source: entsoe.query_crossborder_flows.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval),\n  avg(coalesce(\"at-de_lu\",0) - coalesce(\"de_lu-at\",0)) AS \"AT\",\n  avg(coalesce(\"be-de_lu\",0) - coalesce(\"de_lu-be\",0)) AS \"BE\",\n  avg(coalesce(\"ch-de_lu\",0) - coalesce(\"de_lu-ch\",0)) AS \"CH\",\n  avg(coalesce(\"cz-de_lu\",0) - coalesce(\"de_lu-cz\",0)) AS \"CZ\",\n  avg(coalesce(\"dk_1-de_lu\",0) - coalesce(\"de_lu-dk_1\",0)) AS \"DK1\",\n  avg(coalesce(\"dk_2-de_lu\",0) - coalesce(\"de_lu-dk_2\",0)) AS \"DK2\",\n  avg(coalesce(\"fr-de_lu\",0) - coalesce(\"de_lu-fr\",0)) AS \"FR\",\n  avg(coalesce(\"nl-de_lu\",0) - coalesce(\"de_lu-nl\",0)) AS \"NL\",\n  avg(coalesce(\"no_2-de_lu\",0) - coalesce(\"de_lu-no_2\",0)) AS \"NO2\",\n  avg(coalesce(\"pl-de_lu\",0) - coalesce(\"de_lu-pl\",0)) AS \"PL\",\n  avg(coalesce(\"se_4-de_lu\",0) - coalesce(\"de_lu-se_4\",0)) AS \"SE4\"\nFROM entsoe.query_crossborder_flows WHERE $__timeFilter(\"index\") GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 90,
+        "w": 12,
+        "h": 8
+      },
+      "id": 26
+    },
+    {
+      "type": "timeseries",
+      "title": "Total import and export DE_LU",
+      "description": "Sum of all physical flows into DE_LU (import) and out of DE_LU (export) over the listed neighbours, ENTSO-E, mean MW per interval. Source: entsoe.query_crossborder_flows.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval),\n  avg(coalesce(\"at-de_lu\",0) + coalesce(\"be-de_lu\",0) + coalesce(\"ch-de_lu\",0) + coalesce(\"cz-de_lu\",0) + coalesce(\"dk_1-de_lu\",0) + coalesce(\"dk_2-de_lu\",0) + coalesce(\"fr-de_lu\",0) + coalesce(\"nl-de_lu\",0) + coalesce(\"no_2-de_lu\",0) + coalesce(\"pl-de_lu\",0) + coalesce(\"se_4-de_lu\",0)) AS \"import\",\n  avg(coalesce(\"de_lu-at\",0) + coalesce(\"de_lu-be\",0) + coalesce(\"de_lu-ch\",0) + coalesce(\"de_lu-cz\",0) + coalesce(\"de_lu-dk_1\",0) + coalesce(\"de_lu-dk_2\",0) + coalesce(\"de_lu-fr\",0) + coalesce(\"de_lu-nl\",0) + coalesce(\"de_lu-no_2\",0) + coalesce(\"de_lu-pl\",0) + coalesce(\"de_lu-se_4\",0)) AS \"export\"\nFROM entsoe.query_crossborder_flows WHERE $__timeFilter(\"index\") GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 98,
+        "w": 12,
+        "h": 8
+      },
+      "id": 27
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead price DE_LU and CH vs JAO capacity auction price CH-DE",
+      "description": "Day-ahead prices of the bidding zones DE_LU and CH (ENTSO-E, EUR/MWh, left) and the JAO day-ahead explicit capacity auction price on the Swiss-German border per direction (EUR/MW, right). The auction price is high when the price spread favours the direction. JAO hourly products B01..B24 are placed at their delivery hour (local day start + hour index; the two DST days of the year are shifted by one hour). Source: entsoe.query_day_ahead_prices, jao.auction_results.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,$__interval), country AS metric, avg(value) AS \"day-ahead EUR/MWh\" FROM entsoe.query_day_ahead_prices\nWHERE $__timeFilter(index) AND country IN ('DE_LU','CH') GROUP BY 1,2 ORDER BY 1,2"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH j AS (SELECT date + (substring(\"productIdentification\" from 2 for 2)::int - 1) * interval '1 hour' AS t, \"corridorCode\" AS c, \"auctionPrice\" AS p\n  FROM jao.auction_results WHERE \"corridorCode\" IN ('CH-DE','DE-CH') AND \"productIdentification\" ~ '^B[0-9][0-9]-+$' AND $__timeFilter(date))\nSELECT $__timeGroupAlias(t,$__interval), c AS metric, avg(p) AS \"JAO auction EUR/MW\" FROM j GROUP BY 1,2 ORDER BY 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/JAO/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 106,
+        "w": 24,
+        "h": 9
+      },
+      "id": 28
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead prices by bidding zone",
+      "description": "Day-ahead price (hourly or 15 min resolution, mean per interval) of the zones chosen in the variable 'Day-ahead zones'. Source: entsoe.query_day_ahead_prices.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(index,$__interval), country AS metric, avg(value) AS \"EUR/MWh\" FROM entsoe.query_day_ahead_prices WHERE $__timeFilter(index) AND country IN ($da_zones) GROUP BY 1,2 ORDER BY 1,2"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "currencyEUR"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 115,
+        "w": 12,
+        "h": 9
+      },
+      "id": 29
+    },
+    {
+      "type": "timeseries",
+      "title": "Generation by type $country_entsoe",
+      "description": "Mean power per interval (MW) of the selected ENTSO-E area, per production type (stacked). Change the area in the variable at the top (DE_LU, DE_50HZ, DE_TENNET, FR, ...). Source: entsoe.query_generation; empty columns are skipped by Grafana.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval),\n  avg(biomass) AS \"biomass\",\n  avg(fossil_hard_coal) AS \"fossil_hard_coal\",\n  avg(geothermal) AS \"geothermal\",\n  avg(nuclear) AS \"nuclear\",\n  avg(\"fossil_brown_coal/lignite\") AS \"fossil_brown_coal/lignite\",\n  avg(\"fossil_coal-derived_gas\") AS \"fossil_coal-derived_gas\",\n  avg(\"hydro_run-of-river_and_pondage\") AS \"hydro_run-of-river_and_pondage\",\n  avg(hydro_pumped_storage) AS \"hydro_pumped_storage\",\n  avg(waste) AS \"waste\",\n  avg(solar) AS \"solar\",\n  avg(wind_offshore) AS \"wind_offshore\",\n  avg(wind_onshore) AS \"wind_onshore\",\n  avg(other_renewable) AS \"other_renewable\",\n  avg(hydro_water_reservoir) AS \"hydro_water_reservoir\",\n  avg(fossil_gas) AS \"fossil_gas\"\nFROM entsoe.query_generation WHERE $__timeFilter(\"index\") AND country = '$country_entsoe' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 115,
+        "w": 12,
+        "h": 9
+      },
+      "id": 30
+    },
+    {
+      "type": "timeseries",
+      "title": "Day-ahead wind and solar forecast (DE_LU) and German weather",
+      "description": "ENTSO-E day-ahead forecast of wind (onshore + offshore) and solar generation for DE_LU (MW, left) next to weather of Germany from ECMWF (ecmwf.ecmwf_eu, NUTS 0 'DE', ERA5-Land): 2 m temperature (degC), global horizontal irradiation (W/m2, hourly mean) and 10 m wind speed (m/s). Weather series on the right axis; ERA5-Land 10 m wind is lower than turbine hub height winds.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"index\",$__interval), avg(solar) AS \"forecast solar MW\", avg(coalesce(wind_offshore,0) + coalesce(wind_onshore,0)) AS \"forecast wind MW\"\nFROM entsoe.query_wind_and_solar_forecast WHERE $__timeFilter(\"index\") AND country = 'DE_LU' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",$__interval), avg(temp_air - 273.15) AS \"temperature degC\", avg(ghi / 3600) AS \"GHI W/m2\", avg(wind_speed) AS \"wind speed 10 m m/s\"\nFROM ecmwf.ecmwf_eu WHERE $__timeFilter(\"time\") AND nuts_id = 'DE' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "MW"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "/degC|W\\/m2|m\\/s/"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 124,
+        "w": 24,
+        "h": 9
+      },
+      "id": 31
+    },
+    {
+      "type": "row",
+      "title": "Gas",
+      "collapsed": false,
+      "panels": [],
+      "id": 32,
+      "gridPos": {
+        "x": 0,
+        "y": 133,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Injection and withdrawal of gas storages, Germany",
+      "description": "Daily gas storage injection and withdrawal in Germany (GWh/d, AGSI+ country values) and the filling level (%, right axis). Source: gie.gie_agsi_country, code DE.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(gasdaystart::timestamp AT TIME ZONE 'UTC',$__interval), avg(injection) AS injection, avg(withdrawal) AS withdrawal, avg(\"full\") AS \"filling level %\"\nFROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart) AND code = 'DE' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "GWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "filling level %"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 134,
+        "w": 14,
+        "h": 9
+      },
+      "id": 33
+    },
+    {
+      "type": "timeseries",
+      "title": "LNG send-out, Germany",
+      "description": "Daily LNG terminal send-out in Germany (GWh/d, ALSI country values) and LNG inventory (GWh, right axis). Source: gie.gie_alsi_country, code DE.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(gasdaystart::timestamp AT TIME ZONE 'UTC',$__interval), avg(sendout) AS \"send-out\", avg(inventory_gwh) AS \"inventory GWh\"\nFROM gie.gie_alsi_country WHERE $__timeFilter(gasdaystart) AND code = 'DE' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "GWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "inventory GWh"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "GWh"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 134,
+        "w": 10,
+        "h": 9
+      },
+      "id": 34
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "external link"
+    },
+    {
+      "title": "Cross-source",
+      "type": "dashboards",
+      "tags": [
+        "oeds",
+        "cross-source"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "dashboard"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      },
+      {
+        "type": "custom",
+        "name": "area",
+        "label": "Regelleistung area",
+        "query": "DE,AT,CZ,TOTAL",
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "options": [
+          {
+            "text": "DE",
+            "value": "DE",
+            "selected": true
+          },
+          {
+            "text": "AT",
+            "value": "AT",
+            "selected": false
+          },
+          {
+            "text": "CZ",
+            "value": "CZ",
+            "selected": false
+          },
+          {
+            "text": "TOTAL",
+            "value": "TOTAL",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "custom",
+        "name": "product",
+        "label": "Direction",
+        "query": "POS,NEG",
+        "current": {
+          "text": "POS",
+          "value": "POS"
+        },
+        "options": [
+          {
+            "text": "POS",
+            "value": "POS",
+            "selected": true
+          },
+          {
+            "text": "NEG",
+            "value": "NEG",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "query",
+        "name": "country_entsoe",
+        "label": "ENTSO-E area (generation)",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "select name from entsoe.areas order by 1",
+        "definition": "select name from entsoe.areas order by 1",
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "DE_50HZ",
+          "value": "DE_50HZ"
+        },
+        "options": []
+      },
+      {
+        "type": "custom",
+        "name": "da_zones",
+        "label": "Day-ahead zones",
+        "multi": true,
+        "includeAll": false,
+        "query": "DE_LU,FR,NL,AT,PL,CH,BE,CZ,DK_1,DK_2",
+        "current": {
+          "text": [
+            "DE_LU",
+            "FR",
+            "NL",
+            "AT",
+            "PL",
+            "CH"
+          ],
+          "value": [
+            "DE_LU",
+            "FR",
+            "NL",
+            "AT",
+            "PL",
+            "CH"
+          ]
+        },
+        "options": [
+          {
+            "text": "DE_LU",
+            "value": "DE_LU",
+            "selected": true
+          },
+          {
+            "text": "FR",
+            "value": "FR",
+            "selected": true
+          },
+          {
+            "text": "NL",
+            "value": "NL",
+            "selected": true
+          },
+          {
+            "text": "AT",
+            "value": "AT",
+            "selected": true
+          },
+          {
+            "text": "PL",
+            "value": "PL",
+            "selected": true
+          },
+          {
+            "text": "CH",
+            "value": "CH",
+            "selected": true
+          },
+          {
+            "text": "BE",
+            "value": "BE",
+            "selected": false
+          },
+          {
+            "text": "CZ",
+            "value": "CZ",
+            "selected": false
+          },
+          {
+            "text": "DK_1",
+            "value": "DK_1",
+            "selected": false
+          },
+          {
+            "text": "DK_2",
+            "value": "DK_2",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

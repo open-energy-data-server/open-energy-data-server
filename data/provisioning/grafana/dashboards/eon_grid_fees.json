@@ -1,0 +1,1400 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Netzentgelte für Strom-Großkunden (RLM) je Postleitzahl, abgefragt über die Preis-API von E.ON. Je PLZ ein Datensatz mit Arbeitspreis, Leistungspreis und Messentgelt des zuständigen Netzbetreibers. Die Abfrage nutzt einen Jahresverbrauch von 100.000 kWh.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Postleitzahlen",
+      "description": "Anzahl PLZ im aktuellen Snapshot. Die Tabelle wird bei jedem vollständigen Crawl komplett ersetzt, ein Abrufdatum wird nicht gespeichert.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as plz from eon_grid_fees.eon_grid_fees",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Netzbetreiber",
+      "description": "Anzahl verschiedener Netzbetreiber (market_partner_name).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct market_partner_name) as n from eon_grid_fees.eon_grid_fees",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Arbeitspreis Ø",
+      "description": "Mittelwert über alle PLZ (ungewichtet).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(working_price_grid_ct_per_kwh) as v from eon_grid_fees.eon_grid_fees",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Leistungspreis Ø",
+      "description": "Mittelwert über alle PLZ (ungewichtet).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(power_price_grid_eur_per_kw) as v from eon_grid_fees.eon_grid_fees",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: €/kW",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Messentgelt Ø",
+      "description": "Mittelwert über alle PLZ (ungewichtet).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(fee_measurement_eur_per_year) as v from eon_grid_fees.eon_grid_fees",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: €/a",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Netzkosten Ø",
+      "description": "Jährliche Netzkosten bei 100.000 kWh und der gewählten Spitzenleistung, Mittelwert über alle PLZ.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)) as v from eon_grid_fees.eon_grid_fees",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Regionale Unterschiede",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "geomap",
+      "title": "Jährliche Netzkosten je PLZ",
+      "description": "Jährliche Netzkosten (EUR) für 100.000 kWh und die gewählte Spitzenleistung. Position ist der Mittelpunkt der PLZ aus public.plz.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select p.latitude as lat, p.longitude as lon, (100000*e.working_price_grid_ct_per_kwh/100.0 + $peak_kw*e.power_price_grid_eur_per_kw + e.fee_measurement_eur_per_year) as netzkosten_eur_a, e.market_partner_name as netzbetreiber, e.working_price_grid_ct_per_kwh as arbeitspreis_ct_kwh, e.power_price_grid_eur_per_kw as leistungspreis_eur_kw from eon_grid_fees.eon_grid_fees e join public.plz p on p.code = e.zip_code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.7,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 3
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "netzkosten_eur_a"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Arbeitspreis je PLZ",
+      "description": "Netzentgelt-Arbeitspreis in ct/kWh (inkl. MwSt. wie von der API geliefert).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select p.latitude as lat, p.longitude as lon, e.working_price_grid_ct_per_kwh as arbeitspreis_ct_kwh, e.market_partner_name as netzbetreiber from eon_grid_fees.eon_grid_fees e join public.plz p on p.code = e.zip_code",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 51.2,
+          "lon": 10.4,
+          "zoom": 5.5,
+          "allLayers": true,
+          "noRepeat": false,
+          "shared": false
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showScale": true,
+          "showMeasure": false,
+          "showDebug": false
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri — Esri, HERE, Garmin, © OpenStreetMap contributors"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Layer 1",
+            "tooltip": true,
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "opacity": 0.7,
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "size": {
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 3
+                },
+                "color": {
+                  "fixed": "blue",
+                  "field": "arbeitspreis_ct_kwh"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 14,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "type": "row",
+      "title": "Preisbestandteile",
+      "collapsed": false,
+      "id": 11,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Verteilung des Arbeitspreises",
+      "description": "Anzahl Postleitzahlen je Arbeitspreisklasse (0,5 ct/kWh).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(floor(working_price_grid_ct_per_kwh/0.5)*0.5,'FM0.0') as \"ab ct/kWh\", count(*) as plz from eon_grid_fees.eon_grid_fees group by floor(working_price_grid_ct_per_kwh/0.5) order by floor(working_price_grid_ct_per_kwh/0.5)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "ab ct/kWh",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 21
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Verteilung des Leistungspreises",
+      "description": "Anzahl Postleitzahlen je Leistungspreisklasse (20 EUR/kW).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(floor(power_price_grid_eur_per_kw/20)*20,'FM000') as \"ab EUR/kW\", count(*) as plz from eon_grid_fees.eon_grid_fees group by floor(power_price_grid_eur_per_kw/20) order by floor(power_price_grid_eur_per_kw/20)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "ab EUR/kW",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 21
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Verteilung der jährlichen Netzkosten",
+      "description": "Anzahl Postleitzahlen je Klasse der jährlichen Netzkosten (500 EUR).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(floor((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)/500)*500,'FM00000') as \"ab EUR/a\", count(*) as plz from eon_grid_fees.eon_grid_fees group by floor((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)/500) order by floor((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)/500)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "ab EUR/a",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 21
+      }
+    },
+    {
+      "type": "row",
+      "title": "Netzbetreiber",
+      "collapsed": false,
+      "id": 15,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Zusammensetzung der Netzkosten (größte Netzbetreiber)",
+      "description": "Jährliche Netzkosten der 15 Netzbetreiber mit den meisten PLZ, aufgeteilt in Arbeitspreis (100.000 kWh), Leistungspreis (gewählte Spitzenleistung) und Messentgelt.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select market_partner_name as netzbetreiber, avg(100000*working_price_grid_ct_per_kwh/100.0) as \"Arbeit\", avg($peak_kw*power_price_grid_eur_per_kw) as \"Leistung\", avg(fee_measurement_eur_per_year) as \"Messung\"\nfrom eon_grid_fees.eon_grid_fees where market_partner_name in (select market_partner_name from eon_grid_fees.eon_grid_fees group by 1 order by count(*) desc limit 15) group by 1 order by sum(avg(100000*working_price_grid_ct_per_kwh/100.0)+avg($peak_kw*power_price_grid_eur_per_kw)+avg(fee_measurement_eur_per_year)) over (partition by market_partner_name) desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Arbeit"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Leistung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Messung"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "netzbetreiber",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "normal",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -30,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Teuerste Netzbetreiber (mind. 5 PLZ)",
+      "description": "Jährliche Netzkosten, Mittelwert je Netzbetreiber.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select market_partner_name as netzbetreiber, avg((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)) as eur_a from eon_grid_fees.eon_grid_fees group by 1 having count(*) >= 5 order by 2 desc limit 15",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Günstigste Netzbetreiber (mind. 5 PLZ)",
+      "description": "Jährliche Netzkosten, Mittelwert je Netzbetreiber.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select market_partner_name as netzbetreiber, avg((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)) as eur_a from eon_grid_fees.eon_grid_fees group by 1 having count(*) >= 5 order by 2 asc limit 15",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyEUR",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      }
+    },
+    {
+      "type": "table",
+      "title": "Alle Netzbetreiber",
+      "description": "Preisbestandteile je Netzbetreiber (Mittelwert über deren PLZ). Netzkosten für 100.000 kWh und die gewählte Spitzenleistung.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select market_partner_name as netzbetreiber, market_partner_code as marktpartner_code, count(*) as plz, avg(working_price_grid_ct_per_kwh) as arbeitspreis_ct_kwh,\navg(power_price_grid_eur_per_kw) as leistungspreis_eur_kw, avg(fee_measurement_eur_per_year) as messentgelt_eur_a, avg((100000*working_price_grid_ct_per_kwh/100.0 + $peak_kw*power_price_grid_eur_per_kw + fee_measurement_eur_per_year)) as netzkosten_eur_a\nfrom eon_grid_fees.eon_grid_fees group by 1,2 order by 3 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "arbeitspreis_ct_kwh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: ct/kWh"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "leistungspreis_eur_kw"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: €/kW"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "messentgelt_eur_a"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: €/a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "netzkosten_eur_a"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 3000
+              },
+              {
+                "id": "max",
+                "value": 15000
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "grid",
+    "prices"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "custom",
+        "name": "peak_kw",
+        "label": "Spitzenleistung",
+        "description": "Angenommene Jahreshöchstleistung für die Berechnung der jährlichen Netzkosten (Arbeitspreis * 100.000 kWh + Leistungspreis * kW + Messentgelt).",
+        "query": "30 kW : 30,50 kW : 50,100 kW : 100,250 kW : 250",
+        "current": {
+          "text": "50 kW",
+          "value": "50"
+        },
+        "options": [
+          {
+            "text": "30 kW",
+            "value": "30",
+            "selected": false
+          },
+          {
+            "text": "50 kW",
+            "value": "50",
+            "selected": true
+          },
+          {
+            "text": "100 kW",
+            "value": "100",
+            "selected": false
+          },
+          {
+            "text": "250 kW",
+            "value": "250",
+            "selected": false
+          }
+        ],
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS E.ON Netzentgelte",
+  "uid": "oeds-eon-grid-fees",
+  "version": 1,
+  "weekStart": ""
+}

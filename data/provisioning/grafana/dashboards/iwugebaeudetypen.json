@@ -1,0 +1,1364 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Deutsche Gebäudetypologie (IWU/TABULA, Stand 2015): Energiebedarf typischer Gebäude je Bauart (EFH, RH, MFH, GMH), Baualtersklasse, Sanierungsstand (unsaniert, konventionell saniert, zukunftsweisend) und Heizsystem. Alle Werte beziehen sich auf die Wohnfläche und das Jahr (kWh/m²a).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Typologie-Zeilen",
+      "description": "Zeilen der Tabelle (alle Rechenverfahren, Typen, Heizsysteme und Sanierungsstände).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from iwugebaeudetypen.\"iwu_typgebäude\"",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Gebäudetypen",
+      "description": "Anzahl verschiedener Gebäudetypen (z.B. EFH_A bis EFH_L).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"Gebäude_typ\") as n from iwugebaeudetypen.\"iwu_typgebäude\"",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Baualtersklassen",
+      "description": "Anzahl Baualtersklassen von 'bis 1859' bis 'ab 2016'.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"Baualtersklasse\") as n from iwugebaeudetypen.\"iwu_typgebäude\"",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Datenstand",
+      "description": "Die IWU-Typologie stammt aus 2015 und wird nicht aktualisiert (Metadaten des Crawlers).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select '2015-02-10' as d",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Heizwärme- und Energiebedarf",
+      "collapsed": false,
+      "id": 6,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Nettoheizwärmebedarf nach Baualtersklasse",
+      "description": "Nutzwärme für Heizung in kWh pro m² Wohnfläche und Jahr, Mittelwert über die Gebäudevarianten des gewählten Typs.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when trim(\"Baualtersklasse\") like '...%' then 'bis ' || trim(replace(\"Baualtersklasse\",'...','')) when trim(\"Baualtersklasse\") like '%...' then 'ab ' || trim(replace(\"Baualtersklasse\",'...','')) else replace(trim(\"Baualtersklasse\"),' ... ','-') end as baualtersklasse,\navg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert') as \"Unsaniert\",\navg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Saniert') as \"Saniert (konventionell)\",\navg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Modern') as \"Modern (zukunftsweisend)\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Gebäude_typ_klasse\"='$typ' and \"Heiz_klasse\"='$heizung' group by 1 order by min(\"Baualtersklasse_von\")",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kWh/m²a",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unsaniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saniert (konventionell)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Modern (zukunftsweisend)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "baualtersklasse",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Primärenergiebedarf nach Baualtersklasse",
+      "description": "Gesamter Primärenergiebedarf für Heizung und Warmwasser in kWh/m²a.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when trim(\"Baualtersklasse\") like '...%' then 'bis ' || trim(replace(\"Baualtersklasse\",'...','')) when trim(\"Baualtersklasse\") like '%...' then 'ab ' || trim(replace(\"Baualtersklasse\",'...','')) else replace(trim(\"Baualtersklasse\"),' ... ','-') end as baualtersklasse,\navg(\"Primärenergiebedarf_gesamt_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert') as \"Unsaniert\",\navg(\"Primärenergiebedarf_gesamt_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Saniert') as \"Saniert (konventionell)\",\navg(\"Primärenergiebedarf_gesamt_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Modern') as \"Modern (zukunftsweisend)\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Gebäude_typ_klasse\"='$typ' and \"Heiz_klasse\"='$heizung' group by 1 order by min(\"Baualtersklasse_von\")",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kWh/m²a",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unsaniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saniert (konventionell)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Modern (zukunftsweisend)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "baualtersklasse",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "CO₂-Emissionen nach Baualtersklasse",
+      "description": "CO₂-Emissionen von Heizung und Warmwasser in kg pro m² und Jahr.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when trim(\"Baualtersklasse\") like '...%' then 'bis ' || trim(replace(\"Baualtersklasse\",'...','')) when trim(\"Baualtersklasse\") like '%...' then 'ab ' || trim(replace(\"Baualtersklasse\",'...','')) else replace(trim(\"Baualtersklasse\"),' ... ','-') end as baualtersklasse,\navg(\"Co2_Heizung_ww_kg_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert') as \"Unsaniert\",\navg(\"Co2_Heizung_ww_kg_div_(m2a)\") filter (where \"Sanierungsstand\"='Saniert') as \"Saniert (konventionell)\",\navg(\"Co2_Heizung_ww_kg_div_(m2a)\") filter (where \"Sanierungsstand\"='Modern') as \"Modern (zukunftsweisend)\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Gebäude_typ_klasse\"='$typ' and \"Heiz_klasse\"='$heizung' group by 1 order by min(\"Baualtersklasse_von\")",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kg/m²a",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unsaniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saniert (konventionell)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Modern (zukunftsweisend)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "baualtersklasse",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Energiekosten nach Baualtersklasse",
+      "description": "Energiekosten für Heizung und Warmwasser in EUR pro m² und Jahr (Preisniveau der Studie).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when trim(\"Baualtersklasse\") like '...%' then 'bis ' || trim(replace(\"Baualtersklasse\",'...','')) when trim(\"Baualtersklasse\") like '%...' then 'ab ' || trim(replace(\"Baualtersklasse\",'...','')) else replace(trim(\"Baualtersklasse\"),' ... ','-') end as baualtersklasse,\navg(\"Energiekosten_Heizung_ww_€_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert') as \"Unsaniert\",\navg(\"Energiekosten_Heizung_ww_€_div_(m2a)\") filter (where \"Sanierungsstand\"='Saniert') as \"Saniert (konventionell)\",\navg(\"Energiekosten_Heizung_ww_€_div_(m2a)\") filter (where \"Sanierungsstand\"='Modern') as \"Modern (zukunftsweisend)\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Gebäude_typ_klasse\"='$typ' and \"Heiz_klasse\"='$heizung' group by 1 order by min(\"Baualtersklasse_von\")",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: €/m²a",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unsaniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saniert (konventionell)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Modern (zukunftsweisend)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "baualtersklasse",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      }
+    },
+    {
+      "type": "row",
+      "title": "Sanierungspotenzial und Heizsysteme",
+      "collapsed": false,
+      "id": 11,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Einsparung gegenüber unsaniertem Zustand",
+      "description": "Reduktion des Nettoheizwärmebedarfs durch konventionelle Sanierung bzw. zukunftsweisendes Modernisierungspaket, in Prozent des unsanierten Bedarfs.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when trim(\"Baualtersklasse\") like '...%' then 'bis ' || trim(replace(\"Baualtersklasse\",'...','')) when trim(\"Baualtersklasse\") like '%...' then 'ab ' || trim(replace(\"Baualtersklasse\",'...','')) else replace(trim(\"Baualtersklasse\"),' ... ','-') end as baualtersklasse,\n100*(1 - avg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Saniert')/avg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert')) as \"Saniert (konventionell)\",\n100*(1 - avg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Modern')/avg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert')) as \"Modern (zukunftsweisend)\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Gebäude_typ_klasse\"='$typ' and \"Heiz_klasse\"='$heizung' group by 1 order by min(\"Baualtersklasse_von\")",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: %",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unsaniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saniert (konventionell)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Modern (zukunftsweisend)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "baualtersklasse",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Gebäudetypen im Vergleich (Baualtersklasse 1958-1968)",
+      "description": "Nettoheizwärmebedarf nach Sanierungsstand für alle Gebäudetypen (unabhängig vom Gebäudetyp-Filter) in der Baualtersklasse 1958-1968, dem Schwerpunkt der deutschen Bausubstanz.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Gebäude_typ_klasse\" as gebaeudetyp,\navg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Unsaniert') as \"Unsaniert\",\navg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Saniert') as \"Saniert (konventionell)\",\navg(\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\") filter (where \"Sanierungsstand\"='Modern') as \"Modern (zukunftsweisend)\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Heiz_klasse\"='Gas' and \"Baualtersklasse\" like '1958%' and \"Gebäude_typ_klasse\" <> 'Sub-Typen' group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: kWh/m²a",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unsaniert"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Saniert (konventionell)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Modern (zukunftsweisend)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "gebaeudetyp",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 13,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Heizsysteme im Vergleich",
+      "description": "Primärenergie, CO₂ und Energiekosten je Heizsystem (Gas, Holz/Bio, Strom/Wärmepumpe) für den gewählten Gebäudetyp, Mittelwert über alle Baualtersklassen, nach Sanierungsstand. Es gibt nur Standardrandbedingungen für Bio/Strom.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Heiz_klasse\" || ' / ' || \"Sanierungsstand\" as system, avg(\"Primärenergiebedarf_gesamt_kWh_div_(m2a)\") as \"Primärenergie kWh/m²a\", avg(\"Co2_Heizung_ww_kg_div_(m2a)\") as \"CO₂ kg/m²a\", avg(\"Energiekosten_Heizung_ww_€_div_(m2a)\") as \"Kosten €/m²a\"\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\" like '%Standardrandbedingungen' and \"Gebäude_typ_klasse\"='$typ' group by \"Heiz_klasse\", \"Sanierungsstand\" order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "system",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -30,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      }
+    },
+    {
+      "type": "table",
+      "title": "Typologie (gefiltert)",
+      "description": "Zeilen der Gebäudetypologie für Rechenverfahren, Gebäudetyp und Heizsystem. Alle Energiewerte in kWh/m²a, CO₂ in kg/m²a.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Gebäude_typ\" as gebaeudetyp, case when trim(\"Baualtersklasse\") like '...%' then 'bis ' || trim(replace(\"Baualtersklasse\",'...','')) when trim(\"Baualtersklasse\") like '%...' then 'ab ' || trim(replace(\"Baualtersklasse\",'...','')) else replace(trim(\"Baualtersklasse\"),' ... ','-') end as baualtersklasse, \"Sanierungsstand\" as sanierungsstand, \"Gebäude_variante\" as variante, \"Wärmetransferkoeffizient_Hüllfläche_W_div_(m2K)\" as u_huelle,\n\"Nutzwärme_Nettoheizwärmebedarf_kWh_div_(m2a)\" as heizwaerme, \"Endenergiebedarf_fossil_kWh_div_(m2a)\" as endenergie_fossil, \"Endenergiebedarf_strom_kWh_div_(m2a)\" as endenergie_strom, \"Primärenergiebedarf_gesamt_kWh_div_(m2a)\" as primaerenergie, \"Co2_Heizung_ww_kg_div_(m2a)\" as co2, \"Energiekosten_Heizung_ww_€_div_(m2a)\" as kosten_eur\nfrom iwugebaeudetypen.\"iwu_typgebäude\" where \"Rechenverfahren\"='$verfahren' and \"Gebäude_typ_klasse\"='$typ' and \"Heiz_klasse\"='$heizung' order by \"Gebäude_typ\", \"Sanierungsstand\", \"Gebäude_variante\"",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "u_huelle"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: W/m²K"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "heizwaerme"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh/m²a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 350
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "endenergie_fossil"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh/m²a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "endenergie_strom"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh/m²a"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "primaerenergie"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kWh/m²a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "co2"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: kg/m²a"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kosten_eur"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: €/m²a"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "buildings",
+    "heat"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "query",
+        "name": "verfahren",
+        "label": "Rechenverfahren",
+        "description": "Standardrandbedingungen = normierter Bedarf; 'korrigiert auf Verbrauchsniveau' berücksichtigt typisches Nutzerverhalten.",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select distinct \"Rechenverfahren\" from iwugebaeudetypen.\"iwu_typgebäude\" order by 1 desc",
+        "query": {
+          "rawSql": "select distinct \"Rechenverfahren\" from iwugebaeudetypen.\"iwu_typgebäude\" order by 1 desc",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "TABULA Berechnungsverfahren / Standardrandbedingungen",
+          "value": "TABULA Berechnungsverfahren / Standardrandbedingungen"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "typ",
+        "label": "Gebäudetyp",
+        "description": "EFH = Einfamilienhaus, RH = Reihenhaus, MFH = Mehrfamilienhaus, GMH = Großes Mehrfamilienhaus.",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select distinct \"Gebäude_typ_klasse\" from iwugebaeudetypen.\"iwu_typgebäude\" where \"Gebäude_typ_klasse\" <> 'Sub-Typen' order by 1",
+        "query": {
+          "rawSql": "select distinct \"Gebäude_typ_klasse\" from iwugebaeudetypen.\"iwu_typgebäude\" where \"Gebäude_typ_klasse\" <> 'Sub-Typen' order by 1",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "EFH",
+          "value": "EFH"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      },
+      {
+        "type": "query",
+        "name": "heizung",
+        "label": "Heizsystem",
+        "description": "Für Bio/Electr gibt es nur Standardrandbedingungen.",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select distinct \"Heiz_klasse\" from iwugebaeudetypen.\"iwu_typgebäude\" order by 1 desc",
+        "query": {
+          "rawSql": "select distinct \"Heiz_klasse\" from iwugebaeudetypen.\"iwu_typgebäude\" order by 1 desc",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Gas",
+          "value": "Gas"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS IWU Gebäudetypologie",
+  "uid": "oeds-iwugebaeudetypen",
+  "version": 1,
+  "weekStart": ""
+}

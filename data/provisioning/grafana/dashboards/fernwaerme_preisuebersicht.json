@@ -1,0 +1,1407 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Fernwärmepreise deutscher Netze (waermepreise.info, nur private Nutzung). Je Zeile ein Teilnetz mit Preisen in ct/kWh (brutto) für drei Abnahmefälle: Einfamilienhaus (15 kW, 27.000 kWh/a), Mehrfamilienhaus (160 kW, 288.000 kWh/a) und Industrie/Gewerbe (600 kW, 1.080.000 kWh/a).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "type": "dashboards",
+      "title": "OEDS dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link",
+      "tooltip": "",
+      "targetBlank": false,
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Datenstand",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Teilnetze",
+      "description": "Anzahl Zeilen (Teilnetze) im Filter. Ein Zeitstempel des Downloads wird nicht gespeichert, siehe 'Aktuellster Preisstand'.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(*) as n from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Städte",
+      "description": "Anzahl verschiedener Städte.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"Stadt\") as n from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Versorger",
+      "description": "Anzahl verschiedener Unternehmen.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select count(distinct \"Unternehmen\") as n from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 4,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Preis EFH Ø",
+      "description": "Mittelwert über alle Teilnetze mit Preis, ungewichtet.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as v from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 5,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Preis MFH Ø",
+      "description": "Mittelwert über alle Teilnetze mit Preis, ungewichtet.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select avg(\"MFH in ct/kWh (brutto) MFH in ct/kWh = Mehrfamilienhaus Abnahme\") as v from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland')",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 6,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Aktuellster Preisstand",
+      "description": "Spätestes Datum der letzten Preisanpassung in der Tabelle, zeigt wie frisch der Snapshot ist.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(max(\"Preisstand Datum der letzten Preisanpassung\"),'YYYY-MM-DD') as d from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "orientation": "auto",
+        "justifyMode": "auto"
+      },
+      "id": 7,
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      }
+    },
+    {
+      "type": "row",
+      "title": "Preisniveau",
+      "collapsed": false,
+      "id": 8,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Durchschnittspreis je Bundesland",
+      "description": "Mittlerer Fernwärmepreis (brutto, ct/kWh) je Bundesland für die drei Abnahmefälle. Unabhängig vom Bundesland-Filter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Bundesland\" as bundesland, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as \"Einfamilienhaus\", avg(\"MFH in ct/kWh (brutto) MFH in ct/kWh = Mehrfamilienhaus Abnahme\") as \"Mehrfamilienhaus\", avg(\"Industrie in ct/kWh (brutto) Industrie in ct/kWh = Industrie bz\") as \"Industrie/Gewerbe\"\nfrom fernwaerme_preisuebersicht.fernwaerme_preisuebersicht group by 1 order by avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") desc nulls last",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Einfamilienhaus"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mehrfamilienhaus"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Industrie/Gewerbe"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#73BF69"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "h": 9,
+        "w": 14,
+        "x": 0,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Verteilung der Preise (Einfamilienhaus)",
+      "description": "Anzahl Teilnetze je Preisklasse (2 ct/kWh).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select to_char(floor(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\"/2)*2,'FM00') as \"ab ct/kWh\", count(*) as teilnetze from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\" is not null group by floor(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\"/2) order by floor(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\"/2)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "ab ct/kWh",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 14,
+        "y": 6
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Teuerste Städte (Einfamilienhaus)",
+      "description": "Mittlerer EFH-Preis je Stadt im Filter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Stadt\" as stadt, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as \"ct/kWh\" from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\" is not null group by 1 order by 2 desc limit 15",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Günstigste Städte (Einfamilienhaus)",
+      "description": "Mittlerer EFH-Preis je Stadt im Filter.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Stadt\" as stadt, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as \"ct/kWh\" from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\" is not null group by 1 order by 2 asc limit 15",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "lineWidth": 0,
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "groupWidth": 0.8,
+        "barWidth": 0.85,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "colorByField": null,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      }
+    },
+    {
+      "type": "row",
+      "title": "Erzeugung und Vertrag",
+      "collapsed": false,
+      "id": 13,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": []
+    },
+    {
+      "type": "barchart",
+      "title": "Energieträger in der Erzeugung",
+      "description": "Anzahl Teilnetze, in deren Erzeugung der Energieträger eingesetzt wird (Mehrfachnennung möglich) und mittlerer EFH-Preis dieser Netze.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select * from (select 'Erdgas' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Erdgas%' union all select 'Biomasse/Biogas/Biomethan' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Bio%' union all select 'Unvermeidbare Abwärme' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Abwärme%' union all select 'Leichtöl' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Leichtöl%' union all select 'Kohle (Stein-/Braunkohle)' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%kohle%' union all select 'Abfall' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Abfall%' union all select 'Geothermie' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Geothermie%' union all select 'Sonstige (EE)' as energietraeger, count(*) as teilnetze, avg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as preis from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') and \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" ilike '%Sonstige (EE)%') x where teilnetze > 0 order by teilnetze desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "preis"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: ct/kWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "energietraeger",
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Preis nach KWK-Anteil",
+      "description": "Mittlerer Preis (EFH/MFH) nach Anteil der Kraft-Wärme-Kopplung an der Wärmeerzeugung des Teilnetzes.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select case when \"Anteil KWK KWK (Kraft-Wärme-Kopplung) gleichzeitige Strom- und\" is null then 'k.A.' when \"Anteil KWK KWK (Kraft-Wärme-Kopplung) gleichzeitige Strom- und\" = 0 then '0 %' when \"Anteil KWK KWK (Kraft-Wärme-Kopplung) gleichzeitige Strom- und\" < 50 then '1-49 %' when \"Anteil KWK KWK (Kraft-Wärme-Kopplung) gleichzeitige Strom- und\" < 80 then '50-79 %' else '80-100 %' end as kwk_anteil,\navg(\"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\") as \"Einfamilienhaus\", avg(\"MFH in ct/kWh (brutto) MFH in ct/kWh = Mehrfamilienhaus Abnahme\") as \"Mehrfamilienhaus\", count(*) as teilnetze\nfrom fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: ct/kWh",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Einfamilienhaus"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#FF9830"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mehrfamilienhaus"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "teilnetze"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "xField": "kwk_anteil",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": 0,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 15,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      }
+    },
+    {
+      "type": "piechart",
+      "title": "Anpassungszyklus der Preise",
+      "description": "Wie oft die Preise vertraglich angepasst werden.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select coalesce(nullif(trim(\"Anpassungs­zyklus Wie oft werden die Preise vertraglich angepa\"),''),'k.A.') as zyklus, count(*) as teilnetze from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 34
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Preisstände der Netze",
+      "description": "Anzahl Teilnetze nach Monat der letzten Preisanpassung. Zeigt, wie aktuell die Preise im Snapshot sind.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select date_trunc('month', \"Preisstand Datum der letzten Preisanpassung\"::timestamp) as time, count(*) as \"Teilnetze\" from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht\nwhere $__timeFilter(\"Preisstand Datum der letzten Preisanpassung\") and ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') group by 1 order by 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 70,
+            "showPoints": "auto",
+            "spanNulls": true,
+            "axisLabel": "",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 34
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Netzverluste je Bundesland",
+      "description": "Mittlere Netzverluste in Prozent der eingespeisten Wärme (Angabe des Versorgers, ungewichtet).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Bundesland\" as bundesland, avg(\"Netzverluste Netzverluste werden bestimmt durch - Netzlänge - \") as \"Netzverluste\" from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht group by 1 order by 2 desc",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: %",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "bundesland",
+        "orientation": "vertical",
+        "showValue": "never",
+        "stacking": "none",
+        "barWidth": 0.8,
+        "groupWidth": 0.75,
+        "xTickLabelRotation": -45,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 34
+      }
+    },
+    {
+      "type": "table",
+      "title": "Alle Teilnetze",
+      "description": "Einzelne Fernwärmenetze mit Preisen, Preisstand, Energieträgern und KWK-Anteil. Preise in ct/kWh (brutto).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select \"Bundesland\" as bundesland, \"Stadt\" as stadt, \"Unternehmen\" as unternehmen, \"Teilnetz\" as teilnetz, \"EFH in ct/kWh (brutto) EFH in ct/kWh = Einfamilienhaus Abnahmef\" as efh, \"MFH in ct/kWh (brutto) MFH in ct/kWh = Mehrfamilienhaus Abnahme\" as mfh, \"Industrie in ct/kWh (brutto) Industrie in ct/kWh = Industrie bz\" as industrie,\n\"Preisstand Datum der letzten Preisanpassung\"::timestamp as preisstand, \"Energie­träger Eingesetzte Energieträger in der Erzeugung\" as energietraeger, \"Anteil KWK KWK (Kraft-Wärme-Kopplung) gleichzeitige Strom- und\" as kwk_anteil, \"PEF Glossar\" as pef, \"Netzverluste Netzverluste werden bestimmt durch - Netzlänge - \" as netzverluste\nfrom fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where ('$bundesland'='Alle' or \"Bundesland\"='$bundesland') order by 2, 4",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "efh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: ct/kWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "min",
+                "value": 10
+              },
+              {
+                "id": "max",
+                "value": 30
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "mfh"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: ct/kWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "industrie"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: ct/kWh"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "preisstand"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "date"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "kwk_anteil"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "netzverluste"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      }
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 42,
+  "tags": [
+    "oeds",
+    "heat",
+    "prices"
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "options": [],
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "type": "query",
+        "name": "bundesland",
+        "label": "Bundesland",
+        "description": "",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "definition": "select b from (select 'Alle' as b, 0 as o union all select distinct \"Bundesland\", 1 from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where \"Bundesland\" is not null) x order by o, b",
+        "query": {
+          "rawSql": "select b from (select 'Alle' as b, 0 as o union all select distinct \"Bundesland\", 1 from fernwaerme_preisuebersicht.fernwaerme_preisuebersicht where \"Bundesland\" is not null) x order by o, b",
+          "editorMode": "code",
+          "format": "table"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "Alle",
+          "value": "Alle"
+        },
+        "options": [],
+        "regex": "",
+        "skipUrlSync": false,
+        "hide": 0
+      }
+    ]
+  },
+  "time": {
+    "from": "now-3y",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "OEDS Fernwärme Preisübersicht",
+  "uid": "oeds-fernwaerme-preisuebersicht",
+  "version": 1,
+  "weekStart": ""
+}

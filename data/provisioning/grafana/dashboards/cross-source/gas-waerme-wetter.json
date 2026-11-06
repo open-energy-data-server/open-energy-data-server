@@ -1,0 +1,1914 @@
+{
+  "uid": "oeds-x-gas-waerme-wetter",
+  "title": "OEDS Gas, Wärme & Wetter",
+  "tags": [
+    "oeds",
+    "cross-source",
+    "gas",
+    "heat",
+    "weather",
+    "entsog",
+    "gie",
+    "ecmwf",
+    "opsd"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Gas flows and storage (ENTSOG, GIE) against temperature, heating degree days (ECMWF ERA5) and the OPSD when2heat heat profiles. Default range 2022: the only year where ENTSOG (from Nov 2021), GIE, ERA5-Land (ecmwf_eu, 2022-2026) and when2heat (until 2022-12-31) all have data.",
+  "time": {
+    "from": "2022-01-01T00:00:00.000Z",
+    "to": "2023-01-01T00:00:00.000Z"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status of the sources used",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'entsog.physical_flow' AS \"Table\", min(periodfrom) AS \"First\", max(periodfrom) AS \"Latest\", round((extract(epoch FROM now() - max(periodfrom))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('entsog.physical_flow'::regclass) AS \"Rows (approx.)\", 36 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 36 THEN 'OK' WHEN extract(epoch FROM now() - max(periodfrom))/3600 <= 108 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM entsog.physical_flow\nUNION ALL\nSELECT 'gie.gie_agsi_country' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_agsi_country'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_agsi_country\nUNION ALL\nSELECT 'gie.gie_alsi_country' AS \"Table\", min(gasdaystart)::timestamptz AS \"First\", max(gasdaystart)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('gie.gie_alsi_country'::regclass) AS \"Rows (approx.)\", 48 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 48 THEN 'OK' WHEN extract(epoch FROM now() - (max(gasdaystart)::timestamptz + interval '1 day'))/3600 <= 144 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM gie.gie_alsi_country\nUNION ALL\nSELECT 'opsd.when2heat' AS \"Table\", (min(utc_timestamp) AT TIME ZONE 'UTC') AS \"First\", (max(utc_timestamp) AT TIME ZONE 'UTC') AS \"Latest\", round((extract(epoch FROM now() - (max(utc_timestamp) AT TIME ZONE 'UTC'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('opsd.when2heat'::regclass) AS \"Rows (approx.)\", NULL::numeric AS \"Expected max age (h)\", 'static' AS \"Status\" FROM opsd.when2heat\nUNION ALL\nSELECT 'ecmwf.era5_land_eu' AS \"Table\", min(time) AS \"First\", max(time) AS \"Latest\", round((extract(epoch FROM now() - max(time))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('ecmwf.era5_land_eu'::regclass) AS \"Rows (approx.)\", NULL::numeric AS \"Expected max age (h)\", 'static' AS \"Status\" FROM ecmwf.era5_land_eu"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 7
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Reading this dashboard",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "**Sources**: ENTSOG physical flows (`kWh/h`, hourly, about 97 % of rows have values), GIE AGSI+/ALSI (daily, GWh/d), weather from the ECMWF tables (variable *Weather table*) and OPSD **when2heat** (hourly heat profiles 2008-2022).\n\n**Weather tables** (`ecmwf.*`, NUTS regions, hourly UTC): `ecmwf_eu` = ERA5-Land 2022-01..2026-02 (default), `era5_eu` = ERA5 single levels 2019..2020 so far (being filled up), `era5_land_eu` = ERA5-Land 2019. Pick the one that covers the time range; for 2019/2020 also the when2heat panels have data. Precipitation of `ecmwf_eu` is a running sum and is not used. Temperatures are converted from K to degC.\n\n**Default range 2022**: all of ENTSOG, GIE, ecmwf_eu and when2heat have data. Heating degree days (HDD) are the daily mean of max(0, base - T) over the hours, base temperature selectable. when2heat: `heat_demand_*` columns are empty after 2015, so the *heat profile* columns are used; profiles are dimensionless/relative values as published by OPSD."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 7
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Overview of the selected range",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Mean air temperature",
+      "description": "Mean 2 m air temperature of the selected country (NUTS 0, ECMWF) over the time range.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(temp_air - 273.15) AS v FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "celsius",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "Heating degree days",
+      "description": "Sum of daily heating degree days over the range (base temperature variable) = sum over the hours of max(0, base - T) / 24, ECMWF NUTS 0.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(greatest(0, ${hdd_base} - (temp_air - 273.15))) / 24 AS v FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}'"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 9,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Gas storage filling level (end of range)",
+      "description": "Filling level of the gas storages of the country on the last gas day of the range (AGSI+, % of working gas volume).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \"full\" AS v FROM gie.gie_agsi_country WHERE code = '${country}' AND $__timeFilter(gasdaystart) ORDER BY gasdaystart DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 9,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Net storage withdrawal",
+      "description": "Sum of withdrawal minus injection of the country's gas storages over the range in TWh (positive = storages emptied), AGSI+.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sum(withdrawal - injection) / 1000 AS v FROM gie.gie_agsi_country WHERE code = '${country}' AND $__timeFilter(gasdaystart)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 4,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Gas to consumers (ENTSOG)",
+      "description": "Mean physical flow at exit points of type final consumers / distribution of the country's TSOs (GW, only hours with values). Not national demand: only points reported on the ENTSOG platform are included.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg(v) / 1e6 AS v FROM (SELECT periodfrom, sum(value) AS v FROM entsog.physical_flow WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND operatorkey LIKE '${country}-%' AND directionkey = 'exit' AND (pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%') GROUP BY 1) h"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 9,
+        "w": 4,
+        "h": 4
+      },
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "Heat profile (when2heat, mean)",
+      "description": "Mean hourly space-heating profile of single-family houses from OPSD when2heat for the selected country over the range (relative units, derived from weather by the dataset authors). Empty when the range lies outside 2008-2022.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT avg((CASE '${country}' WHEN 'DE' THEN \"DE_heat_profile_space_SFH\" WHEN 'FR' THEN \"FR_heat_profile_space_SFH\" WHEN 'IT' THEN \"IT_heat_profile_space_SFH\" WHEN 'NL' THEN \"NL_heat_profile_space_SFH\" WHEN 'AT' THEN \"AT_heat_profile_space_SFH\" WHEN 'BE' THEN \"BE_heat_profile_space_SFH\" WHEN 'PL' THEN \"PL_heat_profile_space_SFH\" WHEN 'ES' THEN \"ES_heat_profile_space_SFH\" WHEN 'HU' THEN \"HU_heat_profile_space_SFH\" WHEN 'CZ' THEN \"CZ_heat_profile_space_SFH\" WHEN 'DK' THEN \"DK_heat_profile_space_SFH\" END)) AS v FROM opsd.when2heat w WHERE $__timeFilter(utc_timestamp)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 9,
+        "w": 4,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "Storage and weather",
+      "collapsed": false,
+      "panels": [],
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas storage net withdrawal vs air temperature",
+      "description": "Daily net withdrawal (withdrawal minus injection, GWh/d, bars-like area, left axis) of the gas storages of the selected country (AGSI+) against the daily mean air temperature (right axis, ECMWF, NUTS 0). In winter the storages are emptied when it gets cold, in summer they are refilled.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(gasdaystart::timestamp AT TIME ZONE 'UTC','1d'), avg(withdrawal - injection) AS \"net withdrawal GWh/d\", avg(injection) AS \"injection GWh/d\", avg(withdrawal) AS \"withdrawal GWh/d\"\nFROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart) AND code = '${country}' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",'1d'), avg(temp_air - 273.15) AS \"air temperature degC\"\nFROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "GWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "air temperature degC"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 16,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "timeseries",
+      "title": "Storage filling level vs cumulated heating degree days",
+      "description": "Filling level of the country's gas storages (%, left, AGSI+) and heating degree days cumulated from the start of the selected range (right axis, HDD base temperature from the variable, ECMWF NUTS 0). The slope of the HDD curve shows the heating demand; the storage level falls fastest when it rises steeply.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(gasdaystart::timestamp AT TIME ZONE 'UTC','1d'), avg(\"full\") AS \"filling level %\" FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart) AND code = '${country}' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT t AS time, sum(h) OVER (ORDER BY t) AS \"cumulated HDD\" FROM (SELECT date_trunc('day', \"time\") AS t, sum(greatest(0, ${hdd_base} - (temp_air - 273.15))) / 24 AS h\nFROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1) x ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cumulated HDD"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 14,
+        "w": 8,
+        "h": 9
+      },
+      "id": 13
+    },
+    {
+      "type": "row",
+      "title": "ENTSOG physical flows vs temperature",
+      "collapsed": false,
+      "panels": [],
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas flows by role in the country's network vs air temperature",
+      "description": "ENTSOG hourly physical flow summed over the points of the selected country's TSOs and averaged per day (GW), grouped by role: supply = entry (non-EU pipeline imports, LNG, storage withdrawal, production), demand = exit (distribution and final consumers, storage injection, exports). Intra-EU interconnection points are left out. Air temperature (right axis, ECMWF). Points reported by two TSOs can be counted twice; only hours with values are used.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(t,'1d'), cls AS metric, avg(v) AS \"flow\"\nFROM (SELECT periodfrom AS t, CASE\n  WHEN pointtype LIKE 'LNG%' AND directionkey = 'entry' THEN 'LNG regasification'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'entry' THEN 'Storage withdrawal'\n  WHEN pointtype LIKE 'Storage point%' AND directionkey = 'exit' THEN 'Storage injection'\n  WHEN pointtype LIKE 'Aggregated production%' AND directionkey = 'entry' THEN 'Domestic production'\n  WHEN pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%' THEN 'Distribution / final consumers'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'entry' THEN 'Pipeline imports (non-EU)'\n  WHEN pointtype LIKE 'Cross-Border Transmission IP between EU and %' AND directionkey = 'exit' THEN 'Pipeline exports (non-EU)'\nEND AS cls, sum(value) AS v FROM entsog.physical_flow\n  WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND operatorkey LIKE '${country}-%' GROUP BY 1, 2) h\nWHERE cls IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",'1d'), avg(temp_air - 273.15) AS \"air temperature degC\"\nFROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 60,
+            "pointSize": 4,
+            "axisPlacement": "auto",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "air temperature degC"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 10
+      },
+      "id": 15
+    },
+    {
+      "type": "xychart",
+      "title": "Daily gas to consumers vs daily mean temperature",
+      "description": "Each point is one day: mean ENTSOG flow at final consumer / distribution exit points of the country (GW, y axis) against the daily mean air temperature (degC, x axis, ECMWF). The slope shows the temperature sensitivity of the reported gas demand (typically about -1 GW per degC in Germany for the reported subset). Source: entsog.physical_flow + the selected weather table.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT t.temp AS \"air temperature degC\", g.v AS \"gas to consumers GW\" FROM\n  (SELECT date_trunc('day', \"time\") AS d, avg(temp_air - 273.15) AS temp FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1) t\n  JOIN (SELECT date_trunc('day', periodfrom) AS d, avg(v) / 1e6 AS v FROM (SELECT periodfrom, sum(value) AS v FROM entsog.physical_flow\n     WHERE $__timeFilter(periodfrom) AND value IS NOT NULL AND operatorkey LIKE '${country}-%' AND directionkey = 'exit'\n       AND (pointtype = 'Aggregated Point - Final Consumers' OR pointtype LIKE 'Distribution Point%') GROUP BY 1) h GROUP BY 1) g ON g.d = t.d"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 5
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "days",
+            "x": "air temperature degC",
+            "y": "gas to consumers GW"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 9
+      },
+      "id": 16
+    },
+    {
+      "type": "xychart",
+      "title": "Daily net storage withdrawal vs daily mean temperature",
+      "description": "Each point is one day: net withdrawal of the country's gas storages (GWh/d, AGSI+, y axis) against the daily mean air temperature (degC, x axis, ECMWF). Includes the seasonal storage cycle: the same temperature gives different values in autumn (filling) and winter (emptying) because of storage regulations and prices.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT t.temp AS \"air temperature degC\", g.v AS \"net withdrawal GWh/d\" FROM\n  (SELECT date_trunc('day', \"time\") AS d, avg(temp_air - 273.15) AS temp FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1) t\n  JOIN (SELECT gasdaystart::timestamp AS d, withdrawal - injection AS v FROM gie.gie_agsi_country WHERE code = '${country}' AND $__timeFilter(gasdaystart)) g ON g.d = t.d"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 5
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "days",
+            "x": "air temperature degC",
+            "y": "net withdrawal GWh/d"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 9
+      },
+      "id": 17
+    },
+    {
+      "type": "row",
+      "title": "Heat demand: OPSD when2heat",
+      "collapsed": false,
+      "panels": [],
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Space heating profile (when2heat) vs air temperature",
+      "description": "Hourly space-heating profiles of the selected country from OPSD when2heat (single-family houses SFH, multi-family houses MFH, commercial COM; relative units as published, left) against the ECMWF air temperature (right, hourly mean over the interval). The profiles are computed by the dataset authors from reanalysis weather and follow the temperature. when2heat covers 2008-2022; the panel is empty outside. heat_demand_* columns of the dataset are empty after 2015 and are not used.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(utc_timestamp,$__interval), avg((CASE '${country}' WHEN 'DE' THEN \"DE_heat_profile_space_SFH\" WHEN 'FR' THEN \"FR_heat_profile_space_SFH\" WHEN 'IT' THEN \"IT_heat_profile_space_SFH\" WHEN 'NL' THEN \"NL_heat_profile_space_SFH\" WHEN 'AT' THEN \"AT_heat_profile_space_SFH\" WHEN 'BE' THEN \"BE_heat_profile_space_SFH\" WHEN 'PL' THEN \"PL_heat_profile_space_SFH\" WHEN 'ES' THEN \"ES_heat_profile_space_SFH\" WHEN 'HU' THEN \"HU_heat_profile_space_SFH\" WHEN 'CZ' THEN \"CZ_heat_profile_space_SFH\" WHEN 'DK' THEN \"DK_heat_profile_space_SFH\" END)) AS \"SFH space heating profile\",\n  avg((CASE '${country}' WHEN 'DE' THEN \"DE_heat_profile_space_MFH\" WHEN 'FR' THEN \"FR_heat_profile_space_MFH\" WHEN 'IT' THEN \"IT_heat_profile_space_MFH\" WHEN 'NL' THEN \"NL_heat_profile_space_MFH\" WHEN 'AT' THEN \"AT_heat_profile_space_MFH\" WHEN 'BE' THEN \"BE_heat_profile_space_MFH\" WHEN 'PL' THEN \"PL_heat_profile_space_MFH\" WHEN 'ES' THEN \"ES_heat_profile_space_MFH\" WHEN 'HU' THEN \"HU_heat_profile_space_MFH\" WHEN 'CZ' THEN \"CZ_heat_profile_space_MFH\" WHEN 'DK' THEN \"DK_heat_profile_space_MFH\" END)) AS \"MFH space heating profile\", avg((CASE '${country}' WHEN 'DE' THEN \"DE_heat_profile_space_COM\" WHEN 'FR' THEN \"FR_heat_profile_space_COM\" WHEN 'IT' THEN \"IT_heat_profile_space_COM\" WHEN 'NL' THEN \"NL_heat_profile_space_COM\" WHEN 'AT' THEN \"AT_heat_profile_space_COM\" WHEN 'BE' THEN \"BE_heat_profile_space_COM\" WHEN 'PL' THEN \"PL_heat_profile_space_COM\" WHEN 'ES' THEN \"ES_heat_profile_space_COM\" WHEN 'HU' THEN \"HU_heat_profile_space_COM\" WHEN 'CZ' THEN \"CZ_heat_profile_space_COM\" WHEN 'DK' THEN \"DK_heat_profile_space_COM\" END)) AS \"COM space heating profile\"\nFROM opsd.when2heat w WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",$__interval), avg(temp_air - 273.15) AS \"air temperature degC\" FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "air temperature degC"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 24,
+        "h": 9
+      },
+      "id": 19
+    },
+    {
+      "type": "xychart",
+      "title": "when2heat profile vs temperature (daily)",
+      "description": "Each point is one day: mean when2heat SFH space heating profile (y) against the daily mean ECMWF temperature (x). Because when2heat is built from weather data of the same reanalysis family, the points follow a tight curve; deviations show the weather table vs the dataset's own weather input and the weekday effect.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT t.temp AS \"air temperature degC\", h.v AS \"SFH heat profile\" FROM\n  (SELECT date_trunc('day', \"time\") AS d, avg(temp_air - 273.15) AS temp FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1) t\n  JOIN (SELECT date_trunc('day', utc_timestamp) AS d, avg((CASE '${country}' WHEN 'DE' THEN \"DE_heat_profile_space_SFH\" WHEN 'FR' THEN \"FR_heat_profile_space_SFH\" WHEN 'IT' THEN \"IT_heat_profile_space_SFH\" WHEN 'NL' THEN \"NL_heat_profile_space_SFH\" WHEN 'AT' THEN \"AT_heat_profile_space_SFH\" WHEN 'BE' THEN \"BE_heat_profile_space_SFH\" WHEN 'PL' THEN \"PL_heat_profile_space_SFH\" WHEN 'ES' THEN \"ES_heat_profile_space_SFH\" WHEN 'HU' THEN \"HU_heat_profile_space_SFH\" WHEN 'CZ' THEN \"CZ_heat_profile_space_SFH\" WHEN 'DK' THEN \"DK_heat_profile_space_SFH\" END)) AS v FROM opsd.when2heat w WHERE $__timeFilter(utc_timestamp) GROUP BY 1) h ON h.d = t.d"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "show": "points",
+            "pointSize": {
+              "fixed": 5
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "mapping": "manual",
+        "seriesMapping": "manual",
+        "series": [
+          {
+            "frame": 0,
+            "name": "days",
+            "x": "air temperature degC",
+            "y": "SFH heat profile"
+          }
+        ],
+        "dims": {
+          "frame": 0
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 12,
+        "h": 9
+      },
+      "id": 20
+    },
+    {
+      "type": "timeseries",
+      "title": "Heat pump COP (when2heat) vs air temperature",
+      "description": "Coefficient of performance of air-source heat pumps (floor heating and radiator heating, water heating) from when2heat (left, hourly mean) against the ECMWF air temperature (right). The COP rises with temperature; low temperatures in winter coincide with the highest heat demand.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(utc_timestamp,$__interval), avg((CASE '${country}' WHEN 'DE' THEN \"DE_COP_ASHP_floor\" WHEN 'FR' THEN \"FR_COP_ASHP_floor\" WHEN 'IT' THEN \"IT_COP_ASHP_floor\" WHEN 'NL' THEN \"NL_COP_ASHP_floor\" WHEN 'AT' THEN \"AT_COP_ASHP_floor\" WHEN 'BE' THEN \"BE_COP_ASHP_floor\" WHEN 'PL' THEN \"PL_COP_ASHP_floor\" WHEN 'ES' THEN \"ES_COP_ASHP_floor\" WHEN 'HU' THEN \"HU_COP_ASHP_floor\" WHEN 'CZ' THEN \"CZ_COP_ASHP_floor\" WHEN 'DK' THEN \"DK_COP_ASHP_floor\" END)) AS \"COP ASHP floor\",\n  avg((CASE '${country}' WHEN 'DE' THEN \"DE_COP_ASHP_radiator\" WHEN 'FR' THEN \"FR_COP_ASHP_radiator\" WHEN 'IT' THEN \"IT_COP_ASHP_radiator\" WHEN 'NL' THEN \"NL_COP_ASHP_radiator\" WHEN 'AT' THEN \"AT_COP_ASHP_radiator\" WHEN 'BE' THEN \"BE_COP_ASHP_radiator\" WHEN 'PL' THEN \"PL_COP_ASHP_radiator\" WHEN 'ES' THEN \"ES_COP_ASHP_radiator\" WHEN 'HU' THEN \"HU_COP_ASHP_radiator\" WHEN 'CZ' THEN \"CZ_COP_ASHP_radiator\" WHEN 'DK' THEN \"DK_COP_ASHP_radiator\" END)) AS \"COP ASHP radiator\", avg((CASE '${country}' WHEN 'DE' THEN \"DE_COP_ASHP_water\" WHEN 'FR' THEN \"FR_COP_ASHP_water\" WHEN 'IT' THEN \"IT_COP_ASHP_water\" WHEN 'NL' THEN \"NL_COP_ASHP_water\" WHEN 'AT' THEN \"AT_COP_ASHP_water\" WHEN 'BE' THEN \"BE_COP_ASHP_water\" WHEN 'PL' THEN \"PL_COP_ASHP_water\" WHEN 'ES' THEN \"ES_COP_ASHP_water\" WHEN 'HU' THEN \"HU_COP_ASHP_water\" WHEN 'CZ' THEN \"CZ_COP_ASHP_water\" WHEN 'DK' THEN \"DK_COP_ASHP_water\" END)) AS \"COP ASHP water\"\nFROM opsd.when2heat w WHERE $__timeFilter(utc_timestamp) GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",$__interval), avg(temp_air - 273.15) AS \"air temperature degC\" FROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "air temperature degC"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 53,
+        "w": 12,
+        "h": 9
+      },
+      "id": 21
+    },
+    {
+      "type": "row",
+      "title": "Europe: regions and countries",
+      "collapsed": false,
+      "panels": [],
+      "id": 22,
+      "gridPos": {
+        "x": 0,
+        "y": 62,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "geomap",
+      "title": "Heating degree days per NUTS-2 region, last 7 days of the range",
+      "description": "Heating degree days (base temperature from the variable) summed over the 7 days before the end of the time range for every NUTS-2 region of the selected weather table (marker colour and size). Cold regions have more HDD, i.e. higher heating demand. Positions are the region centres from the weather table.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS region, round(sum(greatest(0, ${hdd_base} - (temp_air - 273.15)))::numeric / 24, 1)::float8 AS \"HDD\", latitude AS lat, longitude AS lon\nFROM ecmwf.${wx} WHERE time >= ($__timeTo()::timestamptz - interval '7 days') AND time <= $__timeTo()::timestamptz AND nuts_id ~ '^[A-Z][A-Z][A-Z0-9][A-Z0-9]$'\nGROUP BY nuts_id, latitude, longitude"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "view": {
+          "id": "coords",
+          "lat": 50,
+          "lon": 12,
+          "zoom": 4,
+          "allLayers": true
+        },
+        "controls": {
+          "showZoom": true,
+          "mouseWheelZoom": true,
+          "showAttribution": true
+        },
+        "basemap": {
+          "type": "xyz",
+          "name": "Basemap",
+          "config": {
+            "url": "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+            "attribution": "Tiles © Esri"
+          }
+        },
+        "layers": [
+          {
+            "type": "markers",
+            "name": "HDD 7 d",
+            "tooltip": true,
+            "filterData": {
+              "id": "byRefId",
+              "options": "A"
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "lat",
+              "longitude": "lon"
+            },
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "field": "HDD",
+                  "fixed": "dark-green"
+                },
+                "opacity": 0.7,
+                "size": {
+                  "field": "HDD",
+                  "fixed": 5,
+                  "min": 3,
+                  "max": 14
+                },
+                "symbol": {
+                  "mode": "fixed",
+                  "fixed": "img/icons/marker/circle.svg"
+                },
+                "symbolAlign": {
+                  "horizontal": "center",
+                  "vertical": "center"
+                },
+                "rotation": {
+                  "fixed": 0,
+                  "min": -360,
+                  "max": 360,
+                  "mode": "mod"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            }
+          }
+        ],
+        "tooltip": {
+          "mode": "details"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 12,
+        "h": 12
+      },
+      "id": 23
+    },
+    {
+      "type": "barchart",
+      "title": "Gas storage filling level by country (end of range)",
+      "description": "Filling level of the national gas storages (%) on the last gas day in the time range, ranked. Source: gie.gie_agsi_country (AGSI+), countries with a working gas volume above 5 TWh.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT name AS country, \"full\" AS \"filling level %\" FROM (SELECT DISTINCT ON (code) code, name, \"full\", workinggasvolume FROM gie.gie_agsi_country WHERE $__timeFilter(gasdaystart) AND \"full\" IS NOT NULL ORDER BY code, gasdaystart DESC) x\nWHERE workinggasvolume > 5 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "hue",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 63,
+        "w": 6,
+        "h": 12
+      },
+      "id": 24
+    },
+    {
+      "type": "barchart",
+      "title": "Mean temperature by country (selected range)",
+      "description": "Mean 2 m air temperature (degC) of the countries (NUTS 0, ECMWF selected weather table) over the time range, ranked from warm to cold; compare with the storage levels. Countries with gas storages only.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT nuts_id AS country, avg(temp_air - 273.15) AS \"air temperature degC\" FROM ecmwf.${wx}\nWHERE $__timeFilter(\"time\") AND nuts_id IN ('DE','FR','IT','NL','AT','BE','PL','ES','HU','CZ','DK','SK','RO','BG','HR','PT','SE','LV','IE','UK') GROUP BY 1 ORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "hue",
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "stacking": "none",
+        "showValue": "auto",
+        "barWidth": 0.8,
+        "groupWidth": 0.8,
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 63,
+        "w": 6,
+        "h": 12
+      },
+      "id": 25
+    },
+    {
+      "type": "row",
+      "title": "LNG",
+      "collapsed": false,
+      "panels": [],
+      "id": 26,
+      "gridPos": {
+        "x": 0,
+        "y": 75,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "LNG send-out vs air temperature",
+      "description": "Daily LNG send-out of the country's terminals (GWh/d, ALSI, left) and the daily mean air temperature (right). Countries without terminals show no data.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(gasdaystart::timestamp AT TIME ZONE 'UTC','1d'), avg(sendout) AS \"send-out GWh/d\" FROM gie.gie_alsi_country WHERE $__timeFilter(gasdaystart) AND code = '${country}' GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(\"time\",'1d'), avg(temp_air - 273.15) AS \"air temperature degC\"\nFROM ecmwf.${wx} WHERE $__timeFilter(\"time\") AND nuts_id = '${country}' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "GWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "air temperature degC"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              },
+              {
+                "id": "custom.showPoints",
+                "value": "never"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 76,
+        "w": 24,
+        "h": 8
+      },
+      "id": 27
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "external link"
+    },
+    {
+      "title": "Cross-source",
+      "type": "dashboards",
+      "tags": [
+        "oeds",
+        "cross-source"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true,
+      "icon": "dashboard"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      },
+      {
+        "type": "custom",
+        "name": "country",
+        "label": "Country",
+        "query": "DE,FR,IT,NL,AT,BE,PL,ES,HU,CZ,DK",
+        "current": {
+          "text": "DE",
+          "value": "DE"
+        },
+        "options": [
+          {
+            "text": "DE",
+            "value": "DE",
+            "selected": true
+          },
+          {
+            "text": "FR",
+            "value": "FR",
+            "selected": false
+          },
+          {
+            "text": "IT",
+            "value": "IT",
+            "selected": false
+          },
+          {
+            "text": "NL",
+            "value": "NL",
+            "selected": false
+          },
+          {
+            "text": "AT",
+            "value": "AT",
+            "selected": false
+          },
+          {
+            "text": "BE",
+            "value": "BE",
+            "selected": false
+          },
+          {
+            "text": "PL",
+            "value": "PL",
+            "selected": false
+          },
+          {
+            "text": "ES",
+            "value": "ES",
+            "selected": false
+          },
+          {
+            "text": "HU",
+            "value": "HU",
+            "selected": false
+          },
+          {
+            "text": "CZ",
+            "value": "CZ",
+            "selected": false
+          },
+          {
+            "text": "DK",
+            "value": "DK",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "custom",
+        "name": "wx",
+        "label": "Weather table",
+        "query": "ecmwf_eu,era5_eu,era5_land_eu",
+        "current": {
+          "text": "ecmwf_eu",
+          "value": "ecmwf_eu"
+        },
+        "options": [
+          {
+            "text": "ecmwf_eu",
+            "value": "ecmwf_eu",
+            "selected": true
+          },
+          {
+            "text": "era5_eu",
+            "value": "era5_eu",
+            "selected": false
+          },
+          {
+            "text": "era5_land_eu",
+            "value": "era5_land_eu",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "type": "custom",
+        "name": "hdd_base",
+        "label": "HDD base temperature (degC)",
+        "query": "12,15,15.5,18",
+        "current": {
+          "text": "15",
+          "value": "15"
+        },
+        "options": [
+          {
+            "text": "12",
+            "value": "12",
+            "selected": false
+          },
+          {
+            "text": "15",
+            "value": "15",
+            "selected": true
+          },
+          {
+            "text": "15.5",
+            "value": "15.5",
+            "selected": false
+          },
+          {
+            "text": "18",
+            "value": "18",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

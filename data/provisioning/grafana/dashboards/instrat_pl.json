@@ -1,0 +1,1214 @@
+{
+  "uid": "oeds-instrat-pl",
+  "title": "OEDS Instrat Fuel and CO2 Prices (PL)",
+  "tags": [
+    "oeds",
+    "fuels",
+    "prices",
+    "instrat_pl"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "description": "Instrat (Poland) market data: EU ETS carbon price, Polish TGE day-ahead gas price and monthly steam coal price.",
+  "time": {
+    "from": "now-5y",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "panels": [],
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "table",
+      "title": "Data status",
+      "description": "First and latest timestamp per table, age of the latest value and approximate row count. Status compares the age with the update cadence of the source: OK within the expected age, LATE up to 3x, STALE beyond; 'static' tables are not updated any more.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'instrat_pl.eu_ets' AS \"Table\", min(date)::timestamptz AS \"First\", max(date)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('instrat_pl.eu_ets'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM instrat_pl.eu_ets\nUNION ALL\nSELECT 'instrat_pl.gas_price' AS \"Table\", min(date)::timestamptz AS \"First\", max(date)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('instrat_pl.gas_price'::regclass) AS \"Rows (approx.)\", 72 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600 <= 72 THEN 'OK' WHEN extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600 <= 216 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM instrat_pl.gas_price\nUNION ALL\nSELECT 'instrat_pl.coal_price (monthly)' AS \"Table\", min(date)::timestamptz AS \"First\", max(date)::timestamptz AS \"Latest\", round((extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600)::numeric, 1) AS \"Age (h)\", approximate_row_count('instrat_pl.coal_price'::regclass) AS \"Rows (approx.)\", 1080 AS \"Expected max age (h)\", CASE WHEN extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600 <= 1080 THEN 'OK' WHEN extract(epoch FROM now() - (max(date)::timestamptz + interval '1 day'))/3600 <= 3240 THEN 'LATE' ELSE 'STALE' END AS \"Status\" FROM instrat_pl.coal_price"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK",
+                        "index": 0
+                      },
+                      "LATE": {
+                        "color": "orange",
+                        "text": "LATE",
+                        "index": 1
+                      },
+                      "STALE": {
+                        "color": "red",
+                        "text": "STALE",
+                        "index": 2
+                      },
+                      "static": {
+                        "color": "blue",
+                        "text": "static",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age (h)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 6
+      },
+      "id": 2
+    },
+    {
+      "type": "text",
+      "title": "Notes",
+      "datasource": null,
+      "options": {
+        "mode": "markdown",
+        "content": "Prices are daily (ETS, gas) or monthly (coal) and keyed by calendar day.\n\n* **EU ETS**: two index series exist (`t2pa` = phase 2 allowances until Apr 2013, `t3pa` = phase 3 and later); they overlap from Oct 2012 to Apr 2013 and are shown as separate lines.\n* **Gas**: Polish TGE day-ahead gas index (`tgegasda`), converted to EUR with the daily exchange rate by the crawler.\n* **Coal**: monthly Polish steam coal index PSCMI1; the source stopped publishing after **Feb 2026**, so coal-based panels end there."
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 6
+      },
+      "id": 3
+    },
+    {
+      "type": "row",
+      "title": "Latest prices",
+      "collapsed": false,
+      "panels": [],
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "stat",
+      "title": "EU ETS (latest)",
+      "description": "Latest EU emission allowance (EUA) price.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT eur_per_tco2 AS \"EUA\" FROM instrat_pl.eu_ets WHERE indeks = 't3pa' ORDER BY date DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: €/tCO2",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "id": 5
+    },
+    {
+      "type": "stat",
+      "title": "EU ETS 30-day change",
+      "description": "Change of the EUA price versus 30 days before the latest quote.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (a.eur_per_tco2 / b.eur_per_tco2 - 1) * 100 AS \"change\" FROM\n(SELECT * FROM instrat_pl.eu_ets WHERE indeks = 't3pa' ORDER BY date DESC LIMIT 1) a,\nLATERAL (SELECT eur_per_tco2 FROM instrat_pl.eu_ets WHERE indeks = 't3pa' AND date <= a.date - interval '30 days' ORDER BY date DESC LIMIT 1) b"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "id": 6
+    },
+    {
+      "type": "stat",
+      "title": "Gas TGE day-ahead (latest)",
+      "description": "Latest Polish day-ahead gas price in EUR/MWh.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT price_eur_per_mwh AS \"gas\" FROM instrat_pl.gas_price ORDER BY date DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: €/MWh",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "id": 7
+    },
+    {
+      "type": "stat",
+      "title": "Gas 30-day change",
+      "description": "Change of the gas price versus 30 days before the latest quote.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (a.price_eur_per_mwh / b.price_eur_per_mwh - 1) * 100 AS \"change\" FROM\n(SELECT * FROM instrat_pl.gas_price ORDER BY date DESC LIMIT 1) a,\nLATERAL (SELECT price_eur_per_mwh FROM instrat_pl.gas_price WHERE date <= a.date - interval '30 days' ORDER BY date DESC LIMIT 1) b"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "id": 8
+    },
+    {
+      "type": "stat",
+      "title": "Steam coal (latest month)",
+      "description": "Latest monthly steam coal price in EUR per tonne (source stopped after Feb 2026).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT steam_coal_eur_per_t AS \"coal\" FROM instrat_pl.coal_price ORDER BY date DESC LIMIT 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-red",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: €/t",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "id": 9
+    },
+    {
+      "type": "stat",
+      "title": "Coal latest month",
+      "description": "Month of the latest coal price.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(max(date), 'YYYY-MM') AS \"month\" FROM instrat_pl.coal_price"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 8,
+        "w": 4,
+        "h": 4
+      },
+      "id": 10
+    },
+    {
+      "type": "row",
+      "title": "Prices",
+      "collapsed": false,
+      "panels": [],
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "EU ETS carbon price and traded volume",
+      "description": "EU emission allowance price in EUR per tonne CO2 (left) with traded volume (right, bars). The two index series are drawn separately where they overlap (2012-2013).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date, $__interval), indeks AS metric, avg(eur_per_tco2) AS \"price\" FROM instrat_pl.eu_ets\nWHERE $__timeFilter(date) GROUP BY 1, 2 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date, $__interval), avg(volume) AS \"volume\" FROM instrat_pl.eu_ets\nWHERE $__timeFilter(date) AND indeks = 't3pa' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: €/tCO2"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "volume"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 30
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 9
+      },
+      "id": 12
+    },
+    {
+      "type": "timeseries",
+      "title": "Gas price (TGE day-ahead)",
+      "description": "Polish day-ahead gas index in EUR/MWh (left) and traded volume (right, bars). The 2021/22 price spike is visible.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date, $__interval), avg(price_eur_per_mwh) AS \"price\" FROM instrat_pl.gas_price\nWHERE $__timeFilter(date) GROUP BY 1 ORDER BY 1"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(date, $__interval), avg(volume) AS \"volume\" FROM instrat_pl.gas_price\nWHERE $__timeFilter(date) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: €/MWh"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "volume"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 30
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 9
+      },
+      "id": 13
+    },
+    {
+      "type": "timeseries",
+      "title": "Steam coal price (monthly)",
+      "description": "Polish steam coal index converted to EUR per tonne (left) and EUR per MWh thermal (right). Monthly values; ends Feb 2026.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT date AS time, steam_coal_eur_per_t AS \"EUR per tonne\", price_eur_per_kwh * 1000 AS \"EUR per MWh thermal\"\nFROM instrat_pl.coal_price WHERE $__timeFilter(date) ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "always",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: €/t"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "EUR per MWh thermal"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix: €/MWh"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "id": 14
+    },
+    {
+      "type": "timeseries",
+      "title": "Fuel price per MWh thermal: gas vs coal",
+      "description": "Gas and coal on a common basis (EUR per MWh of fuel heat). Coal is monthly (held for the whole month) and therefore ends Feb 2026.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(g.date, $__interval), avg(g.price_eur_per_mwh) AS \"gas\", avg(c.price_eur_per_kwh * 1000) AS \"coal\"\nFROM instrat_pl.gas_price g JOIN instrat_pl.coal_price c ON c.date = date_trunc('month', g.date)\nWHERE $__timeFilter(g.date) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: €/MWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 9
+      },
+      "id": 15
+    },
+    {
+      "type": "row",
+      "title": "Cross-fuel economics",
+      "collapsed": false,
+      "panels": [],
+      "id": 16,
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Marginal generation cost: gas CCGT vs hard-coal plant",
+      "description": "Fuel plus CO2 cost per MWh electricity. Assumptions: gas plant efficiency 55 %, emission factor 0.202 tCO2/MWh gas heat; coal plant efficiency 38 %, emission factor 0.341 tCO2/MWh coal heat. cost = fuel price / efficiency + emission factor / efficiency x EUA price. The cheaper technology is dispatched first (fuel switching). Coal is monthly and ends Feb 2026.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(g.date, $__interval),\n  avg(g.price_eur_per_mwh / 0.55 + 0.202 / 0.55 * e.eur_per_tco2) AS \"gas CCGT\",\n  avg(c.price_eur_per_kwh * 1000 / 0.38 + 0.341 / 0.38 * e.eur_per_tco2) AS \"hard coal\"\nFROM instrat_pl.gas_price g\nJOIN instrat_pl.eu_ets e ON e.date = g.date AND e.indeks = 't3pa'\nJOIN instrat_pl.coal_price c ON c.date = date_trunc('month', g.date)\nWHERE $__timeFilter(g.date) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "suffix: €/MWh_el"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 9
+      },
+      "id": 17
+    },
+    {
+      "type": "timeseries",
+      "title": "Share of CO2 cost in marginal cost",
+      "description": "Part of the marginal cost that comes from the carbon price (same assumptions as the panel on the left).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(g.date, $__interval),\n  avg(0.202 / 0.55 * e.eur_per_tco2 / (g.price_eur_per_mwh / 0.55 + 0.202 / 0.55 * e.eur_per_tco2)) * 100 AS \"gas CCGT\",\n  avg(0.341 / 0.38 * e.eur_per_tco2 / (c.price_eur_per_kwh * 1000 / 0.38 + 0.341 / 0.38 * e.eur_per_tco2)) * 100 AS \"hard coal\"\nFROM instrat_pl.gas_price g\nJOIN instrat_pl.eu_ets e ON e.date = g.date AND e.indeks = 't3pa'\nJOIN instrat_pl.coal_price c ON c.date = date_trunc('month', g.date)\nWHERE $__timeFilter(g.date) GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "pointSize": 4,
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 9
+      },
+      "id": 18
+    },
+    {
+      "type": "table",
+      "title": "Yearly averages",
+      "description": "Annual mean prices: EUA (EUR/tCO2), TGE gas (EUR/MWh), coal (EUR/MWh thermal; 2026 covers Jan-Feb only).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT y AS \"Year\", round(max(e)::numeric, 1) AS \"EUA (EUR/tCO2)\", round(max(g)::numeric, 1) AS \"Gas (EUR/MWh)\", round(max(c)::numeric, 1) AS \"Coal (EUR/MWh th)\" FROM (\n  SELECT extract(year FROM date)::int AS y, avg(eur_per_tco2) AS e, NULL::float8 AS g, NULL::float8 AS c FROM instrat_pl.eu_ets WHERE indeks = 't3pa' GROUP BY 1\n  UNION ALL SELECT extract(year FROM date)::int, NULL, avg(price_eur_per_mwh), NULL FROM instrat_pl.gas_price GROUP BY 1\n  UNION ALL SELECT extract(year FROM date)::int, NULL, NULL, avg(price_eur_per_kwh * 1000) FROM instrat_pl.coal_price GROUP BY 1) t\nGROUP BY y ORDER BY y DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "EUA (EUR/tCO2)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gas (EUR/MWh)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 130
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Coal (EUR/MWh th)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 30
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 12,
+        "h": 9
+      },
+      "id": 19
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "hide": 0,
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  }
+}

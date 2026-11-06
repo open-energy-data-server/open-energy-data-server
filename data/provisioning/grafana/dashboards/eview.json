@@ -1,0 +1,1183 @@
+{
+  "uid": "oeds-eview",
+  "title": "OEDS eview PV plants",
+  "tags": [
+    "oeds",
+    "solar",
+    "pv",
+    "germany"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "description": "Photovoltaic plants of the eview.de portal (Germany), 15 minute power values, 2009 until now.",
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "ds",
+        "label": "Data source",
+        "query": "grafana-postgresql-datasource",
+        "current": {
+          "text": "Open-Energy-Data-Server",
+          "value": "eg2u9e03rplhcc"
+        },
+        "hide": 2,
+        "refresh": 1,
+        "regex": "",
+        "options": [],
+        "multi": false,
+        "includeAll": false
+      },
+      {
+        "type": "query",
+        "name": "plant",
+        "label": "Plant",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${ds}"
+        },
+        "query": "SELECT max(plant) || ' (' || plant_id || ')' AS __text, plant_id AS __value FROM eview.eview GROUP BY plant_id ORDER BY 1",
+        "definition": "SELECT max(plant) || ' (' || plant_id || ')' AS __text, plant_id AS __value FROM eview.eview GROUP BY plant_id ORDER BY 1",
+        "current": {
+          "text": "SCHULZEN (Mq)",
+          "value": "Mq"
+        },
+        "refresh": 1,
+        "sort": 0,
+        "multi": false,
+        "includeAll": false,
+        "hide": 0,
+        "options": [],
+        "regex": "",
+        "description": "PV plant (name and eview id). About 50 plants stopped reporting, see the table of stopped plants."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Data status",
+      "collapsed": false,
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "eview.eview",
+      "description": "First and latest timestamp, approximate row count and age of the newest value. The crawler fetches with one day offset, so an age of 1-2 days is normal.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT (extract(epoch from min(datetime))*1000)::bigint as \"First\", (extract(epoch from max(datetime))*1000)::bigint as \"Latest\", approximate_row_count('eview.eview'::regclass) as \"Rows (approx.)\", extract(epoch from now() - max(datetime)) as \"Age\"\nFROM eview.eview"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latest"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rows (approx.)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 259200
+                    },
+                    {
+                      "color": "red",
+                      "value": 604800
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 14,
+        "h": 4
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Plants",
+      "description": "Active: reported within 3 days. Stopped: last value older than 30 days. Total: plants that ever reported.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) FILTER (WHERE l >= now() - interval '3 days') AS \"Active\", count(*) FILTER (WHERE l < now() - interval '30 days') AS \"Stopped\", count(*) AS \"Total\"\nFROM (SELECT plant_id, max(datetime) AS l FROM eview.eview GROUP BY 1) x"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {},
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stopped"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "orange",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Active"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 10,
+        "h": 4
+      }
+    },
+    {
+      "type": "row",
+      "title": "Fleet",
+      "collapsed": false,
+      "id": 4,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "PV fleet output",
+      "description": "Sum over all plants of the mean 15 minute power per time bin. The sum drops when plants stop reporting or have gaps, so read it together with the number of reporting plants. Values outside 0..1000 kW are dropped: the source contains sentinel values (about 4.29 million, an unsigned overflow) and some plants switch to a constant meter-like reading (e.g. SCHULZEN 2025-02-17 onward ~14000). Unit kW as delivered by the source.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT time, sum(v) AS \"Fleet output\"\nFROM (SELECT $__timeGroupAlias(datetime,$__interval), plant_id, avg(value) AS v FROM eview.eview\n  WHERE $__timeFilter(datetime) AND value >= 0 AND value < 1000 GROUP BY 1,2) x\nGROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 16,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Reporting plants per day",
+      "description": "Number of plants with at least one valid value per day. The source has gaps; dips are outages of the portal or of single plants.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,'1d'), count(DISTINCT plant_id) AS \"Plants reporting\" FROM eview.eview\nWHERE $__timeFilter(datetime) AND value >= 0 AND value < 1000 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 16,
+        "y": 6,
+        "w": 8,
+        "h": 9
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Daily fleet energy",
+      "description": "Daily energy of all plants, assuming each value is the mean power (kW) of its 15 minute interval (energy = value x 0.25 h).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,'1d'), sum(value)*0.25/1000 AS \"Energy\" FROM eview.eview\nWHERE $__timeFilter(datetime) AND value >= 0 AND value < 1000 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "MWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Top 15 plants by energy",
+      "description": "Energy per plant in the selected time range (value x 0.25 h). Plants with gaps rank lower.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT plant AS \"Plant\", sum(value)*0.25/1000 AS \"Energy (MWh)\" FROM eview.eview\nWHERE $__timeFilter(datetime) AND value >= 0 AND value < 1000 GROUP BY plant ORDER BY 2 DESC LIMIT 15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "MWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Plant",
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "type": "table",
+      "title": "Plants in the selected range",
+      "description": "Per plant: last value, peak power and energy in the time range, and the number of days with data.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT plant AS \"Plant\", plant_id AS \"Id\", (extract(epoch from max(datetime))*1000)::bigint AS \"Last value\", max(value) AS \"Peak (kW)\", sum(value)*0.25/1000 AS \"Energy (MWh)\", count(DISTINCT date_trunc('day', datetime)) AS \"Days with data\"\nFROM eview.eview WHERE $__timeFilter(datetime) AND value >= 0 AND value < 1000 GROUP BY 1,2 ORDER BY 5 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last value"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Peak (kW)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "kwatt"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Energy (MWh)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "MWh"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "table",
+      "title": "Plants that stopped reporting",
+      "description": "Plants whose newest value is more than 30 days old (whole history).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT max(plant) AS \"Plant\", plant_id AS \"Id\", (extract(epoch from min(datetime))*1000)::bigint AS \"First value\", (extract(epoch from max(datetime))*1000)::bigint AS \"Last value\"\nFROM eview.eview GROUP BY plant_id HAVING max(datetime) < now() - interval '30 days' ORDER BY 4 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "First value"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Last value"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 12,
+        "y": 23,
+        "w": 12,
+        "h": 9
+      }
+    },
+    {
+      "type": "row",
+      "title": "Selected plant",
+      "collapsed": false,
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Power of $plant",
+      "description": "15 minute power of the selected plant. Night values are mostly not delivered by the source (gaps instead of zeros). Values outside 0..1000 kW are dropped: the source contains sentinel values (about 4.29 million, an unsigned overflow) and some plants switch to a constant meter-like reading (e.g. SCHULZEN 2025-02-17 onward ~14000). ",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(datetime,$__interval), avg(value) AS \"Power\", max(value) AS \"Max in bin\" FROM eview.eview\nWHERE $__timeFilter(datetime) AND plant_id = '$plant' AND value >= 0 AND value < 1000 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "axisPlacement": "auto",
+            "gradientMode": "none"
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 16,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Daily energy of $plant",
+      "description": "Energy per day (value x 0.25 h). Days with source gaps appear too low.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(day, 'YYYY-MM-DD') AS \"Day\", e AS \"Energy (kWh)\" FROM (SELECT date_trunc('day', datetime) AS day, sum(value)*0.25 AS e FROM eview.eview WHERE $__timeFilter(datetime) AND plant_id = '$plant' AND value >= 0 AND value < 1000 GROUP BY 1) x ORDER BY day"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "kwatth"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Day",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 13,
+      "gridPos": {
+        "x": 16,
+        "y": 33,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "trend",
+      "title": "Typical day of $plant (local time)",
+      "description": "Mean, 90th percentile and maximum power by hour of day (Europe/Berlin) over the selected range. Hours without reported values (night) are missing.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT extract(hour from datetime AT TIME ZONE 'Europe/Berlin')::int AS \"Hour\", avg(value) AS \"Mean\", percentile_cont(0.9) WITHIN GROUP (ORDER BY value) AS \"P90\", max(value) AS \"Max\" FROM eview.eview\nWHERE $__timeFilter(datetime) AND plant_id = '$plant' AND value >= 0 AND value < 1000 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "axisPlacement": "auto",
+            "spanNulls": true
+          },
+          "unit": "kwatt"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Hour",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Output distribution of $plant",
+      "description": "Share of reported intervals by output class relative to the peak power of the plant in the range. A PV plant spends many intervals at low output.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH s AS (SELECT value, max(value) OVER () AS m FROM eview.eview WHERE $__timeFilter(datetime) AND plant_id = '$plant' AND value >= 0 AND value < 1000)\nSELECT lpad((least(floor(value/NULLIF(m,0)*10),9)*10)::int::text, 2, '0') || '-' || ((least(floor(value/NULLIF(m,0)*10),9)+1)*10)::int || ' %' AS \"Output class (% of peak)\", count(*)*100.0/sum(count(*)) OVER () AS \"Share of intervals (%)\" FROM s WHERE m > 0 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Output class (% of peak)",
+        "orientation": "vertical",
+        "xTickLabelRotation": 0,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 15,
+      "gridPos": {
+        "x": 8,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Reporting intervals per day, $plant",
+      "description": "Number of delivered 15 minute values per day (a full day with night values would be 96). Shows data gaps of the plant.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('day', datetime), 'YYYY-MM-DD') AS \"Day\", count(*) AS \"Values\" FROM eview.eview WHERE $__timeFilter(datetime) AND plant_id = '$plant' GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Day",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 16,
+      "gridPos": {
+        "x": 16,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Monthly energy of $plant, last 36 months",
+      "description": "Energy per month of the selected plant for the last 36 months (independent of the time range). Shows the seasonal PV pattern.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', datetime), 'YYYY-MM') AS \"Month\", sum(value)*0.25/1000 AS \"Energy (MWh)\" FROM eview.eview\nWHERE datetime >= date_trunc('month', now()) - interval '36 months' AND plant_id = '$plant' AND value >= 0 AND value < 1000 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "MWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 17,
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Fleet energy per month, last 36 months",
+      "description": "Energy of all plants per month for the last 36 months (independent of the time range).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${ds}"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT to_char(date_trunc('month', datetime), 'YYYY-MM') AS \"Month\", sum(value)*0.25/1000 AS \"Energy (MWh)\" FROM eview.eview\nWHERE datetime >= date_trunc('month', now()) - interval '36 months' AND value >= 0 AND value < 1000 GROUP BY 1 ORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "gradientMode": "none",
+            "axisPlacement": "auto"
+          },
+          "unit": "MWh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "Month",
+        "orientation": "vertical",
+        "xTickLabelRotation": -45,
+        "stacking": "none",
+        "showValue": "never",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "barWidth": 0.9,
+        "groupWidth": 0.8,
+        "fullHighlight": false
+      },
+      "id": 18,
+      "gridPos": {
+        "x": 8,
+        "y": 49,
+        "w": 8,
+        "h": 8
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "OEDS dashboards",
+      "type": "dashboards",
+      "tags": [
+        "oeds"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": false,
+      "icon": "external link"
+    }
+  ]
+}
