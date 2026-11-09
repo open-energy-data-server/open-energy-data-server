@@ -169,3 +169,22 @@ def test_previous_month_is_fetched_from_december_2018(monkeypatch):
     result = crawler._previous_hour("TOT_PRECIP", 2018, 12, Regions, first)
     assert calls == [(2018, 11)]
     assert list(result) == [first + pd.Timedelta(hours=1)]
+
+
+def test_crawl_refuses_naive_times_and_keeps_the_stored_month():
+    crawler = _crawler()
+    stored = pd.DataFrame(
+        {"time": pd.to_datetime(["2019-03-01 05:00"], utc=True), "tot_precip": [1.0]}
+    )
+    stored.to_sql(dwd.DWDCrawler.TABLE, crawler.engine, index=False)
+    naive = stored.assign(tot_precip=2.0)
+    naive["time"] = naive["time"].dt.tz_localize(None)
+
+    with mock.patch.object(crawler, "_read_month", return_value=naive):
+        with pytest.raises(ValueError, match="naive"):
+            crawler.crawl_from_to(
+                datetime(2019, 3, 1, tzinfo=UTC), datetime(2019, 4, 1, tzinfo=UTC)
+            )
+
+    kept = pd.read_sql(f"select * from {dwd.DWDCrawler.TABLE}", crawler.engine)
+    assert kept["tot_precip"].tolist() == [1.0]
