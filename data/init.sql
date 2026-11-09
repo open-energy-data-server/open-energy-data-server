@@ -7,6 +7,8 @@ CREATE ROLE readonly WITH LOGIN PASSWORD 'readonly' NOSUPERUSER INHERIT NOCREATE
 GRANT pg_read_all_data TO readonly;
 ALTER ROLE readonly SET search_path TO public;
 ALTER ROLE opendata SET search_path TO public;
+ALTER ROLE readonly SET timezone TO 'UTC';
+ALTER ROLE opendata SET timezone TO 'UTC';
 CREATE TABLE public.metadata (
     schema_name TEXT PRIMARY KEY,
     crawl_date DATE,
