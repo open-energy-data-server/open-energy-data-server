@@ -37,6 +37,23 @@ def test_crawler_registry():
         assert name in crawlers, f"Missing crawler in registry: {name}"
 
 
+def test_registry_imports_and_dict_api():
+    """Every mapped module must import and expose the mapped class (the class
+    names are plain strings that no linter can check), and the lazy registry
+    must provide the dict API the CLI and tests use."""
+    from oeds.base_crawler import BaseCrawler
+    from oeds.crawler import _CRAWLER_MODULES
+
+    for name, cls in crawlers.items():
+        assert issubclass(cls, BaseCrawler), name
+    assert len(crawlers) == len(_CRAWLER_MODULES)
+    assert len(crawlers.values()) == len(crawlers)
+    assert "dwd" in crawlers
+    assert "not-a-crawler" not in crawlers
+    assert crawlers.get("dwd") is crawlers["dwd"]
+    assert crawlers.get("not-a-crawler") is None
+
+
 def test_instantiate_crawlers(tmp_path):
     """Verify that each crawler can be instantiated with a test SQLite URI."""
     db_file = tmp_path / "test.db"

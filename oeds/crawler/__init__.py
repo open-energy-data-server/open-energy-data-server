@@ -11,8 +11,8 @@ checks that the class exists, since the class names here are plain strings
 that no linter can check.
 """
 
+from collections.abc import Iterator
 from importlib import import_module
-from typing import Iterator
 
 from oeds.base_crawler import BaseCrawler
 
