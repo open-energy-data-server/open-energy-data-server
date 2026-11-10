@@ -19,6 +19,7 @@ numpy>=2.3
 openpyxl
 open-mastr @ git+https://github.com/OpenEnergyPlatform/open-MaStR.git@c192a8f008f8869081b09e99db53c534e3b408f5
 pandas
+pdfplumber # for netzentgelte grid-fee price sheets (PDF)
 psycopg[binary]
 tzdata # for additional timezones like Europe/Kiev in entsoe
 py7zr>=0.20.0

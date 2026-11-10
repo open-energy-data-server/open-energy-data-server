@@ -1,0 +1,75 @@
+# SPDX-FileCopyrightText: Christoph Komanns
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Configuration: which city is served by which distribution system operator (VNB),
+# and where its current price sheet is located.
+#
+# IMPORTANT: The city -> VNB mapping does not exist anywhere as a reliable,
+# free, machine-readable list (see README, section "Why no 100% automatic
+# solution"). This file must therefore be researched and maintained manually per
+# city - usually a search for "Stadtwerke <city> grid" or "grid operator <city>
+# electricity" is enough.
+#
+# "adapter" points to a module in netzentgelte/adapters/. If no adapter has been
+# written yet for the respective VNB, leave it null - the city is then skipped
+# and emitted as a warning instead of producing wrong data.
+
+cities:
+  - name: "Berlin"
+    vnb: "Stromnetz Berlin GmbH"
+    preisblatt_url: "https://www.stromnetz.berlin/files/globalassets/dokumente/entgelte/zugang/entgelte-01-01-2026/voraussichtliche-nne-b-2026_20251015.pdf"
+    adapter: "stromnetz_berlin"
+
+  # Example of a city WITHOUT a finished adapter (skipped at runtime,
+  # but appears as a console warning so nothing is silently missing):
+  - name: "München"
+    vnb: "SWM Infrastruktur GmbH & Co. KG"
+    preisblatt_url: "https://www.swm-infrastruktur.de/dam/swm-infrastruktur/dokumente/strom/netzzugang-netznutzungsentgelte/preisblaetter-2026/strom-preisblatt-2026.pdf"
+    adapter: null  # TODO: write adapter, see README
+
+  - name: "Wuppertal"
+    vnb: "WSW Netz GmbH"
+    preisblatt_url: "https://www.wsw-netz.de/fileadmin/wsw-netz/Dokumente/durchsuchbar/Stromnetz/Netzzugang/WSW-Netz-S-101_Preisblatt_Strom_2026.pdf"
+    adapter: null  # TODO: write adapter, see README
+
+  # --- Aachen region / Euregio Meuse-Rhine (Germany) ------------------------
+
+  - name: "Jülich"
+    vnb: "Stadtwerke Jülich GmbH"
+    preisblatt_url: "https://netz.stadtwerke-juelich.de/fileadmin/SW-Juelich/user_upload/Netze/NNE_S_2026.pdf"
+    adapter: "stadtwerke_juelich"
+
+  - name: "Aachen"
+    vnb: "Regionetz GmbH"
+    preisblatt_url: "https://www.regionetz.de/de/Service/Downloads/20251212-Preisblaetter-Strom-Regionetz-2026.pdf"
+    adapter: "regionetz"
+
+  - name: "Köln"
+    vnb: "Rheinische NETZGesellschaft mbH (RheinNetz)"
+    preisblatt_url: "https://www.rheinnetz.de/netzentgelte-strom-ab-dem-01.01.2026.pdfx"
+    adapter: "rheinnetz"
+
+  - name: "Düren"
+    # NOTE: grid operator is Leitungspartner GmbH, NOT Stadtwerke Düren GmbH
+    # (that is the supplier/default provider).
+    vnb: "Leitungspartner GmbH"
+    preisblatt_url: "https://www.leitungspartner.de/download/preisblatt-netzentgelte/"
+    adapter: "leitungspartner"
+
+  # --- Abroad: only limited comparability with the German schema --------------
+  # These two cities are not in Germany. Their grid fee systems are structurally
+  # different (see README and adapter docstrings). The nationwide transmission
+  # rows added by the pipeline do NOT apply to them - they only concern German
+  # cities.
+
+  - name: "Heerlen (NL)"
+    vnb: "Enexis Netbeheer B.V."
+    preisblatt_url: "https://www.enexis.nl/-/media/enexis-nl/pdf-documents/tarieven/tarieven-consument/2026/ptkv-elektriciteit--01012026v10.pdf"
+    adapter: "enexis_heerlen"
+
+  - name: "Lüttich (BE)"
+    vnb: "RESA SA"
+    # Official CWaPE synthesis of all Walloon VNBs; the adapter reads the RESA row.
+    preisblatt_url: "https://www.cwape.be/sites/default/files/cwape-documents/SYNTHESE%20DES%20TARIFS%20DE%20DISTRIBUTION%20ELEC%202026%20(FR)-m%C3%A0j%203.02.2026.pdf"
+    adapter: "resa_luettich"

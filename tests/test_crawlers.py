@@ -24,6 +24,7 @@ def test_crawler_registry():
         "gie",
         "jao",
         "mastr",
+        "netzentgelte",
         "netztransparenz",
         "smard",
         "regelleistung",

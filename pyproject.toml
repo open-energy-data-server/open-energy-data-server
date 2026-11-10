@@ -48,6 +48,7 @@ dependencies = [
     "json5 >=0.9.14",
     "matplotlib >=3.8.0",
     "netztransparenz >=0.2.3",
+    "pdfplumber >=0.11",
     # the MaStR export of 2026-10 has list fields, fixed upstream (#820, #832) after 1.0.0
     "open-mastr @ git+https://github.com/OpenEnergyPlatform/open-MaStR.git@c192a8f008f8869081b09e99db53c534e3b408f5",
     "openpyxl >=3.1.0",

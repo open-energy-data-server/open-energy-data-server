@@ -22,6 +22,7 @@ from oeds.crawler.kelmarsh import KelmarshCrawler
 from oeds.crawler.ladesaeulenregister import LadesaeulenregisterCrawler
 from oeds.crawler.londondatastore import LondonLoadData
 from oeds.crawler.mastr import MastrDownloader
+from oeds.crawler.netzentgelte import NetzentgeltCrawler
 from oeds.crawler.netztransparenz import NetztransparenzCrawler
 from oeds.crawler.ninja import NinjaCrawler
 from oeds.crawler.nrw_kwp_waermedichte import KwpCrawler
@@ -58,6 +59,7 @@ crawlers: dict[str, type[BaseCrawler]] = {
     "ladesaeulenregister": LadesaeulenregisterCrawler,
     "londondatastore": LondonLoadData,
     "mastr": MastrDownloader,
+    "netzentgelte": NetzentgeltCrawler,
     "netztransparenz": NetztransparenzCrawler,
     "ninja": NinjaCrawler,
     "nrw_kwp_waermedichte": KwpCrawler,
