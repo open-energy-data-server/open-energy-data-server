@@ -24,6 +24,7 @@ from oeds.base_crawler import (
     DEFAULT_CONFIG_LOCATION,
     DownloadOnceCrawler,
     copy_insert,
+    ensure_utc,
     load_config,
 )
 
@@ -100,6 +101,7 @@ class RefitCrawler(DownloadOnceCrawler):
             df["Time"] = pd.to_datetime(df["Unix"], unit="s", utc=True)
             df = df.drop(columns="Unix").set_index("Time")
             df["house"] = name
+            df = ensure_utc(df)
             log.info(f"writing {name}")
 
             with self.engine.begin() as conn:

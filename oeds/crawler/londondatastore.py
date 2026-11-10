@@ -22,6 +22,7 @@ from oeds.base_crawler import (
     DEFAULT_CONFIG_LOCATION,
     DownloadOnceCrawler,
     copy_insert,
+    ensure_utc,
     load_config,
 )
 
@@ -112,6 +113,7 @@ class LondonLoadData(DownloadOnceCrawler):
         df["DateTime"] = pd.to_datetime(df["DateTime"], utc=True)
         # The data contains a few exactly duplicated rows (e.g. 2013-10-27 00:00).
         df = df.drop_duplicates(["LCLid", "DateTime"])
+        df = ensure_utc(df)
         df.to_sql(
             STAGING_TABLE,
             self.engine,

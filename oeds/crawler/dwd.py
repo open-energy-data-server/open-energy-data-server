@@ -49,6 +49,7 @@ from oeds.base_crawler import (
     ContinuousCrawler,
     as_utc,
     copy_insert,
+    ensure_utc,
     load_config,
 )
 
@@ -490,6 +491,7 @@ class DWDCrawler(ContinuousCrawler):
                         "last": (date + pd.DateOffset(months=1)).to_pydatetime(),
                     },
                 )
+                df = ensure_utc(df)
                 df.to_sql(
                     self.TABLE,
                     con=conn,
