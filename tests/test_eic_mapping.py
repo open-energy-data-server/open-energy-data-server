@@ -2,7 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from oeds.crawler.eic_mapping import build_eic_locations, parse_eic_codes
+from types import SimpleNamespace
+
+from oeds.base_crawler import empty_config
+from oeds.crawler.eic_mapping import (
+    EicMappingCrawler,
+    build_eic_locations,
+    metadata_info,
+    parse_eic_codes,
+)
 from oeds.crawler.powerplantmatching import parse_powerplants
 
 PP_CSV = """id,Name,Fueltype,Technology,Set,Country,Capacity,Efficiency,DateIn,DateRetrofit,DateOut,lat,lon,Duration,Volume_Mm3,DamHeight_m,StorageCapacity_MWh,EIC,projectID
@@ -34,3 +42,26 @@ def test_build_eic_locations():
     # first occurrence wins for duplicated codes
     row = loc[loc["eic_code"] == "48WSTN00000CRUAC"].iloc[0]
     assert row["lat"] == 46.9
+
+
+def test_metadata_info_is_valid():
+    # an empty string would be rejected as a timestamp by public.metadata
+    assert metadata_info["temporal_start"] is None
+
+
+def test_crawl_structural_registers_metadata(monkeypatch, tmp_path):
+    """On Postgres the crawl records the schema in public.metadata (kelmarsh pattern)."""
+    config = empty_config()
+    config["db_uri"] = f"sqlite:///{tmp_path}/eic.db"
+    crawler = EicMappingCrawler("eic_mapping", config)
+    # pretend the target is Postgres to exercise the metadata branch
+    monkeypatch.setattr(
+        crawler,
+        "engine",
+        SimpleNamespace(url=SimpleNamespace(drivername="postgresql")),
+    )
+    monkeypatch.setattr(crawler, "structure_exists", lambda: True)
+    calls = []
+    monkeypatch.setattr(crawler, "set_metadata", calls.append)
+    crawler.crawl_structural()
+    assert calls == [metadata_info]

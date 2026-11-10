@@ -34,7 +34,7 @@ metadata_info = {
     "description": "Matched European power plant list from PyPSA powerplantmatching. "
     "Licenses of the underlying databases may differ.",
     "contact": "",
-    "temporal_start": "",
+    "temporal_start": None,
 }
 
 DOWNLOAD_URL = (
@@ -110,6 +110,8 @@ class PowerplantmatchingCrawler(DownloadOnceCrawler):
             with self.engine.begin() as conn:
                 df.to_sql("powerplants", conn, if_exists="replace", index=False)
             log.info("Finished writing %i power plants", len(df))
+        if self.engine.url.drivername.startswith("postgresql"):
+            self.set_metadata(metadata_info)
 
 
 if __name__ == "__main__":

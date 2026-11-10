@@ -39,7 +39,7 @@ metadata_info = {
     "description": "ENTSO-E allocated EIC codes and a mapping of EIC codes to "
     "coordinates derived from PyPSA powerplantmatching",
     "contact": "",
-    "temporal_start": "",
+    "temporal_start": None,
 }
 
 # A: Substation, T: Tie-line, V: Location, W: Resource object,
@@ -123,6 +123,8 @@ class EicMappingCrawler(DownloadOnceCrawler):
                         )
                     )
             log.info("Wrote %i EIC codes and %i locations", len(codes), len(locations))
+        if self.engine.url.drivername.startswith("postgresql"):
+            self.set_metadata(metadata_info)
 
 
 if __name__ == "__main__":
