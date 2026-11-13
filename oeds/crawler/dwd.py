@@ -7,6 +7,9 @@
 Source: https://opendata.dwd.de/climate_environment/REA/COSMO_REA6/hourly/2D/
 (parameter tables: ParameterTables_REA6.pdf in the parent directory).
 
+The crawl starts in 2019-01, as most uses need only recent years; the config key
+``dwd_start`` (e.g. ``"1995-01"``) sets an earlier first month.
+
 The grid cells are averaged per NUTS region (all levels, the cells are assigned with
 the NUTS 3 polygons). Every row of ``dwd.cosmo_rea6`` describes the hour ending at
 ``time`` (UTC), like the ERA5 tables:
@@ -91,6 +94,8 @@ DATA_PATH = Path(__file__).parent.parent / "data"
 NUTS_MATRIX_PATH = DATA_PATH / "nuts_matrix.npy"
 # first month of the reanalysis
 COSMO_START = datetime(1995, 1, 1, tzinfo=UTC)
+# first month crawled by default, the config key dwd_start crawls more (e.g. "1995-01")
+DEFAULT_START = datetime(2019, 1, 1, tzinfo=UTC)
 # the boundary conditions ERA-Interim were discontinued after August 2019
 COSMO_END = datetime(2019, 9, 1, tzinfo=UTC)
 DOWNLOAD_TIMEOUT = 300
@@ -444,15 +449,22 @@ class DWDCrawler(ContinuousCrawler):
             raise ValueError(f"{directory} of {previous:%Y-%m} ends at {time}")
         return {time: regions.average(grid)}
 
+    @property
+    def start(self) -> pd.Timestamp:
+        """First month to crawl: dwd_start of the config, within the reanalysis."""
+        start = as_utc(self.config.get("dwd_start") or DEFAULT_START)
+        start = start.tz_localize(None).to_period("M").to_timestamp().tz_localize("UTC")
+        return min(max(start, as_utc(COSMO_START)), as_utc(COSMO_END))
+
     def get_latest_data(self) -> datetime:
         with self.engine.begin() as conn:
             latest = conn.execute(text(f"SELECT max(time) FROM {self.TABLE}")).scalar()
-        return as_utc(latest) if latest else COSMO_START
+        return as_utc(latest) if latest else self.start
 
     def get_first_data(self) -> datetime:
         with self.engine.begin() as conn:
             first = conn.execute(text(f"SELECT min(time) FROM {self.TABLE}")).scalar()
-        return as_utc(first) if first else COSMO_START
+        return as_utc(first) if first else self.start
 
     def crawl_from_to(self, begin: datetime, end: datetime):
         """Crawls the months from the month of begin until end (exclusive).
@@ -461,7 +473,7 @@ class DWDCrawler(ContinuousCrawler):
         one transaction. Resuming from the latest time therefore starts with the next
         month, and a month which is crawled again is replaced.
         """
-        begin = max(as_utc(begin), as_utc(COSMO_START))
+        begin = max(as_utc(begin), self.start)
         end = min(as_utc(end), as_utc(COSMO_END))
         months = pd.date_range(
             start=begin.tz_localize(None)
