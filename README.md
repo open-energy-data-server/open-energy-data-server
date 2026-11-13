@@ -58,6 +58,13 @@ Follow the [instructions](https://cds.climate.copernicus.eu/api-how-to) of coper
 The crawler downloads **ERA5** (`reanalysis-era5-single-levels`): `ghi`, 100 m `wind_speed`,
 `temp_air`, `precipitation`. See [docs/ecmwf.md](docs/ecmwf.md).
 
+## Using the Netztransparenz crawler
+
+The crawler `netztransparenz` needs an API client of the [netztransparenz.de API portal](https://api-portal.netztransparenz.de/),
+set `ipnt_client_id` and `ipnt_client_secret` in `config.yml`.
+It stores the forecasts, extrapolations, prices, balancing and redispatch data of the German TSOs,
+one table per time series. See [docs/netztransparenz.md](docs/netztransparenz.md).
+
 ## TimeScaleDB
 
 The used database technology for the database server is [TimescaleDB](https://timescale.com/) which is an extension for PostgreSQL (just like PostGIS but for timeseries databases).
