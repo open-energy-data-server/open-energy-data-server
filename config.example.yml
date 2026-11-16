@@ -10,6 +10,8 @@ entsoe_api_key: "YOUR_ENTSOE_API_KEY"
 # entsoe_countries: "DE,DE_LU,DE_AT_LU,DE_50HZ,DE_AMPRION,DE_TENNET,DE_TRANSNET,DE_AMP_LU"
 # optional: number of parallel requests to the ENTSO-E API (default: 8)
 # entsoe_workers: 8
+# optional: first month of the DWD COSMO-REA6 reanalysis to crawl (default: 2019-01, data from 1995-01)
+# dwd_start: "1995-01"
 gie_api_key: "YOUR_GIE_API_KEY"
 ipnt_client_id: "YOUR_IPNT_CLIENT_ID"
 ipnt_client_secret: "YOUR_IPNT_CLIENT_SECRET"

@@ -24,6 +24,7 @@ def _crawler():
     # skip __init__, which needs the NUTS matrix
     crawler = object.__new__(dwd.DWDCrawler)
     crawler.engine = create_engine("sqlite://")
+    crawler.config = {}
     return crawler
 
 
@@ -51,8 +52,28 @@ def test_missing_month_inside_the_reanalysis_stops_the_crawl():
         _crawl(_http_error(404))
 
 
+def test_crawl_starts_at_the_default_start():
+    crawler = _crawler()
+    assert crawler.start == dwd.DEFAULT_START
+    with mock.patch.object(
+        crawler, "_read_month", side_effect=_http_error(503)
+    ) as read:
+        with pytest.raises(requests.HTTPError):
+            crawler.crawl_from_to(datetime(2010, 1, 1, tzinfo=UTC), dwd.COSMO_END)
+    read.assert_called_once_with(2019, 1)
+
+
+def test_configured_start_is_the_first_month_within_the_reanalysis():
+    crawler = _crawler()
+    crawler.config = {"dwd_start": "2005-03-15"}
+    assert crawler.start == pd.Timestamp("2005-03-01", tz="UTC")
+    crawler.config = {"dwd_start": "2030-01"}
+    assert crawler.start == dwd.COSMO_END
+
+
 def test_crawl_starts_at_the_first_month_of_the_reanalysis():
     crawler = _crawler()
+    crawler.config = {"dwd_start": "1990-01"}
     begin = datetime(1990, 1, 1, tzinfo=UTC)
     end = datetime(1995, 3, 1, tzinfo=UTC)
     with mock.patch.object(
