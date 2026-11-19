@@ -50,6 +50,19 @@ there also is a CLI tool to download/update a given dataset using:
 
 For more information, check out `oeds -h`.
 
+## Scheduled crawling
+
+`deploy/systemd` contains units for a daily run of all crawlers (02:00) and a monthly MaStR refresh.
+They are templates: the instance name is the user who owns the repository in `~/open-energy-data-server`,
+with its `.venv` and `config.yml`. As that user:
+
+```bash
+sudo cp deploy/systemd/oeds-* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now oeds-crawl@$USER.timer oeds-mastr@$USER.timer
+journalctl -u oeds-crawl@$USER   # logs
+```
+
 ## Using the ECMWF crawler
 
 If you want to use the ECMWF crawler you need to create an account at [copernicus](https://cds.climate.copernicus.eu) to get an API key which allows you to query the API of copernicus.

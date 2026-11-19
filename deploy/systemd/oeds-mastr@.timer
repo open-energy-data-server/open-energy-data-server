@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: OEDS Contributors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[Unit]
+Description=Monthly OEDS MaStR snapshot refresh (%i)
+
+[Timer]
+OnCalendar=*-*-01 04:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
