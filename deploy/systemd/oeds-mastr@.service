@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: OEDS Contributors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Downloads the Marktstammdatenregister snapshot again. The daily run skips
+# it once it exists. Started monthly by oeds-mastr@.timer.
+
+[Unit]
+Description=OEDS MaStR snapshot refresh (%i)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=%i
+WorkingDirectory=/home/%i/open-energy-data-server
+# waits for a running oeds-crawl@.service, so both never touch mastr at once
+ExecStart=/usr/bin/flock /home/%i/open-energy-data-server/.oeds.lock /home/%i/open-energy-data-server/.venv/bin/oeds --config /home/%i/open-energy-data-server/config.yml --crawler-list mastr --recreate
+TimeoutStartSec=infinity
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full

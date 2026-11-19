@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: OEDS Contributors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[Unit]
+Description=Daily OEDS crawler run (%i)
+
+[Timer]
+OnCalendar=*-*-* 02:00
+# catch up on a run missed while the machine was off
+Persistent=true
+
+[Install]
+WantedBy=timers.target

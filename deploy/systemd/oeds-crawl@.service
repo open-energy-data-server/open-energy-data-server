@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: OEDS Contributors
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Template unit: the instance is the user who owns ~/open-energy-data-server,
+# e.g. systemctl enable --now oeds-crawl@debian.timer
+#
+# Runs all crawlers once: snapshot data (DownloadOnceCrawler) is skipped if it
+# exists, time series (ContinuousCrawler) are updated from their latest entry.
+# Started daily by oeds-crawl@.timer, see "Scheduled crawling" in README.md.
+
+[Unit]
+Description=OEDS crawler run (%i)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=%i
+WorkingDirectory=/home/%i/open-energy-data-server
+# the lock serializes this run with oeds-mastr@.service
+ExecStart=/usr/bin/flock /home/%i/open-energy-data-server/.oeds.lock /home/%i/open-energy-data-server/.venv/bin/oeds --config /home/%i/open-energy-data-server/config.yml
+# a first full run takes hours to days
+TimeoutStartSec=infinity
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
