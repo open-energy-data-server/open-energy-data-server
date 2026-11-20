@@ -124,6 +124,9 @@ def getPagedDataFrame(name, params, page_size=None):
 
     limit=-1 silently truncates large responses: a day of hourly physical flow
     has ~13.7k rows, but only the first ~9.4k are returned.
+
+    The pages need a fixed order: without sort the API orders each page on its
+    own, so pages overlap and ~20% of the values of a day are never returned.
     """
     page_size = page_size or PAGE_SIZE
     pages = []
@@ -131,7 +134,7 @@ def getPagedDataFrame(name, params, page_size=None):
     while True:
         page = getDataFrame(
             name,
-            [*params, f"limit={page_size}", f"offset={offset}"],
+            [*params, "sort=id", f"limit={page_size}", f"offset={offset}"],
             useJson=True,
             allow_empty=True,
         )

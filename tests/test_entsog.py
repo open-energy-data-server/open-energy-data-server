@@ -316,6 +316,8 @@ def test_paged_data_frame_fetches_until_a_short_page(monkeypatch):
             return {"operationaldata": self.rows}
 
     def get(url, timeout):
+        # without a fixed order the pages of the API overlap and miss rows
+        assert "sort=id" in url
         offset = int(url.split("offset=")[1])
         requested.append(offset)
         rows = [
