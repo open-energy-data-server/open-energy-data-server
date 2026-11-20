@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from oeds.base_crawler import BaseCrawler
+from oeds.crawler.bnetza_gas_prices import BnetzaGasPriceCrawler
 from oeds.crawler.chargepoint import ChargepointDownloader
 from oeds.crawler.dwd import DWDCrawler
 from oeds.crawler.e2watch import E2WatchCrawler
@@ -38,6 +39,7 @@ from oeds.crawler.windmodel import WindTurbineCrawler
 
 crawlers: dict[str, type[BaseCrawler]] = {
     "public": NutsCrawler,
+    "bnetza_gas_prices": BnetzaGasPriceCrawler,
     "chargepoint": ChargepointDownloader,
     "e2watch": E2WatchCrawler,
     "dwd": DWDCrawler,
