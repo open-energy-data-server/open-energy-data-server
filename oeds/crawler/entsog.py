@@ -124,6 +124,9 @@ def getPagedDataFrame(name, params, page_size=None):
 
     limit=-1 silently truncates large responses: a day of hourly physical flow
     has ~13.7k rows, but only the first ~9.4k are returned.
+
+    The pages need a fixed order: without sort the API orders each page on its
+    own, so pages overlap and ~20% of the values of a day are never returned.
     """
     page_size = page_size or PAGE_SIZE
     pages = []
@@ -131,7 +134,7 @@ def getPagedDataFrame(name, params, page_size=None):
     while True:
         page = getDataFrame(
             name,
-            [*params, f"limit={page_size}", f"offset={offset}"],
+            [*params, "sort=id", f"limit={page_size}", f"offset={offset}"],
             useJson=True,
             allow_empty=True,
         )
@@ -562,35 +565,59 @@ class EntsogCrawler(ContinuousCrawler):
             log.exception("could not check the archive table")
             return False
 
-    def import_archive_file(self, path: str) -> int:
-        """Replaces the rows covered by one archive file, in a single transaction."""
+    def import_archive_file(self, path) -> int:
+        """Replaces the rows of one archive file, in a single transaction.
+
+        Rows are replaced by ARCHIVE_KEY, not by the gas day range of the file:
+        a file holds a few stray rows of the previous year (the 2018 file starts
+        at 2017-12-13), so a range delete would remove weeks of the previous
+        year which the file does not contain.
+        """
         df = read_archive(path)
-        lo, hi = df["gasday"].min(), df["gasday"].max()
-        rows = 0
         dtype = {
             "gasday": Date(),
             "value": Float(53),
         }
         with self.engine.begin() as conn:
-            if inspect(conn).has_table(ARCHIVE_TABLE):
-                conn.execute(
-                    text(
-                        f"DELETE FROM {ARCHIVE_TABLE} WHERE gasday BETWEEN :lo AND :hi"
-                    ),
-                    {"lo": lo, "hi": hi},
+            method = copy_insert if conn.dialect.name == "postgresql" else None
+            if not inspect(conn).has_table(ARCHIVE_TABLE):
+                self._append_archive(conn, df, ARCHIVE_TABLE, dtype, method)
+                return len(df)
+
+            staging = f"{ARCHIVE_TABLE}_staging"
+            conn.execute(text(f"DROP TABLE IF EXISTS {staging}"))
+            self._append_archive(conn, df, staging, dtype, method)
+            # the key columns are never NULL (read as str with keep_default_na=False)
+            match = " AND ".join(f"s.{c} = t.{c}" for c in ARCHIVE_KEY)
+            conn.execute(
+                text(
+                    f"DELETE FROM {ARCHIVE_TABLE} AS t "
+                    "WHERE t.gasday BETWEEN :lo AND :hi "
+                    f"AND EXISTS (SELECT 1 FROM {staging} AS s WHERE {match})"
+                ),
+                {"lo": df["gasday"].min(), "hi": df["gasday"].max()},
+            )
+            columns = ", ".join(df.columns)
+            conn.execute(
+                text(
+                    f"INSERT INTO {ARCHIVE_TABLE} ({columns}) "
+                    f"SELECT {columns} FROM {staging}"
                 )
-            for start in range(0, len(df), ARCHIVE_CHUNKSIZE):
-                chunk = df.iloc[start : start + ARCHIVE_CHUNKSIZE]
-                chunk.to_sql(
-                    ARCHIVE_TABLE,
-                    conn,
-                    if_exists="append",
-                    index=False,
-                    dtype=dtype,
-                    method=copy_insert,
-                )
-                rows += len(chunk)
-        return rows
+            )
+            conn.execute(text(f"DROP TABLE {staging}"))
+        return len(df)
+
+    @staticmethod
+    def _append_archive(conn, df, table, dtype, method) -> None:
+        for start in range(0, len(df), ARCHIVE_CHUNKSIZE):
+            df.iloc[start : start + ARCHIVE_CHUNKSIZE].to_sql(
+                table,
+                conn,
+                if_exists="append",
+                index=False,
+                dtype=dtype,
+                method=method,
+            )
 
     def import_archive(self, force: bool = False) -> None:
         """Imports the yearly daily physical flow archives which are not stored yet.

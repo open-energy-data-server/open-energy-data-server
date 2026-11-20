@@ -316,6 +316,8 @@ def test_paged_data_frame_fetches_until_a_short_page(monkeypatch):
             return {"operationaldata": self.rows}
 
     def get(url, timeout):
+        # without a fixed order the pages of the API overlap and miss rows
+        assert "sort=id" in url
         offset = int(url.split("offset=")[1])
         requested.append(offset)
         rows = [
@@ -347,3 +349,88 @@ def test_paged_data_frame_treats_404_as_the_end(monkeypatch):
     monkeypatch.setattr(entsog.requests, "get", lambda url, timeout: next(pages))
     df = entsog.getPagedDataFrame("operationaldata", ["indicator=x"], page_size=2)
     assert df["value"].tolist() == [1, 2]
+
+
+def _archive_file(path, rows):
+    """Writes an archive CSV in the 2020 layout with (gas day, point, value) rows."""
+    header = (
+        "Operator Name;Operator EIC;Point name;Point EIC;Direction;Indicator;"
+        "Period From;Period To;value;Unit;RmkMessage;RmkGeneral;RmkSpecific,,\n"
+    )
+    lines = [
+        f"Op;21X1;{point};21Z{point};entry;PhysicalFlow;"
+        f"{day} 06:00:00.0000000 +01:00;{day} 06:00:00.0000000 +01:00;"
+        f"{value};kWh/d;NULL;;,,\n"
+        for day, point, value in rows
+    ]
+    path.write_text(header + "".join(lines), encoding="utf-8")
+    return str(path)
+
+
+def _archive_rows(crawler):
+    from oeds.crawler.entsog import ARCHIVE_TABLE
+    from sqlalchemy import text
+
+    with crawler.engine.connect() as conn:
+        rows = conn.execute(
+            text(f"SELECT gasday, pointlabel, value FROM {ARCHIVE_TABLE}")
+        ).fetchall()
+    return sorted((str(day), point, value) for day, point, value in rows)
+
+
+def test_import_archive_keeps_previous_year_beyond_stray_rows(tmp_path):
+    from oeds.base_crawler import empty_config
+    from oeds.crawler.entsog import EntsogCrawler
+
+    config = empty_config()
+    config["db_uri"] = "sqlite://"
+    crawler = EntsogCrawler("test", config)
+
+    year_2017 = _archive_file(
+        tmp_path / "2017.csv",
+        [
+            ("2017-12-13", "A", "1.00"),
+            ("2017-12-13", "B", "2.00"),
+            ("2017-12-20", "A", "3.00"),
+            ("2017-12-31", "A", "4.00"),
+        ],
+    )
+    # the 2018 file starts with a stray row of 2017-12-13 and the last gas day
+    year_2018 = _archive_file(
+        tmp_path / "2018.csv",
+        [
+            ("2017-12-13", "A", "10.00"),
+            ("2017-12-31", "A", "40.00"),
+            ("2018-01-01", "A", "50.00"),
+        ],
+    )
+    assert crawler.import_archive_file(year_2017) == 4
+    assert crawler.import_archive_file(year_2018) == 3
+
+    assert _archive_rows(crawler) == [
+        ("2017-12-13", "A", 10.0),
+        ("2017-12-13", "B", 2.0),
+        ("2017-12-20", "A", 3.0),
+        ("2017-12-31", "A", 40.0),
+        ("2018-01-01", "A", 50.0),
+    ]
+
+
+def test_import_archive_twice_does_not_duplicate(tmp_path):
+    from oeds.base_crawler import empty_config
+    from oeds.crawler.entsog import EntsogCrawler
+
+    config = empty_config()
+    config["db_uri"] = "sqlite://"
+    crawler = EntsogCrawler("test", config)
+
+    path = _archive_file(
+        tmp_path / "2018.csv",
+        [("2018-01-01", "A", "1.00"), ("2018-01-02", "A", "2.00")],
+    )
+    crawler.import_archive_file(path)
+    crawler.import_archive_file(path)
+    assert _archive_rows(crawler) == [
+        ("2018-01-01", "A", 1.0),
+        ("2018-01-02", "A", 2.0),
+    ]
